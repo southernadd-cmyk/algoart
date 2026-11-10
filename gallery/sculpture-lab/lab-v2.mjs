@@ -1,4 +1,4 @@
-// PROPORTION PIECE — Sculpture Lab v2. Full replacement of v1 LAB UI only.
+// PROPORTION PIECE — Sculpture Lab V3: source-anchored anamorphic comparison.
 // Production tower, archive bakes, and daily publishing do not import this.
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -7,8 +7,7 @@ import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
-import {buildSpatialGraph} from './sculpture-v2-graph.mjs';
-import {ENGINE_TYPES,buildSculptureEngine,disposeSculptureV2} from './sculpture-v2-engines.mjs';
+import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs';
 
 const $=id=>document.getElementById(id);
 const canvas=$('view'),scene=new THREE.Scene();
@@ -42,8 +41,8 @@ const backWall=block(18,6,.20,0,3,-7,'#d4c9b7');
 block(.2,6,15,-8.7,3,0,'#c9bfad');
 const sideWall=block(.2,6,15,8.7,3,0,'#c9bfad');
 const centres=[-5.1,-1.7,1.7,5.1],stages=[],active=[],supports=[],debug=[];
-const titles={strand:'STRAND / ORBITAL',ribbon:'FOLDED / RIBBON',
-  mass:'MASS / STRATA',hybrid:'HYBRID / CONFLUENCE'};
+const titles={armature:'SOURCE ARMATURE',fold:'FOLDED SURFACE',
+  mass:'PIGMENT VOLUME',hybrid:'HYBRID / ANAMORPHIC'};
 function tagTexture(text){
   const c=document.createElement('canvas');c.width=512;c.height=128;
   const ctx=c.getContext('2d');ctx.fillStyle='#283129';ctx.fillRect(0,0,512,128);
@@ -59,7 +58,7 @@ for(let i=0;i<4;i++){
   block(1.64,.75,1.48,x,.375,0,'#d1c8b9');
   block(1.69,.045,1.54,x,.76,0,'#38463d',.3);
   const label=new THREE.Mesh(new THREE.PlaneGeometry(1.44,.35),
-    new THREE.MeshBasicMaterial({map:tagTexture(titles[ENGINE_TYPES[i]])}));
+    new THREE.MeshBasicMaterial({map:tagTexture(titles[V3_METHODS[i]])}));
   label.position.set(x,.43,.774);scene.add(label);
   const stage=new THREE.Group();stage.position.set(x,1.60,0);scene.add(stage);stages.push(stage);
 }
@@ -67,13 +66,15 @@ let archive=[],entries=[],currentDate='',selectedImage='';
 let loaded=null,ticket=0,currentGraph=null,currentFeatures=null;
 const status=s=>{$('status').textContent=s;};
 function uiOptions(){
-  return {phiPull:Number($('phi').value)/100,
-    abstraction:Number($('abstraction').value)/100,
+  return {
+    phiPull:Number($('phi').value)/100,
+    fidelity:Number($('fidelity').value)/100,
     depth:Number($('depth').value)/100,
-    connection:Number($('connection').value)/100};
+    connection:Number($('connection').value)/100
+  };
 }
 function updateOutputs(){
-  for(const key of ['phi','abstraction','depth','connection'])
+  for(const key of ['phi','fidelity','depth','connection'])
     $(key+'Value').textContent=$(key).value+'%';
 }
 function disposeDebug(g){
@@ -81,27 +82,22 @@ function disposeDebug(g){
   g.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
   g.removeFromParent();g.clear();
 }
-function graphOverlay(graph){
-  const group=new THREE.Group(),sphere=new THREE.SphereGeometry(.021,8,6);
-  const material=new THREE.MeshBasicMaterial({color:'#dceacc',depthTest:false});
-  const lineMat=new THREE.LineBasicMaterial({color:'#bf9a61',transparent:true,opacity:.7});
-  const byId=new Map(graph.nodes.map(n=>[n.id,n.position]));
-  for(const n of graph.nodes){
-    const m=new THREE.Mesh(sphere,material);m.position.set(n.position.x,n.position.y,n.position.z);
-    group.add(m);
+function sourceOverlay(features){
+  const group=new THREE.Group();
+  const geometry=new THREE.SphereGeometry(.018,7,6);
+  const mat=new THREE.MeshBasicMaterial({color:'#e6d2a9',depthTest:false});
+  for(const p of features.anchors){
+    const dot=new THREE.Mesh(geometry,mat);
+    dot.position.set(p.x,p.y,.81);group.add(dot);
   }
-  const coords=[];
-  for(const l of graph.links){
-    const a=byId.get(l.from),b=byId.get(l.to);
-    if(a&&b)coords.push(a.x,a.y,a.z,b.x,b.y,b.z);
-  }
-  const lines=new THREE.BufferGeometry();
-  lines.setAttribute('position',new THREE.Float32BufferAttribute(coords,3));
-  group.add(new THREE.LineSegments(lines,lineMat));
+  group.userData.sourceAnchors=true;
   return group;
 }
-function clearCandidate(c,s,g){if(s)disposeHybridSupport(s);
-  if(c)disposeSculptureV2(c);if(g)disposeDebug(g);}
+function clearCandidate(c,s,g){
+  if(s)disposeHybridSupport(s);
+  if(c)disposeAnamorphicSculpture(c);
+  if(g)disposeDebug(g);
+}
 function showSelection(){
   const selected=$('focus').value;
   for(let i=0;i<4;i++)stages[i].visible=selected==='all'||selected===String(i);
@@ -120,61 +116,69 @@ function focus(view='threequarter'){
   }[view];
   camera.position.set(...p);orbit.update();
 }
-function publishStatus(models,graph,features){
+function publishStatus(models,scores,features){
+  const methods=models.map((m,i)=>{
+    const box=new THREE.Box3().setFromObject(m),size=box.getSize(new THREE.Vector3());
+    const attr=[];
+    m.traverse(o=>{
+      if(!o.isMesh||!o.geometry?.attributes?.position)return;
+      const p=o.geometry.attributes.position;
+      const stride=Math.max(1,Math.floor(p.count/200));
+      for(let j=0;j<p.count;j+=stride)attr.push(p.getZ(j));
+    });
+    return {
+      method:V3_METHODS[i],meshCount:m.userData.meshCount,
+      noImagePlane:m.userData.noImagePlane,
+      noSilhouetteExtrusion:m.userData.noSilhouetteExtrusion,
+      preservedOriginalXY:m.userData.preservedOriginalXY,
+      sourceStrokeCount:m.userData.sourceStrokeCount,
+      sourceBody:m.userData.sourceBody,
+      extent:[size.x,size.y,size.z],
+      sourceOverlap:scores[i],
+      front:attr.filter(z=>z>.15).length,
+      rear:attr.filter(z=>z<-.15).length,
+      support:supports[i]?.userData.variant,
+      supportAnchors:supports[i]?.userData.anchorCount
+    };
+  });
   window.__sculptureLabStatus={
-    ready:true,version:2,engine:'spatial-v2',sourceKind:features.sourceKind,
+    ready:true,version:3,engine:'source-anchored-v3',
     date:currentDate,imageFile:selectedImage,
-    graphNodes:graph.nodes.length,graphLinks:graph.links.length,
-    graphGestures:graph.gestures.length,
-    methods:models.map((m,i)=>{
-      const box=new THREE.Box3().setFromObject(m),size=box.getSize(new THREE.Vector3());
-      const positions=[];
-      m.traverse(obj=>{
-        const attr=obj.geometry?.attributes?.position;
-        if(!obj.isMesh||!attr)return;
-        const stride=Math.max(1,Math.floor(attr.count/1200));
-        obj.updateMatrixWorld(true);
-        const p=new THREE.Vector3();
-        for(let j=0;j<attr.count;j+=stride){
-          p.fromBufferAttribute(attr,j).applyMatrix4(obj.matrixWorld);
-          positions.push([p.x-centres[i],p.y-1.60,p.z]);
-        }
-      });
-      let front=0,rear=0,spatial=0;
-      for(const p of positions){
-        if(p[2]>.16)front++;if(p[2]<-.16)rear++;
-        if(Math.abs(p[2])>.35)spatial++;
-      }
-      return {
-        method:ENGINE_TYPES[i],meshCount:m.userData.meshCount,
-        noImagePlane:m.userData.noImagePlane,
-        noSilhouetteExtrusion:m.userData.noSilhouetteExtrusion,
-        extent:[size.x,size.y,size.z],
-        sampledVertices:positions.length,front,rear,spatial,
-        support:supports[i]?.userData.variant,
-        supportAnchors:supports[i]?.userData.anchorCount
-      };
-    }),options:uiOptions(),material:features.material
+    material:features.material,sourceKind:features.sourceKind,
+    originalStrokes:loaded?.strokes?.length||0,
+    sourcePigmentRegions:features.regions.length,
+    methods,options:uiOptions()
   };
+  return methods;
 }
 function renderSculptures(){
-  if(!currentFeatures)return;
-  const graph=buildSpatialGraph(currentFeatures,uiOptions());
-  const candidates=[],pins=[],overlays=[];
+  if(!currentFeatures||!loaded)return;
+  const opts=uiOptions(),candidates=[],pins=[],overlays=[],scores=[];
   try{
     for(let i=0;i<4;i++){
-      const model=buildSculptureEngine(ENGINE_TYPES[i],graph,currentFeatures,{
-        colourMode:$('colourMode').value
+      const model=buildAnamorphicSculpture(V3_METHODS[i],{
+        features:currentFeatures,strokes:loaded.strokes||[],
+        pixels:loaded.pixels,texture:loaded.texture,
+        paper:loaded.paper,material:loaded.material,
+        ...opts,colourMode:$('colourMode').value,
+        quality:innerWidth<700?'mobile':'desktop'
       });
+      candidates.push(model);
+      // Independent FRONT silhouette readback. Rear geometry is counted as
+      // a mismatch if it spills across original negative space.
+      let overlap=null;
+      try{
+        overlap=measureFrontSilhouette(renderer,model,loaded.pixels,{
+          material:loaded.material,paper:loaded.paper
+        });
+      }catch(e){console.warn('Front-view score unavailable:',e.message);}
+      scores.push(overlap);
       const bounds=new THREE.Box3().setFromObject(model);
       model.position.y=-.34-bounds.min.y;
       model.updateMatrixWorld(true);
-      candidates.push(model);
-      const pin=createHybridSupport(model,'pin',{pixels:loaded?.pixels});
-      pins.push(pin);
-      const overlay=graphOverlay(graph);
+      pins.push(createHybridSupport(model,'pin',{pixels:loaded.pixels}));
+      const overlay=sourceOverlay(currentFeatures);
       overlay.position.y=model.position.y;
-      overlay.scale.copy(model.scale);
       overlay.visible=$('showGraph').checked;
       overlays.push(overlay);
     }
@@ -183,13 +187,17 @@ function renderSculptures(){
       active[i]=candidates[i];supports[i]=pins[i];debug[i]=overlays[i];
       stages[i].add(candidates[i],pins[i],overlays[i]);
     }
-    currentGraph=graph;
-    showSelection();publishStatus(candidates,graph,currentFeatures);
-    status('Four genuine XYZ engines · '+graph.gestures.length+
-      ' gestures · '+graph.nodes.length+' pigment masses · '+currentFeatures.sourceKind);
+    showSelection();
+    const methods=publishStatus(candidates,scores,currentFeatures);
+    const pct=methods.map(m=>m.sourceOverlap?
+      Math.round(m.sourceOverlap.iou*100)+'%':'n/a').join(' / ');
+    $('frontScore').textContent='Measured front silhouette overlap (IoU): '+pct+
+      ' · 01 Armature / 02 Fold / 03 Pigment / 04 Hybrid';
+    status('V3 source-anchored · '+(loaded.strokes?.length||0)+
+      ' recorded paths · front overlap '+pct);
   }catch(error){
     candidates.forEach((c,i)=>clearCandidate(c,pins[i],overlays[i]));
-    status('3D construction failed: '+error.message);
+    status('V3 construction failed: '+error.message);
     window.__sculptureLabStatus={ready:false,error:error.message};
     console.error(error);
   }
@@ -210,44 +218,52 @@ function loadImage(url){
 async function choosePainting(file){
   selectedImage=file;const me=++ticket,entry=entries.find(e=>e.imageFile===file);
   if(!entry)return;
-  status('Reading archived painting…');
+  status('Reading archived source painting…');
   try{
     const url=new URL('../'+encodeURIComponent(currentDate)+'/'+encodeURIComponent(file),location.href).href;
     const image=await loadImage(url);if(me!==ticket)return;
     const pixels=imagePixels(image);
     const mat=resolveStudyMaterial(entry.shareUrl,entry.material||'marker');
-    loaded={pixels,material:mat.type,paper:mat.params.paper||'#f5f0e6'};
-    currentFeatures=buildSourceFeatures(pixels,{material:mat.type,paper:loaded.paper});
+    const texture=new THREE.Texture(image);
+    texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;
+    const previous=loaded;
+    loaded={pixels,texture,material:mat.type,
+      paper:mat.params.paper||'#f5f0e6',strokes:[]};
+    currentFeatures=buildSourceFeatures(pixels,{
+      material:mat.type,paper:loaded.paper,maxGestures:90
+    });
     $('thumb').src=url;$('caption').textContent=entry.title||entry.seed;
     $('source').href=entry.shareUrl;
-    $('sourceEvidence').textContent='Analysing original generator paths…';
+    $('sourceEvidence').textContent='Provisional pigment-derived geometry — retrieving original marks…';
     renderSculptures();
+    if(previous?.texture)previous.texture.dispose();
     const link=new URL(location.href);
     link.searchParams.set('date',currentDate);link.searchParams.set('image',file);
     history.replaceState(null,'',link);
-    // Render an immediate useful pigment-derived sculpture. Upgrade the SAME
-    // source graph when the original renderer recording becomes available.
     try{
       const capture=await recordOriginalComposition(entry);
       if(me!==ticket)return;
       const strokes=prepareOriginalStrokes(capture,{
         material:mat.type,imageData:{...pixels,sourceWidth:capture.width,
-          sourceHeight:capture.height},maxPaths:65,
-        minimumCoverage:mat.type==='marker'?0:.24
+          sourceHeight:capture.height},maxPaths:165,
+        minimumCoverage:mat.type==='marker'?0:.22
       });
-      if(strokes.length>=3){
+      loaded.strokes=strokes;
+      if(strokes.length>=2){
         currentFeatures=buildSourceFeatures(pixels,{
-          material:mat.type,paper:loaded.paper,strokes
+          material:mat.type,paper:loaded.paper,strokes,
+          maxRegions:32,maxGestures:90
         });
         renderSculptures();
         $('sourceEvidence').textContent=strokes.length+
-          ' original recorded gestures + source pigment';
+          ' actual renderer marks + original pigment · front XY preserved';
       }else{
-        $('sourceEvidence').textContent='Source pigment regions (no usable vector paths)';
+        $('sourceEvidence').textContent='No usable vector paths; source pigment geometry only';
       }
     }catch(e){
       if(me!==ticket)return;
-      $('sourceEvidence').textContent='Pigment-based fallback · '+e.message;
+      $('sourceEvidence').textContent='Archive source recorder unavailable: '+e.message;
+      console.warn(e);
     }
   }catch(error){
     if(me!==ticket)return;
@@ -276,7 +292,7 @@ async function chooseDate(day){
 $('day').addEventListener('change',()=>{selectedImage='';chooseDate($('day').value);});
 $('painting').addEventListener('change',()=>choosePainting($('painting').value));
 $('focus').addEventListener('change',()=>{showSelection();focus('threequarter');});
-for(const key of ['phi','abstraction','depth','connection']){
+for(const key of ['phi','fidelity','depth','connection']){
   $(key).addEventListener('input',updateOutputs);
   $(key).addEventListener('change',renderSculptures);
 }
@@ -338,4 +354,4 @@ try{
   if(innerWidth<740&&window.__sculptureLabStatus?.ready){
     $('focus').value='0';showSelection();focus('threequarter');
   }else focus('threequarter');
-}catch(error){status('Cannot initialise Sculpture Lab v2: '+error.message);console.error(error);}
+}catch(error){status('Cannot initialise Sculpture Lab v3: '+error.message);console.error(error);}
