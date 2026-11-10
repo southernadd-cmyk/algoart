@@ -50,7 +50,7 @@ const titles={armature:'SOURCE ARMATURE',fold:'FOLDED SURFACE',
   assembly:'REGIONAL ASSEMBLY'};
 const methods=()=> $('engineMode').value==='v3'?V3_METHODS:V4_METHODS;
 const isV4=()=> $('engineMode').value!=='v3';
-const labels=new Array(4);
+const labels=[];
 function labelMethods(){
   for(let i=0;i<4;i++){
     const map=tagTexture(titles[methods()[i]]);
