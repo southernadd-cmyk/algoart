@@ -2,7 +2,7 @@
 // importing gallery/visit/sculpture-render-traced.mjs and V1 baked packs.
 // This adapter preserves the real tower's createPortraitSculpture contract.
 import * as THREE from 'three';
-import {downloadV2Floor,reconstructV2Study,disposePreparedV2}
+import {downloadV2Floor,downloadV2Reception,reconstructV2Study,disposePreparedV2}
   from './v2-pack-loader.mjs';
 import {createHybridSupport,disposeHybridSupport,PLINTH_TOP_LOCAL_Y}
   from '../sculpture-lab/hybrid-supports.mjs';
@@ -127,9 +127,12 @@ export function createPortraitSculpture({
   count(study,'attempted');
   (async()=>{
     const start=performance.now();
-    const date=archiveDate(study),name=sourceFileOf(study);
+    const date=study.receptionPrepared?'reception':archiveDate(study);
+    const name=sourceFileOf(study);
     const requestedQuality=quality==='desktop'?'desktop':'mobile';
-    const floor=await preparedFloor(date,requestedQuality);
+    const floor=study.receptionPrepared
+      ?await downloadV2Reception(requestedQuality)
+      :await preparedFloor(date,requestedQuality);
     const prepared=floor.studies[name];
     if(!prepared)throw Error('Verified V2 pack omits '+date+'/'+name);
     if(prepared.quality!==requestedQuality||prepared.method!=='assembly'||
@@ -166,7 +169,7 @@ export function createPortraitSculpture({
       attached=true;
       for(const mesh of body.children)if(mesh.isMesh)onArtworkMesh?.(mesh);
       const stats={
-        prepared:true,
+        prepared:true,reception:!!study.receptionPrepared,
         regions:body.userData.regionCount,
         omittedCells:body.userData.omittedCells,
         triangles:body.userData.polygonTriangles,

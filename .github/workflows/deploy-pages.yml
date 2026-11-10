@@ -246,6 +246,22 @@ jobs:
           test -s _site/gallery/2026-11-10/3d/v2/sculptures.desktop.json.gz
           test -s _site/gallery/2026-10-18/3d/v2/sculptures.mobile.json.gz
           du -sh _site
+      - name: Stage verified reception sculpture in isolated V2 test tower
+        env:
+          GH_TOKEN: ${{ github.token }}
+          V2_RECEPTION_RUN: '42912652898'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/v2-reception"
+          gh run download "$V2_RECEPTION_RUN" --repo "${{ github.repository }}" --name sculpture-v2-reception --dir "$RUNNER_TEMP/v2-reception"
+          V2_RECEPTION_OUT="$RUNNER_TEMP/v2-reception" node --test tests/sculpture-v2-reception.test.mjs
+          mkdir -p _site/gallery/sculpture-v2-test/reception
+          cp "$RUNNER_TEMP/v2-reception/sculptures.desktop.json.gz" _site/gallery/sculpture-v2-test/reception/
+          cp "$RUNNER_TEMP/v2-reception/sculptures.mobile.json.gz" _site/gallery/sculpture-v2-test/reception/
+          cp "$RUNNER_TEMP/v2-reception/manifest.json" _site/gallery/sculpture-v2-test/reception/
+          test -s _site/gallery/sculpture-v2-test/reception/sculptures.desktop.json.gz
+          test -s _site/gallery/sculpture-v2-test/reception/sculptures.mobile.json.gz
+          echo "Isolated reception sculpture restored from approved run $V2_RECEPTION_RUN"
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
