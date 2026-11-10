@@ -236,9 +236,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "${{ steps.cached.outputs.ready }}" == 'true' ]] || {
-            echo "::error::Frozen dated Watercolour assets missing: refusing regeneration on recovery."; exit 1;
-          }
+          TODAY="$(TZ=Europe/London date +%F)"
+          if [[ "${{ steps.gate.outputs.date }}" < "$TODAY" ]]; then
+            [[ "${{ steps.cached.outputs.ready }}" == 'true' ]] || {
+              echo "::error::Frozen dated Watercolour assets missing: refusing regeneration on recovery."; exit 1;
+            }
+          fi
 
       - name: Install Playwright
         if: steps.gate.outputs.should_run == 'true'
