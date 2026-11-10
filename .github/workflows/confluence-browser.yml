@@ -7,6 +7,7 @@ on:
       - 'automation/confluence-daily-variation.mjs'
       - 'automation/generate-gallery-confluence.mjs'
       - 'tests/confluence-daily-publishing.test.mjs'
+      - 'tests/confluence-daily-random-browser.mjs'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
       - 'tests/confluence-completion-browser.mjs'
@@ -29,6 +30,7 @@ on:
       - 'automation/confluence-daily-variation.mjs'
       - 'automation/generate-gallery-confluence.mjs'
       - 'tests/confluence-daily-publishing.test.mjs'
+      - 'tests/confluence-daily-random-browser.mjs'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
       - 'tests/confluence-completion-browser.mjs'
@@ -73,3 +75,16 @@ jobs:
         run: node tests/confluence-v8-parity-browser.mjs
       - name: Measure saved monochrome Tissue atmosphere over 27 turns
         run: node tests/confluence-tissue-accumulation-browser.mjs
+
+  daily-pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify both exact 11 November daily Confluence studies render correctly
+        run: node tests/confluence-daily-random-browser.mjs
