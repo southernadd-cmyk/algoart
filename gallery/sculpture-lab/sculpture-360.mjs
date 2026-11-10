@@ -429,7 +429,10 @@ export function buildSculpture(method, data) {
     const backing = new THREE.Group();
     backing.name = method + ' — phi-governed three-dimensional rear';
     for (const child of [...group.children]) backing.add(child);
-    backing.position.z = -1.13;
+    // Keep the 3D rear within the source silhouette when seen head-on;
+    // its sides and back still occupy the full φ-shaped sculptural depth.
+    backing.scale.set(.78, .80, .86);
+    backing.position.z = -1.17;
     group.add(backing);
     applyPaintingTexture(group, data.paintTexture, data.paintStrength ?? .76);
     // The physical pigment islands preserve the original painting's exact
