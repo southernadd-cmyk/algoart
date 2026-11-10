@@ -102,6 +102,12 @@ test('sculpted front details retain image-space mark positions but bend in real 
     }
   });
   assert.ok(frontMeshes>=marks.length);
+  const sourceFacing=layer.children.filter(m=>m.userData.sourceFacing);
+  const returns=layer.children.filter(m=>m.userData.returnBranch);
+  assert.equal(sourceFacing.length,marks.length);
+  assert.ok(returns.length<=Math.ceil(marks.length/3));
+  assert.ok(sourceFacing.every(m=>m.material.isMeshBasicMaterial&&
+    m.material.toneMapped===false),'Original pigment colour must remain faithful');
   assert.equal(hasSourcePosition,true);
   assert.ok(maxDepth>.6,'Front gestures must be developed in depth, not flat');
   for(const obj of [...layer.children]){
