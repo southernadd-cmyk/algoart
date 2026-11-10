@@ -22,7 +22,7 @@ try{
   await page.waitForFunction(()=>
     (window.__hybridTowerStatus&&window.__phiFullEngine)||window.__galleryStartupError,
     null,{timeout:100000});
-  assert.ok(requests.some(u=>/\/gallery\/hybrid-tower-test\/gallery-phi-bundle\.js/.test(u)),
+  assert.ok(requests.some(u=>/\/gallery\/visit\/gallery-phi-hybrid-test-bundle\.js/.test(u)),
     'Test tower imported the LIVE bundle instead of its isolated renderer');
   assert.ok(!requests.some(u=>/\/test\/virtual-gallery\//.test(u)));
   const report=await page.evaluate(()=>({
