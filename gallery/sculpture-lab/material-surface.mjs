@@ -8,6 +8,7 @@ import {estimatePaper,pigmentOpacity} from '../visit/paper-isolation.mjs';
 
 export const PHI=(1+Math.sqrt(5))/2;
 const TAU=Math.PI*2;
+const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const W=1.34,H=1.88;
 export const MATERIAL_SURFACE_VERSION='paint-surface-v1';
