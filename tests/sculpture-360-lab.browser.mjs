@@ -9,8 +9,12 @@ const browser=await chromium.launch({
 });
 try {
   const page=await browser.newPage({viewport:{width:1400,height:900}});
-  const errors=[];
+  const errors=[],shaderErrors=[];
   page.on('pageerror',e=>errors.push(e.message));
+  page.on('console',e=>{
+    if(e.type()==='error'&&/WebGLProgram|shader|VALIDATE_STATUS|compile|link/i.test(e.text()))
+      shaderErrors.push(e.text().slice(0,300));
+  });
   await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/',{
     waitUntil:'domcontentloaded',timeout:45000
   });
@@ -28,6 +32,8 @@ try {
   assert.deepEqual(lab.methods.map(m=>m.method),['petal','ribbon','pigment','hybrid']);
   assert.ok(lab.methods.every(m=>m.meshes===1),
     'A detached image/line layer or unrelated back sculpture is still visible');
+  assert.ok(lab.methods.every(m=>m.sideTextureOnBody===true),
+    'The curved sides have no actual pigment continuation texture');
   assert.ok(lab.methods.every(m=>m.sourceTextureOnBody===true),
     'Archived source painting is not physically mapped on the 3D object');
   assert.ok(lab.methods.every(m=>m.paintedCells>30&&m.frontIndices>0&&
@@ -54,7 +60,7 @@ try {
       option,{timeout:100000});
     lab=await report();
     assert.equal(lab.engine,'paint-surface-v1');
-    assert.ok(lab.methods.every(m=>m.meshes===1&&m.sourceTextureOnBody));
+    assert.ok(lab.methods.every(m=>m.meshes===1&&m.sourceTextureOnBody&&m.sideTextureOnBody));
     assert.equal(lab.paintingFinish,name);
     await page.locator('#focus').selectOption('3');
     await page.locator('#front').click();
@@ -132,6 +138,7 @@ try {
   assert.equal(await page.locator('#geometryMode').isVisible(),true);
   assert.equal(await page.locator('#back').isVisible(),true);
   assert.deepEqual(errors,[],'Browser errors: '+errors.join('; '));
+  assert.deepEqual(shaderErrors,[],'WebGL shader errors: '+shaderErrors.join('; '));
   console.log('Source image mapped to one real volumetric mesh per method:',
     lab.paintingFinish,lab.methods.map(m=>m.method+':'+m.meshes).join(' '));
 }finally{await browser.close();}
