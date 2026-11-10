@@ -159,7 +159,8 @@ function replaceSculptures(marks,entry){
       const obj=mode==='surface'
         ?buildMaterialSculpture(method,currentSourceData.pixels,
           currentSourceData.paintTexture,{
-          depth,material:currentSourceData.material,paper:currentSourceData.paper
+          depth,material:currentSourceData.material,paper:currentSourceData.paper,
+          quality:currentSourceData.quality
         })
         :mode==='jscad'
         ?buildJSCADSculpture(method,marks,jscad,{
