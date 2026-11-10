@@ -1,4 +1,5 @@
 name: Confluence browser viewport smoke
+# Read-only baseline run on unchanged main code; do not merge this audit.
 on:
   push:
     branches: [main]
