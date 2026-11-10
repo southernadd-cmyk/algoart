@@ -10,8 +10,8 @@ import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs?v=3-fi
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
 import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs?v=3-finish-1';
-import {segmentPainting,V4_METHODS} from './sculpture-v4-topology.mjs?v=4.2';
-import {buildV4Sculpture,disposeV4Sculpture} from './sculpture-v4-surface.mjs?v=4.2';
+import {segmentPainting,V4_METHODS} from './sculpture-v4-topology.mjs?v=4.2.1';
+import {buildV4Sculpture,disposeV4Sculpture} from './sculpture-v4-surface.mjs?v=4.2.1';
 
 const $=id=>document.getElementById(id);
 const canvas=$('view'),scene=new THREE.Scene();
@@ -53,7 +53,7 @@ for(const [idx,[c,p,intensity]] of
       innerWidth<740?512:1024);
     Object.assign(light.shadow.camera,{left:-8,right:8,top:6,bottom:-6,
       near:.5,far:25});
-    light.shadow.bias=-.00008;
+    light.shadow.bias=-.00008;light.shadow.normalBias=.02;
   }
   scene.add(light);
 }
