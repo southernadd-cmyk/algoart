@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Isolated hybrid sculpture tower bake (CI only)</title>
+<meta name="robots" content="noindex,nofollow">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"}}</script>
+</head><body><p>Offline 360° hybrid sculpture bakery — not a public renderer.</p>
+<script type="module">
+import * as THREE from 'three';
+import {buildMaterialSculpture,disposeMaterialSculpture}
+  from '../sculpture-lab/material-surface.mjs';
+import {resolveStudyMaterial} from './study-material.mjs';
+const sourceWidth=108,sourceHeight=152,VERTEX_STRIDE=13;
+const testDate=/^\d{4}-\d{2}-\d{2}$/;
+const testName=/^[a-zA-Z0-9._-]+\.jpe?g$/;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function base64(bytes){
+  let result='';
+  for(let i=0;i<bytes.length;i+=8192)
+    result+=String.fromCharCode(...bytes.subarray(i,i+8192));
+  return btoa(result);
+}
+function geometryToPack(mesh){
+  const pos=mesh.geometry.getAttribute('position'),
+    normal=mesh.geometry.getAttribute('normal'),
+    uv=mesh.geometry.getAttribute('uv');
+  if(!pos||!normal||!uv||pos.count!==normal.count||pos.count!==uv.count||
+      pos.count<150||pos.count%3!==0)
+    throw Error('Invalid hybrid geometry attributes');
+  if(pos.count>450000)throw Error('Excessive hybrid geometry vertex count: '+pos.count);
+  const bytes=new Uint8Array(pos.count*VERTEX_STRIDE),
+    view=new DataView(bytes.buffer);
+  let min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+  for(let i=0;i<pos.count;i++){
+    const k=i*VERTEX_STRIDE;
+    for(let a=0;a<3;a++){
+      const n=pos.getComponent(i,a);
+      if(!Number.isFinite(n)||Math.abs(n)>=1.999)throw Error('Position exceeded quantisation bounds');
+      view.setInt16(k+a*2,clamp(Math.round(n*16384),-32768,32767),true);
+      min[a]=Math.min(min[a],n);max[a]=Math.max(max[a],n);
+      const nn=normal.getComponent(i,a);
+      if(!Number.isFinite(nn))throw Error('Invalid surface normal');
+      view.setInt8(k+6+a,clamp(Math.round(nn*127),-127,127));
+    }
+    for(let a=0;a<2;a++){
+      const u=uv.getComponent(i,a);
+      if(!Number.isFinite(u)||u<-.001||u>1.001)
+        throw Error('Source UV is outside archived painting');
+      view.setUint16(k+9+a*2,clamp(Math.round(u*65535),0,65535),true);
+    }
+  }
+  return {
+    format:'hybrid-13b-pos16-normal8-uv16-le',
+    vertices:pos.count,triangles:pos.count/3,
+    min:min.map(x=>Math.round(x*10000)/10000),
+    max:max.map(x=>Math.round(x*10000)/10000),
+    packed:base64(bytes)
+  };
+}
+function loadImage(url){
+  return new Promise((resolve,reject)=>{
+    const image=new Image();
+    image.onload=()=>resolve(image);
+    image.onerror=()=>reject(Error('Could not read original archived portrait '+url));
+    image.src=url;
+  });
+}
+window.bakeHybridTowerStudy=async({date,item,quality})=>{
+  if(!testDate.test(date)||!testName.test(item?.imageFile))
+    throw Error('Invalid archived portrait address');
+  if(!['desktop','mobile'].includes(quality))throw Error('Invalid bake quality');
+  if(item.material==='confluence')throw Error('Confluence cannot become a sculpture');
+  const url=new URL('../'+date+'/'+item.imageFile,location.href);
+  const image=await loadImage(url);
+  const canvas=document.createElement('canvas');
+  canvas.width=sourceWidth;canvas.height=sourceHeight;
+  const context=canvas.getContext('2d',{willReadFrequently:true});
+  context.drawImage(image,0,0,sourceWidth,sourceHeight);
+  const pixels=context.getImageData(0,0,sourceWidth,sourceHeight);
+  const material=resolveStudyMaterial(item.shareUrl,item.material||'marker');
+  const texture=new THREE.Texture(image);
+  const sculpture=buildMaterialSculpture('hybrid',pixels,texture,{
+    depth:1,material:material.type,
+    paper:material.params.paper||'#f5f0e6',quality
+  });
+  try {
+    const mesh=sculpture.children[0];
+    const geometry=geometryToPack(mesh);
+    return {
+      ...geometry,material:material.type,
+      sourceImage:item.imageFile,seed:item.seed,
+      method:'hybrid',mount:'museum-pin',quality,
+      sourceTexture:true,
+      hasFront:sculpture.userData.frontIndices>0,
+      hasBack:sculpture.userData.backIndices>0,
+      hasSides:sculpture.userData.wallIndices>0
+    };
+  }finally{
+    disposeMaterialSculpture(sculpture);
+    texture.dispose();
+  }
+};
+window.hybridTowerBakerReady=true;
+</script></body></html>
