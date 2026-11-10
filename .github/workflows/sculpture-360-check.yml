@@ -6,6 +6,7 @@ on:
       - 'tests/sculpture-rules.test.mjs'
       - 'tests/sculpture-csg.test.mjs'
       - 'tests/sculpture-material-surface.test.mjs'
+      - 'tests/sculpture-hybrid-supports.test.mjs'
       - 'tests/sculpture-recorded-gestures.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
       - '.github/workflows/sculpture-360-check.yml'
@@ -33,6 +34,7 @@ jobs:
           node --check gallery/sculpture-lab/sculpture-rules.mjs
           node --check gallery/sculpture-lab/sculpture-csg.mjs
           node --check gallery/sculpture-lab/material-surface.mjs
+          node --check gallery/sculpture-lab/hybrid-supports.mjs
           node --check gallery/sculpture-lab/source-echo.mjs
           node --check gallery/sculpture-lab/recorded-gestures.mjs
           node --check gallery/sculpture-lab/source-bridge.mjs
@@ -40,6 +42,7 @@ jobs:
           node --test tests/sculpture-rules.test.mjs
           node --test tests/sculpture-csg.test.mjs
           node --test tests/sculpture-material-surface.test.mjs
+          node --test tests/sculpture-hybrid-supports.test.mjs
           node --test tests/sculpture-recorded-gestures.test.mjs
           if grep -E -i -n '(meshy|fal\.ai|image.to.3d|aiFiles|resetAI|MESHY_API_KEY)' \
             gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-360.mjs; then
