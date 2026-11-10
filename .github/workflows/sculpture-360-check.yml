@@ -9,6 +9,7 @@ on:
       - 'tests/sculpture-hybrid-supports.test.mjs'
       - 'tests/sculpture-recorded-gestures.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
+      - 'tests/sculpture-v2.test.mjs'
       - '.github/workflows/sculpture-360-check.yml'
   workflow_dispatch:
 
@@ -39,13 +40,18 @@ jobs:
           node --check gallery/sculpture-lab/recorded-gestures.mjs
           node --check gallery/sculpture-lab/source-bridge.mjs
           node --check gallery/sculpture-lab/lab-360.mjs
+          node --check gallery/sculpture-lab/lab-v2.mjs
+          node --check gallery/sculpture-lab/sculpture-v2-features.mjs
+          node --check gallery/sculpture-lab/sculpture-v2-graph.mjs
+          node --check gallery/sculpture-lab/sculpture-v2-engines.mjs
           node --test tests/sculpture-rules.test.mjs
           node --test tests/sculpture-csg.test.mjs
           node --test tests/sculpture-material-surface.test.mjs
           node --test tests/sculpture-hybrid-supports.test.mjs
           node --test tests/sculpture-recorded-gestures.test.mjs
+          node --test tests/sculpture-v2.test.mjs
           if grep -E -i -n '(meshy|fal\.ai|image.to.3d|aiFiles|resetAI|MESHY_API_KEY)' \
-            gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-360.mjs; then
+            gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-v2.mjs; then
             echo "Public sculpture lab must remain rules-only" >&2
             exit 1
           fi
