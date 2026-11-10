@@ -1,0 +1,88 @@
+name: Sculpture V2 prepared meshes — isolated bake
+
+on:
+  pull_request:
+    paths:
+      - 'gallery/sculpture-v2-test/v2-baker.mjs'
+      - 'gallery/sculpture-v2-test/v2-pack-loader.mjs'
+      - 'automation/build-sculpture-v2-baker.mjs'
+      - 'automation/build-sculpture-v2-packs.mjs'
+      - 'tests/sculpture-v2-packs.test.mjs'
+      - '.github/workflows/sculpture-v2-prebake.yml'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'One archive date, ignored when all=true'
+        required: true
+        default: '2026-11-10'
+        type: string
+      limit:
+        description: 'Maximum portraits per day: 0 means all'
+        required: true
+        default: '0'
+        type: string
+      all:
+        description: 'Bake the complete historic archive'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sculpture-v2-offline-bake
+  cancel-in-progress: false
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      V2_DATE: ${{ inputs.date || '2026-11-10' }}
+      V2_LIMIT: ${{ inputs.limit || '3' }}
+      V2_ALL: ${{ inputs.all || 'false' }}
+      V2_BAKE_OUT: artifacts/sculpture-v2-packs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Check offline baker and loader syntax
+        run: |
+          node --check automation/build-sculpture-v2-baker.mjs
+          node --check automation/build-sculpture-v2-packs.mjs
+          node --check gallery/sculpture-v2-test/v2-baker.mjs
+          node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
+          node --check tests/sculpture-v2-packs.test.mjs
+          node automation/build-sculpture-v2-baker.mjs
+          node --check gallery/sculpture-v2-test/v2-baker-bundle.js
+      - name: Start isolated local archive server
+        run: |
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v2-baker-server.log 2>&1 &
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/v2-baker-server.log
+          exit 1
+      - name: Prepare V2 meshes outside the published gallery
+        shell: bash
+        run: |
+          if [[ "$V2_ALL" == "true" ]]; then
+            node automation/build-sculpture-v2-packs.mjs --all --quality both
+          else
+            node automation/build-sculpture-v2-packs.mjs --date "$V2_DATE" --quality both --limit "$V2_LIMIT"
+          fi
+      - name: Validate packed geometry, source checksums and safe V1 isolation
+        run: node --test tests/sculpture-v2-packs.test.mjs
+      - name: Upload V2 dry-run assets and audit report (never push)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sculpture-v2-prepared-packs
+          path: artifacts/sculpture-v2-packs/
+          retention-days: 7
+          if-no-files-found: error
