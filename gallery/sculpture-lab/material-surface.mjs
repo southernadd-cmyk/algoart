@@ -135,14 +135,19 @@ function fieldAt(field,method,x,y,z,depth){
   return pigment-.092-thickness*profile*profile;
 }
 export function buildMaterialSculpture(method,imageData,texture,{
-  depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null
+  depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null,
+  towerBake=false
 }={}){
   if(!texture?.isTexture)throw Error('Actual archived artwork texture is required');
   if(!['petal','ribbon','pigment','hybrid'].includes(method))
     throw Error('Unsupported 360° sculpting method '+method);
   const field=pigmentField(imageData,{material,paper});
   const mobile=quality==='mobile';
-  const nx=mobile?60:82,ny=mobile?88:116,nz=mobile?17:20;
+  // Test-tower-only LOD. The Sculpture Lab's existing mobile/desktop
+  // geometry is unchanged unless this explicit offline bake flag is supplied.
+  const nx=towerBake?(mobile?48:70):(mobile?60:82);
+  const ny=towerBake?(mobile?70:100):(mobile?88:116);
+  const nz=towerBake?(mobile?12:16):(mobile?17:20);
   const sizex=1.88,sizey=2.35;
   const plane=(nx+1)*(ny+1);
   const count=plane*(nz+1);
