@@ -278,9 +278,41 @@ export function buildPlanarRegion(r,{quality='desktop'}={}){
   if(!triangles.length)throw Error('V4 marching squares triangulation found no surface');
   const boundaryCount=vertices.length;
   delaunayFlip(vertices,triangles);
-  const refined=subdivideConforming(vertices,triangles,quality==='mobile'?2.55:1.8);
-  // Construct the actual final perimeter after all edge subdivisions.
-  return{vertices,triangles:refined,boundaries:boundaryLoops(vertices,refined),
+  // Preserve the source outlines when the cap triangulation is refined.
+  // Reconstructing the perimeter from triangle *vertices* loses branches at
+  // touching pigment islands (multiple boundary edges can share a vertex).
+  // The resulting open chain previously crashed on historical oil portraits.
+  const refined=subdivideConforming(vertices,triangles,
+    quality==='mobile'?2.55:1.8,boundaries);
+  const boundaryEdges=new Map();
+  for(const t of refined)for(let j=0;j<3;j++){
+    const id=ek(t[j],t[(j+1)%3]);
+    boundaryEdges.set(id,(boundaryEdges.get(id)||0)+1);
+  }
+  const rimBoundaries=boundaries.map(({indices,hole})=>{
+    if(indices.length<3)throw Error('V2 refined boundary has fewer than 3 points');
+    const edgeNormals=indices.map((a,j)=>{
+      const b=indices[(j+1)%indices.length];
+      const p=vertices[a],q=vertices[b];
+      if(!p||!q||!Number.isFinite(p.x)||!Number.isFinite(p.y)||
+          !Number.isFinite(q.x)||!Number.isFinite(q.y))
+        throw Error('V2 refined perimeter contains an invalid vertex');
+      if(boundaryEdges.get(ek(a,b))!==1)
+        throw Error('V2 refined perimeter is not a single cap boundary edge');
+      // Outer loops are clockwise and holes anticlockwise: in both cases
+      // the solid is on the right and its outward side normal points left.
+      const nx=p.y-q.y,ny=q.x-p.x,length=Math.hypot(nx,ny);
+      if(length<1e-9)throw Error('V2 refined perimeter has a zero-length edge');
+      return[nx/length,ny/length];
+    });
+    const outward=edgeNormals.map((q,j)=>{
+      const p=edgeNormals[(j+indices.length-1)%indices.length];
+      const x=p[0]+q[0],y=p[1]+q[1],length=Math.hypot(x,y);
+      return length>1e-9?[x/length,y/length]:q;
+    });
+    return{indices,outward,hole};
+  });
+  return{vertices,triangles:refined,boundaries:rimBoundaries,
     boundaryCount};
 }
 
