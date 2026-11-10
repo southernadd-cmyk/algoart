@@ -35,10 +35,10 @@ await build({
           'Reception study must have exactly one approved V1 source record');
         assert.equal(original.split(exhibitAnchor).length-1,1,
           'Reception plinth must have exactly one registration point');
-        const transformed=original.replace(studyAnchor,
+        let transformed=original.replace(studyAnchor,
           "      id:'reception-recursive-divisions-v2',"+
           "date:'reception',engine:'recursive-divisions',portrait:true,"+
-          "imageFile:'reception-growth-systems.png',receptionPrepared:true,\n"+
+          "imageFile:'recursive-divisions-portrait.png',receptionPrepared:true,\n"+
           studyAnchor).replace(exhibitAnchor,
           exhibitAnchor+"\n"+
           "      const exhibit={study,position:new THREE.Vector3("+
@@ -47,6 +47,18 @@ await build({
           "      window.__sculptureV2ReceptionExhibit={"+
           "title:study.title,seed:study.seed,href:study.href};\n"+
           "      window.__sculptureV2ReceptionInspect=()=>showInfo(exhibit);");
+        const oldSource="./data/reception-growth-systems.json";
+        const oldImage="./data/reception-growth-systems.png";
+        const oldGate="!bake.qualities?.desktop?.length";
+        const oldPrebuilt="prebuilt:{desktop:bake.qualities.desktop,mobile:bake.qualities.mobile}";
+        for(const token of [oldSource,oldImage,oldGate,oldPrebuilt])
+          assert.equal(transformed.split(token).length-1,1,
+            'Reception source substitution needs one exact anchor: '+token);
+        transformed=transformed
+          .replace(oldSource,"../sculpture-v2-test/reception/source.json")
+          .replace(oldImage,"../sculpture-v2-test/reception/recursive-divisions-portrait.png")
+          .replace(oldGate,"!(bake.orientation==='portrait'&&bake.width===1000&&bake.height===1400)")
+          .replace(oldPrebuilt,"sourcePortrait:true");
         receptionReplacements++;
         return{contents:transformed,loader:'js',resolveDir:dirname(args.path)};
       });

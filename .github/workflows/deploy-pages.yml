@@ -249,7 +249,7 @@ jobs:
       - name: Stage verified reception sculpture in isolated V2 test tower
         env:
           GH_TOKEN: ${{ github.token }}
-          V2_RECEPTION_RUN: '42912652898'
+          V2_RECEPTION_RUN: '42915426552'
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/v2-reception"
@@ -259,6 +259,10 @@ jobs:
           cp "$RUNNER_TEMP/v2-reception/sculptures.desktop.json.gz" _site/gallery/sculpture-v2-test/reception/
           cp "$RUNNER_TEMP/v2-reception/sculptures.mobile.json.gz" _site/gallery/sculpture-v2-test/reception/
           cp "$RUNNER_TEMP/v2-reception/manifest.json" _site/gallery/sculpture-v2-test/reception/
+          cp "$RUNNER_TEMP/v2-reception/source.json" _site/gallery/sculpture-v2-test/reception/
+          cp "$RUNNER_TEMP/v2-reception/recursive-divisions-portrait.png" _site/gallery/sculpture-v2-test/reception/
+          test -s _site/gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png
+          test -s _site/gallery/sculpture-v2-test/reception/source.json
           test -s _site/gallery/sculpture-v2-test/reception/sculptures.desktop.json.gz
           test -s _site/gallery/sculpture-v2-test/reception/sculptures.mobile.json.gz
           echo "Isolated reception sculpture restored from approved run $V2_RECEPTION_RUN"

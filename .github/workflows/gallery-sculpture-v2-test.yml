@@ -6,6 +6,7 @@ on:
       - 'gallery/sculpture-v2-test/**'
       - 'automation/build-sculpture-v2-test.mjs'
       - 'automation/build-reception-v2.mjs'
+      - 'automation/generate-reception-portrait.mjs'
       - 'tests/sculpture-v2-reception.test.mjs'
       - 'automation/stage-sculpture-v2-preview.mjs'
       - 'tests/sculpture-v2-packs.test.mjs'
@@ -67,6 +68,7 @@ jobs:
           exit 1
       - name: Bake and audit independent reception hero V2 source
         run: |
+          node automation/generate-reception-portrait.mjs
           node automation/build-sculpture-v2-baker.mjs
           node automation/build-reception-v2.mjs
           node --test tests/sculpture-v2-reception.test.mjs
