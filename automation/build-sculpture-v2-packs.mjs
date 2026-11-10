@@ -68,6 +68,8 @@ try{
       assert.equal(geometry.coverage,1,'Regression source coverage');
       assert.equal(geometry.omittedCells,0,'Regression lost pigment');
       assert.ok(geometry.triangleCount>0,'Regression has no geometry');
+      assert.ok(geometry.meshes.length>=geometry.regionCount,
+        'Regression omitted a source pigment region');
       console.log('V2_REGRESSION_OK '+JSON.stringify({
         date:fixtureDay,file:fixtureFile,quality:fixtureQuality,
         regions:geometry.regionCount,triangles:geometry.triangleCount

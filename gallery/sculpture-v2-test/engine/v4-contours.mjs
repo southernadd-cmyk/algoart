@@ -293,7 +293,7 @@ export function boundaryLoops(vertices,triangles){
     const k=ek(t[i],t[(i+1)%3]);
     uses.set(k,(uses.get(k)||0)+1);
   }
-  const edges=[],outgoing=new Map();
+  const edges=[],adjacent=new Map();
   for(const t of triangles)for(let i=0;i<3;i++){
     let a=t[i],b=t[(i+1)%3],c=t[(i+2)%3];
     if(uses.get(ek(a,b))!==1)continue;
@@ -302,52 +302,60 @@ export function boundaryLoops(vertices,triangles){
     const area=(q.x-p.x)*(inside.y-p.y)-(q.y-p.y)*(inside.x-p.x);
     if(!Number.isFinite(area)||Math.abs(area)<1e-12)
       throw Error('V2 cap has a degenerate boundary triangle');
-    // Every edge is oriented with solid on its RIGHT, for external contours
-    // and holes alike. Unlike a vertex->vertex map this supports pinches.
+    // Choose an initial direction with the cap interior to the right.
     if(area>0)[a,b]=[b,a];
-    const edge={id:edges.length,a,b,used:false};
+    const edge={id:edges.length,a,b,c,used:false};
     edges.push(edge);
-    if(!outgoing.has(a))outgoing.set(a,[]);
-    outgoing.get(a).push(edge);
+    for(const id of [a,b]){
+      if(!adjacent.has(id))adjacent.set(id,[]);
+      adjacent.get(id).push(edge);
+    }
   }
   if(!edges.length)throw Error('V2 cap has no exterior boundary edges');
+  // Traverse by edge identity, not a vertex->successor map. Real artwork
+  // includes touching components and face winding can be inconsistent at
+  // a pinch; both would silently erase a branch in the former algorithm.
+  for(const [id,incidents] of adjacent)if(incidents.length%2)
+    throw Error('V2 cap has a non-manifold open boundary at vertex '+
+      id+' (degree '+incidents.length+')');
   const loops=[];
   for(const first of edges){
     if(first.used)continue;
-    let edge=first,closed=false;
-    const indices=[];
+    let from=first.a,to=first.b,edge=first,closed=false;
+    const indices=[],edgeNormals=[];
     for(let guard=0;guard<=edges.length;guard++){
-      if(edge.used)throw Error('V2 boundary edge visited twice');
-      edge.used=true;indices.push(edge.a);
-      if(edge.b===first.a){closed=true;break;}
-      const candidates=(outgoing.get(edge.b)||[]).filter(e=>!e.used);
-      if(!candidates.length)
-        throw Error('V2 cap has an open boundary chain at vertex '+edge.b);
-      if(candidates.length===1){edge=candidates[0];continue;}
-      const p=vertices[edge.a],v=vertices[edge.b];
-      const dx=v.x-p.x,dy=v.y-p.y;
-      // At touching corners choose the rightmost continuation: this keeps
-      // neighbouring paint islands separate instead of merging two loops.
-      const turn=e=>{
-        const q=vertices[e.b],ux=q.x-v.x,uy=q.y-v.y;
-        return Math.atan2(dx*uy-dy*ux,dx*ux+dy*uy);
-      };
-      candidates.sort((a,b)=>turn(a)-turn(b)||a.id-b.id);
-      edge=candidates[0];
+      if(edge.used)throw Error('V2 cap boundary reused an edge');
+      edge.used=true;indices.push(from);
+      const p=vertices[from],q=vertices[to],inside=vertices[edge.c];
+      let nx=q.y-p.y,ny=-(q.x-p.x);
+      const length=Math.hypot(nx,ny);
+      if(!Number.isFinite(length)||length<1e-12)
+        throw Error('V2 cap has a zero-length perimeter segment');
+      nx/=length;ny/=length;
+      if(nx*(inside.x-p.x)+ny*(inside.y-p.y)>0){nx=-nx;ny=-ny;}
+      edgeNormals.push([nx,ny]);
+      if(to===first.a){closed=true;break;}
+      const available=(adjacent.get(to)||[]).filter(e=>!e.used);
+      if(!available.length)
+        throw Error('V2 cap has an open boundary chain at vertex '+to);
+      const previous=p,current=q,dx=current.x-previous.x,
+        dy=current.y-previous.y;
+      const next=available.map(e=>{
+        const target=e.a===to?e.b:e.a,point=vertices[target],
+          ix=point.x-current.x,iy=point.y-current.y,
+          insidePoint=vertices[e.c];
+        const turn=Math.atan2(dx*iy-dy*ix,dx*ix+dy*iy);
+        const interiorSide=ix*(insidePoint.y-current.y)-
+          iy*(insidePoint.x-current.x);
+        return{e,target,turn,aligned:interiorSide<0};
+      }).sort((u,v)=>Number(v.aligned)-Number(u.aligned)||
+          u.turn-v.turn||u.e.id-v.e.id)[0];
+      edge=next.e;from=to;to=next.target;
     }
     if(!closed||indices.length<3)
       throw Error('V2 cap perimeter did not close to a polygon');
-    const normals=indices.map((a,i)=>{
-      const b=indices[(i+1)%indices.length],
-        p=vertices[a],q=vertices[b];
-      if(!p||!q)throw Error('V2 perimeter references missing vertex');
-      const nx=p.y-q.y,ny=q.x-p.x,length=Math.hypot(nx,ny);
-      if(!Number.isFinite(length)||length<1e-12)
-        throw Error('V2 perimeter contains a zero-length edge');
-      return[nx/length,ny/length];
-    });
-    const outward=normals.map((q,i)=>{
-      const p=normals[(i+normals.length-1)%normals.length],
+    const outward=edgeNormals.map((q,i)=>{
+      const p=edgeNormals[(i+edgeNormals.length-1)%edgeNormals.length],
         x=p[0]+q[0],y=p[1]+q[1],length=Math.hypot(x,y);
       return length>1e-10?[x/length,y/length]:q;
     });
