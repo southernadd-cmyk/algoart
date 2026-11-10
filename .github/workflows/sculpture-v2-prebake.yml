@@ -41,7 +41,7 @@ jobs:
     env:
       V2_DATE: ${{ inputs.date || '2026-11-10' }}
       V2_LIMIT: ${{ inputs.limit || '3' }}
-      V2_ALL: ${{ inputs.all || 'false' }}
+      V2_ALL: ${{ github.event_name == 'pull_request' && 'true' || inputs.all || 'false' }}
       V2_BAKE_OUT: artifacts/sculpture-v2-packs
     steps:
       - uses: actions/checkout@v4
