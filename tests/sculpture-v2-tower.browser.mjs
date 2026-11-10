@@ -8,7 +8,8 @@ const browser=await chromium.launch({
 try{
   for(const spec of [
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,method:'assembly'},
-    {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'}
+    {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'},
+    {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'}
   ]){
     const page=await browser.newPage({
       viewport:{width:spec.width,height:spec.height},
@@ -19,8 +20,9 @@ try{
     page.on('pageerror',error=>errors.push(error.message));
     page.on('request',request=>requests.push(request.url()));
     try{
-      await page.goto('http://127.0.0.1:4173/gallery/sculpture-v2-test/?date='+
-        spec.date+'&v2method='+spec.method+'&debug',
+      await page.goto('http://127.0.0.1:4173/gallery/sculpture-v2-test/?'+
+        (spec.date==='reception'?'':'date='+spec.date+'&')+
+        'v2method='+spec.method+'&debug',
         {waitUntil:'domcontentloaded',timeout:45000});
       await page.waitForFunction(()=>
         (window.__sculptureV2TowerStatus && window.__phiFullEngine)||
@@ -44,7 +46,8 @@ try{
       assert.equal(startup.status?.variant,'v2.0-prepared-archive');
       assert.equal(startup.status?.method,spec.method);
       assert.equal(startup.status?.connector,'pin');
-      assert.ok(startup.phi?.roomCount>0&&startup.phi?.sculptures>0,
+      assert.ok(startup.phi?.roomCount>0&&
+        (startup.phi?.sculptures>0||spec.date==='reception'),
         'Test floor did not load actual archive and sculptures');
       await page.waitForFunction(()=>
         window.__sculptureV2TowerStatus?.complete>0||
@@ -53,8 +56,10 @@ try{
       assert.ok(state.attempted>0,'No V2 source sculpture attempted');
       assert.equal(state.failed,0,'V2 sculpture failed: '+JSON.stringify(state.builds));
       assert.ok(state.complete>0,'No V2 sculpture completed');
-      assert.ok(requests.some(url=>url.includes(
-        '/gallery/'+spec.date+'/3d/v2/sculptures.'+spec.quality+'.json.gz')),
+      const expectedPack=spec.date==='reception'
+        ?'/gallery/sculpture-v2-test/reception/sculptures.'+spec.quality+'.json.gz'
+        :'/gallery/'+spec.date+'/3d/v2/sculptures.'+spec.quality+'.json.gz';
+      assert.ok(requests.some(url=>url.includes(expectedPack)),
         'Tower did not actually request its prepared mesh pack');
       for(const item of state.builds.filter(item=>item.state==='complete')){
         assert.equal(item.prepared,true,'Dynamic sculpting used instead of V2 pack');
@@ -64,6 +69,22 @@ try{
         assert.ok(item.triangles>0,'No curved mesh generated');
         assert.ok(item.extent.every(Number.isFinite),'Invalid sculpture bounds');
         assert.ok(item.extent[2]>.01,'Sculpture has no depth');
+      }
+      if(spec.date==='reception'){
+        assert.equal(state.failed,0,'Reception statue bake should not fail');
+        assert.ok(state.builds.some(x=>x.reception===true&&x.prepared===true));
+        await page.waitForFunction(()=>window.__sculptureV2ReceptionInspect);
+        await page.evaluate(()=>window.__sculptureV2ReceptionInspect());
+        const panel=await page.evaluate(()=>({
+          title:document.querySelector('#infoTitle')?.textContent,
+          seed:document.querySelector('#infoSeed')?.textContent,
+          href:document.querySelector('#openArt')?.href,
+          hidden:document.querySelector('#info')?.hidden
+        }));
+        assert.equal(panel.title,'Recursive Divisions');
+        assert.equal(panel.hidden,false);
+        assert.ok(panel.seed.includes('AA-20261005-03-55769'));
+        assert.ok(panel.href.includes('mode=rects')&&panel.href.includes('seed='));
       }
       assert.deepEqual(errors,[],'Fatal browser errors');
       await page.waitForFunction(()=>

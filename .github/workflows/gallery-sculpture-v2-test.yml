@@ -5,6 +5,8 @@ on:
     paths:
       - 'gallery/sculpture-v2-test/**'
       - 'automation/build-sculpture-v2-test.mjs'
+      - 'automation/build-reception-v2.mjs'
+      - 'tests/sculpture-v2-reception.test.mjs'
       - 'automation/stage-sculpture-v2-preview.mjs'
       - 'tests/sculpture-v2-packs.test.mjs'
       - 'tests/sculpture-v2-tower*'
@@ -63,5 +65,19 @@ jobs:
           done
           cat /tmp/sculpture-v2-tower-http.log
           exit 1
-      - name: Exercise actual archived floors on desktop and mobile
+      - name: Bake and audit independent reception hero V2 source
+        run: |
+          node automation/build-sculpture-v2-baker.mjs
+          node automation/build-reception-v2.mjs
+          node --test tests/sculpture-v2-reception.test.mjs
+          mkdir -p gallery/sculpture-v2-test/reception
+          cp artifacts/sculpture-v2-reception/sculptures.*.json.gz gallery/sculpture-v2-test/reception/
+      - name: Exercise actual archived floors and linked reception statue
         run: node tests/sculpture-v2-tower.browser.mjs
+      - name: Retain validated reception assets for isolated Pages deployment
+        uses: actions/upload-artifact@v4
+        with:
+          name: sculpture-v2-reception
+          path: artifacts/sculpture-v2-reception/
+          retention-days: 7
+          if-no-files-found: error
