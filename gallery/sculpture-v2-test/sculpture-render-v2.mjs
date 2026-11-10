@@ -69,10 +69,12 @@ function preparedFloor(date,quality){
   return loading;
 }
 function archiveDate(study){
-  const day=String(study.id||'').match(/^(20\\d{2}-\\d{2}-\\d{2})/)?.[1]||
-    String(study.image||'').match(/\\/gallery\\/(20\\d{2}-\\d{2}-\\d{2})\\//)?.[1];
-  if(!day)throw Error('Missing date for prepared V2 sculpture '+study.seed);
-  return day;
+  const idDate=String(study.id||'').slice(0,10);
+  if(/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(idDate))return idDate;
+  const segments=new URL(study.image,location.href).pathname.split('/');
+  const fromImage=segments.find(x=>/^20[0-9]{2}-[0-9]{2}-[0-9]{2}$/.test(x));
+  if(!fromImage)throw Error('Missing date for prepared V2 sculpture '+study.seed);
+  return fromImage;
 }
 function sourceFileOf(study){
   if(study.imageFile)return study.imageFile;
