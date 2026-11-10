@@ -31,13 +31,18 @@ function texture(pixels){
   t.needsUpdate=true;t.colorSpace=THREE.SRGBColorSpace;return t;
 }
 function edgeIncidence(geometry){
-  const ix=geometry.index.array,edges=new Map();
+  const ix=geometry.index.array,attr=geometry.attributes.position,edges=new Map();
+  // Front/back and rounded rim have independent normals and therefore
+  // independent vertex indices. Manifoldness is checked in WELDED XYZ space.
+  const at=i=>[attr.getX(i),attr.getY(i),attr.getZ(i)]
+    .map(v=>Math.round(v*10000)).join(':');
   for(let i=0;i<ix.length;i+=3)for(const [a,b] of
     [[ix[i],ix[i+1]],[ix[i+1],ix[i+2]],[ix[i+2],ix[i]]]){
-    const key=a<b?a+':'+b:b+':'+a;
+    const keys=[at(a),at(b)].sort(),key=keys.join('|');
+    if(keys[0]===keys[1])continue;
     edges.set(key,(edges.get(key)||0)+1);
   }
-  return [...edges.values()];
+  return edges;
 }
 for(const kind of ['circle','ring','crescent','branch','islands']){
   test('Poisson source topology: '+kind,()=>{
@@ -51,6 +56,10 @@ for(const kind of ['circle','ring','crescent','branch','islands']){
       assert.ok(r.maxPotential>10,'circle should have a strongly inflated centre');
       const at=regionElevation(r,54,76,'poisson');
       const near=regionElevation(r,76,76,'poisson');
+      console.log('CIRCLE_SOLVER',JSON.stringify({
+        regions:topo.regions.map(x=>({area:x.area,center:[x.centerX,x.centerY],
+          max:x.maxPotential})),at,near,coverage:topo.covered/topo.pigmented
+      }));
       assert.ok(at>near*2,'Poisson height must follow local boundary distance');
     }
     if(kind==='ring'){
@@ -71,12 +80,25 @@ for(const kind of ['circle','ring','crescent','branch','islands']){
         assert.equal(model.userData.noImagePlane,true);
         assert.ok(model.userData.regionCount>=1);
         assert.ok(model.userData.polygonTriangles>0);
+        assert.ok(model.userData.roundedRimTriangles>0);
+        assert.equal(model.userData.sourceInkRelief,true);
+        assert.equal(model.userData.sourceColourOnFront,true);
         const bounds=new THREE.Box3().setFromObject(model);
+        if(kind==='islands'){
+          assert.ok(model.userData.zLayerExtent>.01,
+            'separate pigment bodies must occupy distinct depth layers');
+        }
         assert.ok(bounds.getSize(new THREE.Vector3()).z>.015);
         for(const m of model.children.filter(o=>o.userData.regionId!==undefined)){
           const counts=edgeIncidence(m.geometry);
-          assert.ok(counts.length>0);
-          assert.ok(counts.every(n=>n===2),
+          const bad=[...counts.entries()].filter(([_,n])=>n!==2);
+          if(bad.length)console.log('NONMANIFOLD',kind,method,
+            'faces',m.geometry.index.count/3,'edges',counts.size,
+            'bad',bad.length,'frequencies',
+            [...new Set(bad.map(x=>x[1]))],
+            'examples',bad.slice(0,12));
+          assert.ok(counts.size>0);
+          assert.equal(bad.length,0,
             kind+' '+method+' has open/nonmanifold mesh edges');
         }
         disposeV4Sculpture(model);
@@ -102,4 +124,31 @@ test('A traced boundary must never masquerade as a recorded gesture',()=>{
     assert.equal(second.userData.sourceStrokeCount,1);
     disposeV4Sculpture(second);
   }finally{t.dispose()}
+});
+
+test('Watercolour regions split by pigment colour and retain all painted pixels',()=>{
+  const data=new Uint8ClampedArray(W*H*4);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const k=(y*W+x)*4;
+    const region=Math.hypot(x-54,y-76)<30;
+    const colour=region?(x<54?[155,66,132]:[60,102,197]):[245,240,230];
+    for(let i=0;i<3;i++)data[k+i]=colour[i];data[k+3]=255;
+  }
+  for(const material of ['watercolour','tissue']){
+    const topology=segmentPainting({width:W,height:H,data},{material,maxRegions:72});
+    assert.ok(topology.regions.length>=2,material+' unsplit connected colour area');
+    assert.equal(topology.omittedCells,0,'Watershed dropped original pigment');
+    assert.equal(topology.covered,topology.pigmented,'Regions must partition original source');
+  }
+});
+test('Connection control never creates bridges when disabled',()=>{
+  const p=painting('islands'),topology=segmentPainting(p);
+  const t=texture(p);
+  try{
+    const disconnected=buildV4Sculpture('assembly',{
+      topology,texture:t,connection:0,quality:'desktop'
+    });
+    assert.equal(disconnected.userData.realConnections,0);
+    disposeV4Sculpture(disconnected);
+  }finally{t.dispose();}
 });

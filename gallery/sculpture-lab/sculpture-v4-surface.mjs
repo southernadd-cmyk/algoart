@@ -1,205 +1,270 @@
-// PROPORTION PIECE Sculpture Lab V4 — actual region-derived, closed 3D bodies.
-// 2D source pixel topology controls *every* XY footprint; no universal rocket
-// cross-section, no painted image card, no contour outlines passed off as strokes.
+// PROPORTION PIECE Sculpture Lab V4.2 — genuine source-colour spatial volumes.
 import * as THREE from 'three';
-import {V4_METHODS,regionElevation} from './sculpture-v4-topology.mjs';
+import {V4_METHODS} from './sculpture-v4-topology.mjs';
+import {buildPlanarRegion,sampleRegion,signedArea} from './sculpture-v4-contours.mjs';
 export {V4_METHODS};
-const PHI=(1+Math.sqrt(5))/2,GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-const W=1.34,H=1.88;
-function regionGeometry(r,{mode='poisson',depth=.85,phiPull=.8,
-                            fidelity=.90,method='poisson'}={}){
-  const positions=[],uvs=[],triTop=[],triBack=[],triWalls=[];
-  const vertexMap=new Map(),rw=r.rw,w=r.width,h=r.height;
-  const heightMemo=new Map();
-  const offset=method==='assembly'? .11*phiPull*depth*
-    Math.sin((r.id+1)*GOLDEN_ANGLE):0;
-  const weight=1+.20*phiPull*Math.sin((r.id+1)*GOLDEN_ANGLE*PHI);
-  const volumeScale=depth*(.72+.28*fidelity)*weight;
-  const frontMult=method==='gesture'?.77:1;
-  const backMult=method==='medial'?1.03:method==='assembly'?1.16:1;
-  function height(x,y){
-    const k=x+','+y;
-    if(heightMemo.has(k))return heightMemo.get(k);
-    let total=0,n=0;
-    for(const yy of [y-1,y])for(const xx of [x-1,x]){
-      const j=(yy-r.minY)*rw+(xx-r.minX);
-      if(xx>=r.minX&&xx<r.minX+rw&&
-         yy>=r.minY&&yy<r.minY+r.rh&&r.mask[j]){
-        total+=regionElevation(r,xx,yy,mode);n++;
+const W=1.34,H=1.88,PHI=(1+Math.sqrt(5))/2;
+const GOLDEN_ANGLE=Math.PI*(3-Math.sqrt(5));
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function paintMaterial(color,material,map=null,bumpMap=null){
+  const rough={oil:.57,action:.66,marker:.78,tissue:.94,watercolour:.87}[material]??.78;
+  const bumpScale={oil:.029,action:.025,marker:.011,tissue:.007,watercolour:.010}[material]??.01;
+  const m=new THREE.MeshStandardMaterial({
+    color,roughness:rough,metalness:0,side:THREE.DoubleSide,
+    ...(map?{map}:{}),...(bumpMap?{bumpMap,bumpScale}:{})
+  });
+  m.userData.ppV4Owned=true;return m;
+}
+export function regionLayerOffset(r,method,depth=.85,phiPull=.8,count=1){
+  const hsl={h:0,s:0,l:0};
+  new THREE.Color(r.color).getHSL(hsl);
+  const rank=count===1?0:r.id/(count-1)-.5;
+  const phase=(r.id+1)*GOLDEN_ANGLE+hsl.h*Math.PI;
+  const stagger=.48*Math.sin(phase)+.3*rank+(.5-hsl.l)*.7;
+  const spread=method==='assembly'?1.7:method==='gesture'?1.25:
+    method==='medial'?1.1:.80;
+  return clamp(stagger,-.72,.72)*depth*(.32+.68*phiPull)*spread;
+}
+function surfaceHeight(r,p,mode,method,depth,phiPull,fidelity,material){
+  const u=sampleRegion(r,r.potential,p.x,p.y);
+  const d=sampleRegion(r,r.distance,p.x,p.y);
+  const radius=Math.max(d,sampleRegion(r,r.radius,p.x,p.y));
+  const scale=(W/r.width+H/r.height)*.5;
+  const base=mode==='medial'?scale*Math.sqrt(Math.max(0,d*(2*radius-d))):
+    2*scale*Math.sqrt(Math.max(0,u));
+  const contrast=sampleRegion(r,r.localInk,p.x,p.y)-r.meanInk;
+  const amp={oil:.06,action:.053,marker:.019,tissue:.013,watercolour:.021}[material]??.017;
+  const detail=depth*amp*(method==='gesture'?2.3:method==='assembly'?1.45:1)*
+    contrast*clamp(d/1.2,0,1);
+  return Math.max(.009,base*depth*(.72+.28*fidelity)*
+    (1+.17*phiPull*Math.sin((r.id+1)*GOLDEN_ANGLE*PHI))+detail);
+}
+function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
+  material,quality,count}){
+  const plane=buildPlanarRegion(r,{quality});
+  const {vertices,triangles,boundaries}=plane;
+  const pos=[],uv=[],upper=[],lower=[],faces=[],rim=[];
+  const offset=regionLayerOffset(r,method,depth,phiPull,count);
+  const phase=(r.id+1)*GOLDEN_ANGLE;
+  const sweep=phiPull*(1-.5*fidelity)*depth*
+    (method==='assembly'?.31:method==='gesture'?.23:
+      method==='medial'?.19:.13);
+  const theta=phiPull*(method==='assembly'?.40:method==='gesture'?.20:
+    method==='medial'?.15:.08);
+  const c=Math.cos(theta),s=Math.sin(theta);
+  const rear=method==='assembly'?1.57:method==='medial'?1.32:
+    method==='gesture'?1.21:1.11;
+  const fore=method==='gesture'?.72:method==='assembly'?1.11:1;
+  function xy(p,isRear){
+    const x=(p.x/r.width-.5)*W,y=(.5-p.y/r.height)*H;
+    if(!isRear)return[x,y];
+    const dx=x-r.centerX,dy=y-r.centerY;
+    return[r.centerX+dx*c-dy*s+Math.cos(phase)*sweep,
+      r.centerY+dx*s+dy*c+Math.sin(phase)*sweep*.72];
+  }
+  function z(p,isRear){
+    const h=surfaceHeight(r,p,mode,method,depth,phiPull,fidelity,material);
+    return offset+(isRear?-rear*h:fore*h);
+  }
+  function add(v,depthValue,source){
+    const k=pos.length/3;pos.push(v[0],v[1],depthValue);
+    uv.push(source.x/r.width,1-source.y/r.height);return k;
+  }
+  for(const p of vertices)upper.push(add(xy(p,false),z(p,false),p));
+  for(const p of vertices)lower.push(add(xy(p,true),z(p,true),p));
+  for(const t of triangles){
+    let [a,b,d]=t;
+    const p=vertices[a],q=vertices[b],v=vertices[d];
+    if((q.x-p.x)*(v.y-p.y)-(q.y-p.y)*(v.x-p.x)>0)[b,d]=[d,b];
+    faces.push(upper[a],upper[b],upper[d],lower[a],lower[d],lower[b]);
+  }
+  // A separate rounded side strip owns its own normals. No shading pollution
+  // from side walls into the textured front/back surfaces.
+  const nSteps=quality==='mobile'?4:7;
+  for(const ring of boundaries){
+    const ids=ring.indices,n=ids.length;
+    if(n<3)continue;
+    const points=ids.map(i=>vertices[i]);
+    const winding=signedArea(points)>=0?1:-1;
+    // A common bevel section at every contour vertex joins *both*
+    // adjacent wall faces. Per-edge outward normals left open seams.
+    const normals=points.map((p,i)=>{
+      const before=points[(i+n-1)%n],after=points[(i+1)%n];
+      const l0=Math.hypot(p.x-before.x,p.y-before.y)||1;
+      const l1=Math.hypot(after.x-p.x,after.y-p.y)||1;
+      const tx=(p.x-before.x)/l0+(after.x-p.x)/l1;
+      const ty=(p.y-before.y)/l0+(after.y-p.y)/l1;
+      const len=Math.hypot(tx,ty)||1;
+      return[winding*ty/len,-winding*tx/len];
+    });
+    const layers=points.map((p,i)=>{
+      const f=xy(p,false),b=xy(p,true);
+      const hz=z(p,false)-offset,hb=offset-z(p,true);
+      const [nx,ny]=normals[i],row=[];
+      for(let j=0;j<=nSteps;j++){
+        const angle=Math.PI*j/nSteps,t=j/nSteps;
+        const bevel=Math.sin(angle)*(quality==='mobile'?.18:.24);
+        const x=f[0]*(1-t)+b[0]*t+nx*bevel*W/r.width;
+        const y=f[1]*(1-t)+b[1]*t-ny*bevel*H/r.height;
+        const dz=offset+Math.cos(angle)*(angle<=Math.PI/2?hz:hb);
+        row.push(add([x,y],dz,p));
+      }
+      return row;
+    });
+    for(let i=0;i<n;i++){
+      const left=layers[i],right=layers[(i+1)%n];
+      for(let j=0;j<nSteps;j++){
+        const a=left[j],b=right[j],c=right[j+1],d=left[j+1];
+        rim.push(a,b,c,a,c,d);
       }
     }
-    // Pixel corners on the boundary retain small physical thickness, letting
-    // the two curved faces close with a real side rim.
-    const v=n===4?Math.max(.0038,total/n):.0038;
-    heightMemo.set(k,v);
-    return v;
   }
-  function vertex(x,y,ownerX,ownerY){
-    // Two diagonal painted cells can meet at one lattice corner without
-    // sharing any area. If the region reaches that corner from separate
-    // quadrants, separate vertex identities so two rims don't share one
-    // vertical edge (which would make an otherwise closed mesh non-manifold).
-    const inside=(px,py)=>{
-      if(px<r.minX||px>=r.minX+rw||py<r.minY||py>=r.minY+r.rh)return false;
-      return !!r.mask[(py-r.minY)*rw+(px-r.minX)];
-    };
-    const nw=inside(x-1,y-1),ne=inside(x,y-1);
-    const sw=inside(x-1,y),se=inside(x,y);
-    let sector='';
-    if(nw&&se&&!ne&&!sw)
-      sector=ownerX===x-1&&ownerY===y-1?'nw':'se';
-    else if(ne&&sw&&!nw&&!se)
-      sector=ownerX===x&&ownerY===y-1?'ne':'sw';
-    const key=x+','+y+':'+sector;
-    if(vertexMap.has(key))return vertexMap.get(key);
-    const xx=(x/w-.5)*W,yy=(.5-y/h)*H,uvx=x/w,uvy=1-y/h;
-    const elevation=height(x,y)*volumeScale;
-    const front=positions.length/3;
-    positions.push(xx,yy,offset+elevation*frontMult);
-    uvs.push(uvx,uvy);
-    const back=positions.length/3;
-    positions.push(xx,yy,offset-elevation*backMult);
-    uvs.push(uvx,uvy);
-    const pair=[front,back];vertexMap.set(key,pair);return pair;
-  }
-  for(const i of r.ids){
-    const x=i%rw+r.minX,y=((i/rw)|0)+r.minY;
-    const a=vertex(x,y,x,y),b=vertex(x+1,y,x,y),
-      c=vertex(x+1,y+1,x,y),d=vertex(x,y+1,x,y);
-    // The top half-space looks toward the front orthographic camera (+z).
-    triTop.push(a[0],d[0],b[0],b[0],d[0],c[0]);
-    triBack.push(a[1],b[1],d[1],b[1],c[1],d[1]);
-    const inside=(xx,yy)=>{
-      if(xx<r.minX||xx>=r.minX+rw||yy<r.minY||yy>=r.minY+r.rh)return false;
-      return !!r.mask[(yy-r.minY)*rw+(xx-r.minX)];
-    };
-    function side(q,s){
-      // Outward-facing winding is consistent with the top's orientation,
-      // and the double-sided material provides a safe fallback for thin rims.
-      triWalls.push(q[0],q[1],s[0],s[0],q[1],s[1]);
+  // Ear-clipped contours sometimes retain duplicate coplanar triangles
+  // where an ink contour has a touching/collinear run. Remove identical
+  // triangles by actual XYZ (not just vertex index) before calculating normals.
+  const triKey=i=>[pos[i*3],pos[i*3+1],pos[i*3+2]]
+    .map(v=>Math.round(v*1e6)).join(':');
+  const seen=new Set();
+  function dedup(input){
+    const result=[];
+    for(let i=0;i<input.length;i+=3){
+      const k=[triKey(input[i]),triKey(input[i+1]),triKey(input[i+2])]
+        .sort().join('|');
+      if(seen.has(k))continue;
+      seen.add(k);
+      result.push(input[i],input[i+1],input[i+2]);
     }
-    if(!inside(x,y-1))side(a,b);
-    if(!inside(x+1,y))side(b,c);
-    if(!inside(x,y+1))side(c,d);
-    if(!inside(x-1,y))side(d,a);
+    return result;
   }
-  const faces=[...triTop,...triBack,...triWalls];
+  const cleanFaces=dedup(faces),cleanRim=dedup(rim);
   const geometry=new THREE.BufferGeometry();
-  geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
-  geometry.setIndex(faces);
-  geometry.addGroup(0,triTop.length,0);
-  geometry.addGroup(triTop.length,triBack.length+triWalls.length,1);
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  geometry.setIndex([...cleanFaces,...cleanRim]);
+  geometry.addGroup(0,cleanFaces.length,0);
+  geometry.addGroup(cleanFaces.length,cleanRim.length,1);
   geometry.computeVertexNormals();
-  return {geometry,frontTriangles:triTop.length/3,
-    backTriangles:triBack.length/3,sideTriangles:triWalls.length/3,
-    vertices:positions.length/3};
-}
-function pigmentMaterial(texture){
-  const m=new THREE.MeshStandardMaterial({
-    map:texture,roughness:.78,metalness:.015,side:THREE.DoubleSide
+  const anchors=boundaries.flatMap(line=>{
+    const spacing=Math.max(1,Math.floor(line.indices.length/24));
+    return line.indices.filter((_,i)=>i%spacing===0).map(i=>{
+      const p=vertices[i],v=xy(p,false);
+      return new THREE.Vector3(v[0],v[1],z(p,false));
+    });
   });
-  m.userData.ppV4Owned=true;return m;
+  return{geometry,anchors,zLayer:offset,triangles:(cleanFaces.length+cleanRim.length)/3,
+    roundedRimTriangles:cleanRim.length/3,boundaryLoops:boundaries.length};
 }
-function materialColor(hex,bronze=false,material='marker'){
-  const colour=bronze?'#9a7f59':hex;
-  const m=new THREE.MeshPhysicalMaterial({
-    color:colour,roughness:bronze?.49:material==='oil'?.56:.82,
-    metalness:bronze?.32:.045,clearcoat:material==='oil'?.18:.03,
-    side:THREE.DoubleSide
-  });
-  m.userData.ppV4Owned=true;return m;
-}
-function genuineSourceStrokes(group,strokes,{depth,phiPull,colourMode,material,limit=18}){
-  const original=(strokes||[]).filter(s=>s.sourceKind!=='pigment-contour'&&
-    Array.isArray(s.points)&&s.points.length>2);
-  // An extracted closed pigment boundary is NOT a real mark. Never use it.
+function actualStrokes(group,strokes,depth,material,max){
   let count=0;
-  for(const s of original.slice(0,limit)){
-    const pts=s.points.filter(p=>Number.isFinite(p.x)&&Number.isFinite(p.y));
-    if(pts.length<3)continue;
-    const curve=new THREE.CatmullRomCurve3(pts.map((p,j)=>{
-      const t=j/Math.max(1,pts.length-1);
-      const z=.025+depth*(.035+.055*phiPull*Math.sin(Math.PI*t));
-      return new THREE.Vector3(p.x,p.y,z);
-    }),false,'centripetal');
-    const radius=clamp((s.width||.009)*.65,.0025,.015);
-    const geometry=new THREE.TubeGeometry(curve,
-      Math.min(90,Math.max(12,pts.length*2)),radius,9,false);
-    const mesh=new THREE.Mesh(geometry,materialColor(
-      s.color||'#70584b',colourMode==='bronze',material));
-    mesh.name='Actual archived rendering gesture '+(s.sourceIndex??count);
-    mesh.userData.ppV4Owned=true;group.add(mesh);count++;
+  for(const s of strokes||[]){
+    if(count>=max)break;
+    if(s.sourceKind==='pigment-contour'||!Array.isArray(s.points)||s.points.length<3)
+      continue;
+    const p=s.points.filter(v=>Number.isFinite(v.x)&&Number.isFinite(v.y));
+    if(p.length<3)continue;
+    const line=p.map((v,i)=>new THREE.Vector3(v.x,v.y,
+      depth*(.17+.22*Math.sin(i/(p.length-1)*Math.PI))));
+    const curve=new THREE.CatmullRomCurve3(line,false,'centripetal');
+    const mesh=new THREE.Mesh(new THREE.TubeGeometry(curve,
+      Math.min(90,Math.max(16,p.length)),clamp((s.width||.009)*.65,.0028,.015),8,false),
+      paintMaterial(s.color||'#756d63',material));
+    mesh.userData.ppV4Owned=true;mesh.castShadow=true;
+    mesh.name='Recorded 3D brush gesture';group.add(mesh);count++;
   }
   return count;
 }
-export function buildV4Sculpture(method,{topology,texture,strokes=[],
-  material='marker',fidelity=.90,phiPull=.8,depth=.85,
-  colourMode='pigment',quality='desktop'}={}){
-  if(!V4_METHODS.includes(method))throw Error('Unknown V4 method '+method);
-  if(!topology?.regions?.length)throw Error('No source region available for inflation');
-  if(!texture?.isTexture)throw Error('Archived painting texture required');
-  const bronze=colourMode==='bronze';
-  const group=new THREE.Group();group.name='Source topology V4 / '+method;
-  const frontMaterial=bronze?materialColor('#9a7f59',true,material):pigmentMaterial(texture);
-  const max=quality==='mobile'?23:32;
-  let count=0,maxHeight=0,triangles=0,medial=0,poisson=0;
-  const regions=topology.regions.slice(0,max);
-  for(const r of regions){
-    const type=method==='medial'?'medial':
-      method==='gesture'?(r.aspect>=1.7?'medial':'poisson'):
-      method==='assembly'?(r.aspect>2.2||r.id%3===1?'medial':'poisson'):
-      'poisson';
-    if(type==='medial')medial++;else poisson++;
-    const {geometry,frontTriangles,backTriangles,sideTriangles}=regionGeometry(r,{
-      mode:type,method,depth,phiPull,fidelity
-    });
-    const side=materialColor(r.color,bronze,material);
-    const mesh=new THREE.Mesh(geometry,[frontMaterial,side]);
-    mesh.name='Inflated actual pigment region '+r.id+' / '+type;
-    mesh.userData={ppV4Owned:true,regionId:r.id,area:r.area,
-      algorithm:type,sourceCenter:[r.centerX,r.centerY],
-      areaAspect:r.aspect,sourceColor:r.color};
-    group.add(mesh);
-    count++;triangles+=frontTriangles+backTriangles+sideTriangles;
-    maxHeight=Math.max(maxHeight,r.maxPotential);
+function connectRegions(group,items,strength,material,quality){
+  if(strength<.18||items.length<2)return 0;
+  const top=items.slice(0,quality==='mobile'?9:16),options=[];
+  for(let i=0;i<top.length;i++)for(let j=i+1;j<top.length;j++){
+    if(Math.abs(top[i].zLayer-top[j].zLayer)<.035)continue;
+    let closest=Infinity,found=null;
+    for(const a of top[i].anchors)for(const b of top[j].anchors){
+      const dist=(a.x-b.x)**2+(a.y-b.y)**2;
+      if(dist<closest){closest=dist;found=[a,b];}
+    }
+    if(found&&closest<.19**2)options.push({i,j,closest,found});
   }
-  let sourceStrokes=0;
-  if(method==='gesture'||method==='assembly')
-    sourceStrokes=genuineSourceStrokes(group,strokes,{
-      depth,phiPull,colourMode,material,limit:quality==='mobile'?10:24
-    });
-  // User data makes topology available to browser tests and UI diagnostics.
-  const box=new THREE.Box3().setFromObject(group);
-  if(box.isEmpty())throw Error('V4 source regions produced no geometry');
-  const ext=box.getSize(new THREE.Vector3());
+  options.sort((a,b)=>a.closest-b.closest);
+  const limit=Math.round(strength*Math.min(7,top.length-1));
+  let built=0;
+  for(const item of options.slice(0,limit)){
+    const [a,b]=item.found,middle=new THREE.Vector3().lerpVectors(a,b,.5);
+    middle.z+=(Math.abs(a.z-b.z)*.18+.028)*Math.sin((item.i+1)*GOLDEN_ANGLE);
+    const mesh=new THREE.Mesh(new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3([a,middle,b]),12,.004+.007*strength,8,false),
+      paintMaterial(top[item.i].color,material));
+    mesh.name='Inter-region XYZ bridge';mesh.castShadow=true;
+    mesh.userData.ppV4Owned=true;group.add(mesh);built++;
+  }
+  return built;
+}
+export function buildV4Sculpture(method,{
+  topology,texture,bumpTexture=null,strokes=[],material='marker',
+  fidelity=.9,phiPull=.8,depth=.85,connection=.65,quality='desktop'
+}={}){
+  if(!V4_METHODS.includes(method))throw Error('Unknown V4 method '+method);
+  if(!topology?.regions?.length||!texture?.isTexture)
+    throw Error('Archived pigment regions and painting texture required');
+  const group=new THREE.Group();
+  group.name='V4.2 source-shaped 360 degree sculpture / '+method;
+  const painted=paintMaterial('#ffffff',material,texture,bumpTexture);
+  const regions=topology.regions.slice(0,quality==='mobile'?48:72);
+  const items=[];
+  let poisson=0,medial=0,triangles=0,rim=0;
+  for(const r of regions){
+    const type=method==='medial'||method==='gesture'?'medial':
+      method==='assembly'&&(r.id%2===1||r.aspect>=1.75)?'medial':'poisson';
+    if(type==='medial')medial++;else poisson++;
+    const result=regionGeometry(r,{mode:type,method,depth,phiPull,
+      fidelity,material,quality,count:regions.length});
+    const mesh=new THREE.Mesh(result.geometry,
+      [painted,paintMaterial(r.color,material)]);
+    mesh.name='Source-derived '+type+' solid '+r.id;
+    mesh.castShadow=true;mesh.receiveShadow=true;
+    mesh.userData={ppV4Owned:true,regionId:r.id,area:r.area,
+      sourceCenter:[r.centerX,r.centerY],sourceColor:r.color,algorithm:type,
+      zLayer:result.zLayer,contourLoops:result.boundaryLoops,
+      sourceInkRelief:true};
+    group.add(mesh);
+    triangles+=result.triangles;rim+=result.roundedRimTriangles;
+    items.push({...result,color:r.color});
+  }
+  const sourceStrokes=(method==='gesture'||method==='assembly')?
+    actualStrokes(group,strokes,depth,material,quality==='mobile'?10:22):0;
+  const links=(method==='gesture'||method==='assembly')?
+    connectRegions(group,items,connection,material,quality):0;
+  const bounds=new THREE.Box3().setFromObject(group);
+  if(bounds.isEmpty())throw Error('V4.2 source regions produced no geometry');
+  const size=bounds.getSize(new THREE.Vector3());
+  const omitted=topology.omittedCells+
+    topology.regions.slice(regions.length).reduce((sum,r)=>sum+r.area,0);
   group.userData={
-    engine:'region-inflation-v4',method,
-    noImagePlane:true,noSilhouetteExtrusion:true,
-    preservedOriginalXY:true,
-    sourceBody:true,sourceStrokeCount:sourceStrokes,meshCount:group.children.length,
-    regionCount:count,medialRegions:medial,poissonRegions:poisson,
+    engine:'region-inflation-v4',method,noImagePlane:true,
+    noSilhouetteExtrusion:true,preservedOriginalXY:true,
+    sourceBody:true,meshCount:group.children.length,
+    regionCount:regions.length,medialRegions:medial,poissonRegions:poisson,
+    sourceStrokeCount:sourceStrokes,realConnections:links,
     sourceCoverage:topology.covered/Math.max(1,topology.pigmented),
     originalShapeCount:topology.separateShapes,
-    polygonTriangles:triangles,maximumPotential:maxHeight,
-    localIndependentSolids:true,sourceColourOnFront:!bronze,
-    extent:[ext.x,ext.y,ext.z],
-    roundedSides:true,phiStructural:phiPull>0
+    omittedCells:omitted,polygonTriangles:triangles,
+    roundedRimTriangles:rim,roundedSides:true,
+    sourceInkRelief:true,localIndependentSolids:true,sourceColourOnFront:true,
+    phiStructural:phiPull>0,
+    zLayerExtent:Math.max(...items.map(x=>x.zLayer))-
+      Math.min(...items.map(x=>x.zLayer)),
+    extent:[size.x,size.y,size.z]
   };
   return group;
 }
 export function disposeV4Sculpture(group){
   if(!group)return;
-  const geometries=new Set(),materials=new Set();
+  const geos=new Set(),mats=new Set();
   group.traverse(o=>{
-    if(o.geometry)geometries.add(o.geometry);
-    for(const m of Array.isArray(o.material)?o.material:(o.material?[o.material]:[])){
-      if(m?.userData?.ppV4Owned)materials.add(m);
-    }
+    if(o.geometry)geos.add(o.geometry);
+    for(const m of Array.isArray(o.material)?o.material:(o.material?[o.material]:[]))
+      if(m?.userData?.ppV4Owned)mats.add(m);
   });
   group.removeFromParent();group.clear();
-  for(const g of geometries)g.dispose();
-  for(const m of materials)m.dispose();
-  // Archive texture remains owned by the painting loader.
+  geos.forEach(g=>g.dispose());mats.forEach(m=>m.dispose());
 }

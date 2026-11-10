@@ -6,6 +6,7 @@ on:
       - 'gallery/sculpture-lab/**'
       - 'tests/sculpture-v3.test.mjs'
       - 'tests/sculpture-v4.test.mjs'
+      - 'gallery/sculpture-lab/sculpture-v4-contours.mjs'
       - 'tests/sculpture-v4-lab.browser.mjs'
       - 'tests/sculpture-v3-finishing.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
@@ -53,6 +54,7 @@ jobs:
           node --check gallery/sculpture-lab/lab-360.mjs
           node --check gallery/sculpture-lab/lab-v2.mjs
           node --check gallery/sculpture-lab/sculpture-v3-anamorphic.mjs
+          node --check gallery/sculpture-lab/sculpture-v4-contours.mjs
           node --check gallery/sculpture-lab/sculpture-v4-topology.mjs
           node --check gallery/sculpture-lab/sculpture-v4-surface.mjs
           node --check gallery/sculpture-lab/visible-pigment-contours.mjs
