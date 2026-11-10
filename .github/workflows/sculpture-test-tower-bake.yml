@@ -1,0 +1,87 @@
+name: Isolated Hybrid Pin Test Tower Re-bake
+# Explicit test branch only. Never touches the daily gallery/R2 canary.
+on:
+  push:
+    branches:
+      - test/hybrid-pin-tower-rebake-20261110
+    paths:
+      - automation/sculpture-test-tower-ready.trigger
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: isolated-hybrid-sculpture-test-tower
+  cancel-in-progress: false
+
+jobs:
+  bake-preview-and-validate:
+    if: github.ref == 'refs/heads/test/hybrid-pin-tower-rebake-20261110'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated sculpture baker and browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Serve immutable archived artwork files
+        run: |
+          python3 -m http.server 4173 >/tmp/hybrid-pin-tower-http.log 2>&1 &
+          for i in {1..45}; do
+            curl -fsS http://127.0.0.1:4173/gallery/visit/sculpture-test-bake.html >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/hybrid-pin-tower-http.log
+          exit 1
+      - name: Re-bake EVERY eligible archived portrait in both resolutions
+        run: node automation/bake-test-sculpture-tower.mjs --all
+      - name: Validate every dated sculpture pack against the source archive
+        run: node automation/validate-sculpture-test-tower.mjs
+      - name: Build test-only copy of real exhibition tower
+        run: |
+          node automation/build-sculpture-test-tower-bundle.mjs
+          node --check gallery/visit/gallery-phi-sculpture-test-bundle.js
+          test -s gallery/visit/sculpture-test-tower.html
+      - name: Verify no production geometry or production bundle changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code HEAD -- gallery/visit/gallery-phi.js gallery/visit/gallery-phi-bundle.js
+          git diff --exit-code HEAD -- 'gallery/*/3d/sculptures.json.gz'
+          if git status --porcelain | grep -E 'gallery/[0-9]{4}-[0-9]{2}-[0-9]{2}/'; then
+            echo 'Test tower tried to edit an archived daily gallery' >&2
+            exit 1
+          fi
+          echo 'LIVE_GALLERY_AND_R2_UNCHANGED'
+      - name: Test real tower startup, source pigment, 3D mounts and mobile
+        run: node tests/sculpture-test-tower.browser.mjs
+      - name: Upload test tower browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hybrid-pin-test-tower-screenshots
+          if-no-files-found: ignore
+          path: /tmp/test-sculpture-tower-*.png
+      - name: Commit ONLY isolated test sculpture data to the TEST branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = 'test/hybrid-pin-tower-rebake-20261110'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- gallery/visit/test-sculpture-packs gallery/visit/gallery-phi-sculpture-test-bundle.js
+          if git diff --cached --quiet; then
+            echo 'All verified test sculpture packs already committed'
+            exit 0
+          fi
+          git diff --cached --name-only | grep -v -E '^gallery/visit/(test-sculpture-packs/|gallery-phi-sculpture-test-bundle\.js$)' &&
+            { echo 'Unexpected non-test file staged' >&2; exit 1; } || true
+          git commit -m 'Bake all archived hybrid-pin sculptures for isolated tower test'
+          git push origin HEAD:refs/heads/test/hybrid-pin-tower-rebake-20261110
