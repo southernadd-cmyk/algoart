@@ -84,28 +84,37 @@ function regionGeometry(r,{mode,method,depth,phiPull,fidelity,
   for(const ring of boundaries){
     const ids=ring.indices,n=ids.length;
     if(n<3)continue;
-    const winding=signedArea(ids.map(i=>vertices[i]))>=0?1:-1;
-    for(let i=0;i<n;i++){
-      const a=vertices[ids[i]],b=vertices[ids[(i+1)%n]];
-      const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;
-      const nx=winding*dy/d,ny=-winding*dx/d;
-      const strips=[[],[]];
-      for(let k=0;k<2;k++){
-        const p=k?b:a,front=xy(p,false),back=xy(p,true);
-        const hz=z(p,false)-offset,hb=offset-z(p,true);
-        for(let j=0;j<=nSteps;j++){
-          const angle=j/nSteps*Math.PI,t=j/nSteps;
-          const bevel=Math.sin(angle)*(quality==='mobile'?.18:.24);
-          const x=front[0]*(1-t)+back[0]*t+nx*bevel*W/r.width;
-          const y=front[1]*(1-t)+back[1]*t-ny*bevel*H/r.height;
-          const depthValue=offset+Math.cos(angle)*
-            (angle<=Math.PI/2?hz:hb);
-          strips[k].push(add([x,y],depthValue,p));
-        }
+    const points=ids.map(i=>vertices[i]);
+    const winding=signedArea(points)>=0?1:-1;
+    // A common bevel section at every contour vertex joins *both*
+    // adjacent wall faces. Per-edge outward normals left open seams.
+    const normals=points.map((p,i)=>{
+      const before=points[(i+n-1)%n],after=points[(i+1)%n];
+      const l0=Math.hypot(p.x-before.x,p.y-before.y)||1;
+      const l1=Math.hypot(after.x-p.x,after.y-p.y)||1;
+      const tx=(p.x-before.x)/l0+(after.x-p.x)/l1;
+      const ty=(p.y-before.y)/l0+(after.y-p.y)/l1;
+      const len=Math.hypot(tx,ty)||1;
+      return[winding*ty/len,-winding*tx/len];
+    });
+    const layers=points.map((p,i)=>{
+      const f=xy(p,false),b=xy(p,true);
+      const hz=z(p,false)-offset,hb=offset-z(p,true);
+      const [nx,ny]=normals[i],row=[];
+      for(let j=0;j<=nSteps;j++){
+        const angle=Math.PI*j/nSteps,t=j/nSteps;
+        const bevel=Math.sin(angle)*(quality==='mobile'?.18:.24);
+        const x=f[0]*(1-t)+b[0]*t+nx*bevel*W/r.width;
+        const y=f[1]*(1-t)+b[1]*t-ny*bevel*H/r.height;
+        const dz=offset+Math.cos(angle)*(angle<=Math.PI/2?hz:hb);
+        row.push(add([x,y],dz,p));
       }
+      return row;
+    });
+    for(let i=0;i<n;i++){
+      const left=layers[i],right=layers[(i+1)%n];
       for(let j=0;j<nSteps;j++){
-        const a=strips[0][j],b=strips[1][j],
-          c=strips[1][j+1],d=strips[0][j+1];
+        const a=left[j],b=right[j],c=right[j+1],d=left[j+1];
         rim.push(a,b,c,a,c,d);
       }
     }
