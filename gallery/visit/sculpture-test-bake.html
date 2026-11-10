@@ -24,17 +24,17 @@ function geometryToPack(mesh){
     normal=mesh.geometry.getAttribute('normal'),
     uv=mesh.geometry.getAttribute('uv');
   if(!pos||!normal||!uv||pos.count!==normal.count||pos.count!==uv.count||
-      pos.count<150||pos.count%3!==0)
-    throw Error('Invalid hybrid geometry attributes');
-  if(pos.count>450000)throw Error('Excessive hybrid geometry vertex count: '+pos.count);
-  const bytes=new Uint8Array(pos.count*VERTEX_STRIDE),
-    view=new DataView(bytes.buffer);
+      pos.count<150||pos.count%3!==0||pos.count>1200000)
+    throw Error('Invalid hybrid geometry attributes: '+(pos?.count||0));
+  const raw=new Uint8Array(pos.count*VERTEX_STRIDE);
+  const view=new DataView(raw.buffer);
   let min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
   for(let i=0;i<pos.count;i++){
     const k=i*VERTEX_STRIDE;
     for(let a=0;a<3;a++){
       const n=pos.getComponent(i,a);
-      if(!Number.isFinite(n)||Math.abs(n)>=1.999)throw Error('Position exceeded quantisation bounds');
+      if(!Number.isFinite(n)||Math.abs(n)>=1.999)
+        throw Error('Position exceeded quantisation bounds');
       view.setInt16(k+a*2,clamp(Math.round(n*16384),-32768,32767),true);
       min[a]=Math.min(min[a],n);max[a]=Math.max(max[a],n);
       const nn=normal.getComponent(i,a);
@@ -48,12 +48,35 @@ function geometryToPack(mesh){
       view.setUint16(k+9+a*2,clamp(Math.round(u*65535),0,65535),true);
     }
   }
+  // Marching tetrahedra emits the SAME edges/vertices repeatedly for each
+  // triangle. Dedup 13-byte quantised position/normal/UV tuples. Rebuild a
+  // mesh index rather than uploading all that repeated data for every date.
+  const lookup=new Map(),unique=[],indices=new Uint32Array(pos.count);
+  for(let i=0;i<pos.count;i++){
+    const off=i*VERTEX_STRIDE;
+    const slice=raw.subarray(off,off+VERTEX_STRIDE);
+    const key=String.fromCharCode(...slice);
+    let index=lookup.get(key);
+    if(index===undefined){
+      index=unique.length/VERTEX_STRIDE;
+      lookup.set(key,index);
+      for(const byte of slice)unique.push(byte);
+    }
+    indices[i]=index;
+  }
+  if(unique.length/VERTEX_STRIDE>220000)
+    throw Error('Indexed hybrid geometry still too complex for test tower');
+  const indexBytes=new Uint8Array(indices.length*4),
+    iview=new DataView(indexBytes.buffer);
+  for(let i=0;i<indices.length;i++)iview.setUint32(i*4,indices[i],true);
   return {
-    format:'hybrid-13b-pos16-normal8-uv16-le',
-    vertices:pos.count,triangles:pos.count/3,
+    format:'hybrid-indexed-13b-u32-v2',
+    vertices:unique.length/VERTEX_STRIDE,indices:indices.length,
+    triangles:indices.length/3,
     min:min.map(x=>Math.round(x*10000)/10000),
     max:max.map(x=>Math.round(x*10000)/10000),
-    packed:base64(bytes)
+    packed:base64(Uint8Array.from(unique)),
+    indexPacked:base64(indexBytes)
   };
 }
 function loadImage(url){
@@ -80,7 +103,7 @@ window.bakeHybridTowerStudy=async({date,item,quality})=>{
   const texture=new THREE.Texture(image);
   const sculpture=buildMaterialSculpture('hybrid',pixels,texture,{
     depth:1,material:material.type,
-    paper:material.params.paper||'#f5f0e6',quality
+    paper:material.params.paper||'#f5f0e6',quality,towerBake:true
   });
   try {
     const mesh=sculpture.children[0];
