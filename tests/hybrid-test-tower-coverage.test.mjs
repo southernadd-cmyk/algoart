@@ -37,7 +37,7 @@ test('every archive floor has readable artwork and every solo portrait can be re
 });
 test('test-only page builder never patches the live renderer or the publishing workflow',async()=>{
   const builder=await readFile('automation/build-hybrid-tower-test.mjs','utf8');
-  assert.match(builder,/gallery\/hybrid-tower-test\/gallery-phi-bundle\.js/);
+  assert.match(builder,/gallery\/visit\/gallery-phi-hybrid-test-bundle\.js/);
   assert.match(builder,/gallery\/visit\/gallery-phi\.js/);
   assert.match(builder,/sculpture-render-traced/);
   const renderer=await readFile('gallery/hybrid-tower-test/sculpture-render-hybrid.mjs','utf8');
