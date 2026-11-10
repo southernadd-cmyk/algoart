@@ -352,6 +352,10 @@ try {
   date = days.includes(query.get('date')) ? query.get('date') : days[0];
   el('day').value = date;
   await chooseDay(date);
+  if (innerWidth < 740 && window.__sculptureLabStatus?.ready) {
+    el('focus').value = '0';
+    cameraView('front');
+  }
 } catch (error) {
   report('Sculpture lab could not open: ' + error.message);
   console.error(error);
