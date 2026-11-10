@@ -47,7 +47,7 @@ for(const mode of METHODS){
     assert.equal(group.userData.noModelInference,true);
     assert.equal(group.userData.noImageExtrusion,true);
     assert.equal(group.userData.sourceAnchors.length,Math.min(markData.length,
-      {petal:42,ribbon:48,pigment:52,hybrid:56}[mode]));
+      {petal:80,ribbon:80,pigment:80,hybrid:85}[mode]));
     let meshCount=0,triangles=0,closedDepth=false;
     group.traverse(child=>{
       if(!child.isMesh)return;
