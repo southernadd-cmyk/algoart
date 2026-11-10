@@ -49,7 +49,28 @@ export function pigmentField(imageData,{material='marker',paper='#f5f0e6'}={}){
     if(rounded>.067){occupancy[i]=1;cells++;mean+=rounded;}
   }
   if(cells<3)throw Error('No source paint detected for volumetric sculpture');
-  return {width:w,height:h,ink,occupancy,cells,meanInk:mean/cells,material};
+  // Distance to paper determines the real cross-section. A fine pencil line
+  // should NOT have the same front-to-back bulk as a broad oil brushstroke.
+  const distance=new Float32Array(w*h);
+  for(let i=0;i<distance.length;i++)distance[i]=occupancy[i]?500:0;
+  const unit=1,diag=Math.SQRT2;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const k=y*w+x;
+    if(!distance[k])continue;
+    if(x)distance[k]=Math.min(distance[k],distance[k-1]+unit);
+    if(y)distance[k]=Math.min(distance[k],distance[k-w]+unit);
+    if(x&&y)distance[k]=Math.min(distance[k],distance[k-w-1]+diag);
+    if(x+1<w&&y)distance[k]=Math.min(distance[k],distance[k-w+1]+diag);
+  }
+  for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){
+    const k=y*w+x;
+    if(!distance[k])continue;
+    if(x+1<w)distance[k]=Math.min(distance[k],distance[k+1]+unit);
+    if(y+1<h)distance[k]=Math.min(distance[k],distance[k+w]+unit);
+    if(x+1<w&&y+1<h)distance[k]=Math.min(distance[k],distance[k+w+1]+diag);
+    if(x&&y+1<h)distance[k]=Math.min(distance[k],distance[k+w-1]+diag);
+  }
+  return {width:w,height:h,ink,occupancy,distance,cells,meanInk:mean/cells,material};
 }
 
 export function materialFinish(material='marker'){
@@ -101,9 +122,14 @@ function fieldAt(field,method,x,y,z,depth){
   const a=at(x0,y0)*(1-fx)+at(x1,y0)*fx;
   const b=at(x0,y1)*(1-fx)+at(x1,y1)*fx;
   const pigment=a*(1-fy)+b*fy;
-  // High-pigment centres thicken into round masses; dilute tissue washes
-  // produce thin curved films. The falloff in Z prevents planar side walls.
-  const range=z>=0?.54:.72;
+  // Respect brush width: 1–2px marks become slender 3D threads while
+  // wider coloured washes and oil blobs acquire substantial sculptural bulk.
+  const dist=(field.distance[y0*field.width+x0]*(1-fx)+
+    field.distance[y0*field.width+x1]*fx)*(1-fy)+
+    (field.distance[y1*field.width+x0]*(1-fx)+
+    field.distance[y1*field.width+x1]*fx)*fy;
+  const localWidth=Math.min(9,Math.max(0,dist));
+  const range=z>=0?.10+.048*localWidth:.14+.055*localWidth;
   const profile=z/(range*depth);
   const thickness=method==='pigment'?.60:method==='ribbon'?.76:.69;
   return pigment-.092-thickness*profile*profile;
