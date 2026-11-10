@@ -8,6 +8,7 @@ import {METHODS,PHI,GOLDEN_ANGLE,extractRuleMarks,buildRuleSculpture,disposeRule
 import {buildJSCADSculpture,disposeJSCADSculpture} from './sculpture-csg.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
+import {MATERIAL_SURFACE_VERSION,pigmentField,buildMaterialSculpture,disposeMaterialSculpture} from './material-surface.mjs';
 
 const $=id=>document.getElementById(id);
 const scene=new THREE.Scene();
@@ -80,6 +81,7 @@ for(let i=0;i<4;i++){
 let currentDate='',chosenImage='',archive=null,entries=[];
 let dateTicket=0,imageTicket=0,currentSourceData=null;
 let archivedMaterialPack=null,packDay='';
+let currentArtworkTexture=null,currentSideTexture=null;
 async function materialContoursFor(day,imageFile,quality='desktop'){
   if(packDay!==day){
     packDay=day;archivedMaterialPack=null;
@@ -107,6 +109,53 @@ async function loadImage(url){
     img.src=url;
   });
 }
+function localPigmentTexture(pixels,material,paper){
+  // Propagate the actual source pigment into the edge of each mark. Sampling
+  // the JPEG directly on a curved boundary samples PAPER, producing white
+  // ribbons from the side. The front still gets the untouched archive JPEG.
+  const field=pigmentField(pixels,{material,paper});
+  const {width:w,height:h,data}=pixels,n=w*h;
+  const nearest=new Int32Array(n).fill(-1);
+  const queue=new Int32Array(n);
+  let head=0,tail=0;
+  for(let i=0;i<n;i++)if(field.ink[i]>.30){
+    nearest[i]=i;queue[tail++]=i;
+  }
+  if(!tail)for(let i=0;i<n;i++)if(field.ink[i]>.07){
+    nearest[i]=i;queue[tail++]=i;
+  }
+  while(head<tail){
+    const i=queue[head++],x=i%w,y=(i/w)|0;
+    const neighbours=[];
+    if(x>0)neighbours.push(i-1);
+    if(x+1<w)neighbours.push(i+1);
+    if(y>0)neighbours.push(i-w);
+    if(y+1<h)neighbours.push(i+w);
+    for(const j of neighbours)if(nearest[j]<0){
+      nearest[j]=nearest[i];queue[tail++]=j;
+    }
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=w;canvas.height=h;
+  const cx=canvas.getContext('2d',{willReadFrequently:true});
+  const finished=cx.createImageData(w,h);
+  for(let i=0;i<n;i++){
+    const dest=i*4;
+    const source=Math.max(0,nearest[i])*4;
+    const original=field.ink[i]>.48;
+    for(let c=0;c<3;c++)
+      finished.data[dest+c]=original?data[dest+c]:data[source+c];
+    finished.data[dest+3]=255;
+  }
+  cx.putImageData(finished,0,0);
+  const texture=new THREE.CanvasTexture(canvas);
+  texture.colorSpace=THREE.SRGBColorSpace;
+  texture.wrapS=THREE.ClampToEdgeWrapping;
+  texture.wrapT=THREE.ClampToEdgeWrapping;
+  texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  texture.needsUpdate=true;
+  return texture;
+}
 function featuresFromImage(image,entry) {
   const width=108,height=152;
   const off=document.createElement('canvas');off.width=width;off.height=height;
@@ -118,7 +167,7 @@ function featuresFromImage(image,entry) {
     material:mat.type,
     paper:mat.params.paper||'#f5f0e6'
   });
-  return {marks,pixels,material:mat.type};
+  return {marks,pixels,material:mat.type,paper:mat.params.paper||'#f5f0e6'};
 
 }
 function focus(side='front'){
@@ -141,7 +190,8 @@ function renderMode(){
 }
 function disposeAny(group){
   if(!group)return;
-  if(group.userData.engine==='jscad-csg-v1')disposeJSCADSculpture(group);
+  if(group.userData.engine===MATERIAL_SURFACE_VERSION)disposeMaterialSculpture(group);
+  else if(group.userData.engine==='jscad-csg-v1')disposeJSCADSculpture(group);
   else disposeRuleSculpture(group);
 }
 function replaceSculptures(marks,entry){
@@ -153,7 +203,13 @@ function replaceSculptures(marks,entry){
   const candidates=[];
   try{
     for(const method of METHODS){
-      const obj=mode==='jscad'
+      const obj=mode==='surface'
+        ?buildMaterialSculpture(method,currentSourceData.pixels,
+          currentSourceData.paintTexture,{
+          depth,material:currentSourceData.material,paper:currentSourceData.paper,
+          quality:currentSourceData.quality,sideTexture:currentSourceData.sideTexture
+        })
+        :mode==='jscad'
         ?buildJSCADSculpture(method,marks,jscad,{
           depth,fidelity:Number($('resemblance').value)/100,
           sourceData:$('sourceMode').value==='original'?currentSourceData:null
@@ -170,13 +226,17 @@ function replaceSculptures(marks,entry){
     active[i]=candidates[i];
     stages[i].add(candidates[i]);
   }
-  currentEngine=mode==='jscad'?'jscad-csg-v1':'rules-v1';
+  currentEngine=mode==='surface'?MATERIAL_SURFACE_VERSION:
+    mode==='jscad'?'jscad-csg-v1':'rules-v1';
   window.__sculptureLabStatus={
     ready:true,
     engine:currentEngine,
     usesModel:false,
     usesExtrusion:false,
     usesJSCAD:mode==='jscad',
+    usesActualPaintTexture:mode==='surface',
+    separatePaintingOverlay:false,
+    paintingFinish:currentSourceData?.material||null,
     date:currentDate,
     imageFile:chosenImage,
     seed:entry.seed,
@@ -214,6 +274,15 @@ function replaceSculptures(marks,entry){
         materialContours:c.userData.materialContours||0,
         sourceDetailAnchors:c.userData.sourceDetailAnchors||[],
         csgPolygons:c.userData.csgPolygons||0,
+        sourceTextureOnBody:c.userData.sourceTextureOnBody===true,
+        sideTextureOnBody:c.userData.sideTextureOnBody===true,
+        separatePaintingOverlay:c.userData.separatePaintingOverlay===true,
+        paintedCells:c.userData.paintedCells||0,
+        frontIndices:c.userData.frontIndices||0,
+        backIndices:c.userData.backIndices||0,
+        wallIndices:c.userData.wallIndices||0,
+        materialRoughness:c.userData.materialRoughness||null,
+        materialBumpScale:c.userData.materialBumpScale||null,
         subtractApplied:c.userData.subtractApplied||false,
         inputVolume:c.userData.inputVolume||0,
         outputVolume:c.userData.outputVolume||0
@@ -227,9 +296,9 @@ function rebuild(){
   const entry=entries.find(e=>e.imageFile===chosenImage);
   if(!entry)return;
   try{
-    status('Constructing '+(renderMode()==='jscad'?'fused JSCAD solids':'individual rule solids')+'…');
+    status('Constructing '+(renderMode()==='surface'?'source-painted 360° volumes':renderMode()==='jscad'?'fused JSCAD solids':'individual rule solids')+'…');
     replaceSculptures(currentMarks,entry);
-    status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+    status((renderMode()==='surface'?'Actual paint on 3D geometry':renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
       ' • '+currentMarks.length+' marks • '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+' sculpted source traces');
   }catch(error){
     status('Cannot build '+renderMode()+' sculpture: '+error.message);
@@ -247,7 +316,7 @@ async function choosePainting(filename){
     const url=new URL('../'+encodeURIComponent(currentDate)+'/'+encodeURIComponent(filename),location.href).href;
     const image=await loadImage(url);
     if(ticket!==imageTicket||d!==dateTicket)return;
-    const {marks,pixels,material}=featuresFromImage(image,entry);
+    const {marks,pixels,material,paper}=featuresFromImage(image,entry);
     const quality=innerWidth<740?'mobile':'desktop';
     let capture=null,captureError=null,materialContours=[];
     // The original generator records compositional strokes. For oil and
@@ -277,13 +346,30 @@ async function choosePainting(filename){
         });
       }catch(error){captureError=error.message;console.warn(error);}
     }
+    const paintTexture=new THREE.Texture(image);
+    paintTexture.colorSpace=THREE.SRGBColorSpace;
+    paintTexture.wrapS=THREE.ClampToEdgeWrapping;
+    paintTexture.wrapT=THREE.ClampToEdgeWrapping;
+    paintTexture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+    paintTexture.needsUpdate=true;
+    const sideTexture=localPigmentTexture(pixels,material,paper);
+    const previousSource=currentSourceData;
     currentSourceData={
-      strokes,materialContours,material,quality,
+      strokes,materialContours,material,paper,pixels,paintTexture,sideTexture,quality,
       captureKind:capture?'recorded-original-v'+capture.version:'unavailable',
       pathCount:capture?.paths?.length||0,
       captureError
     };
-    replaceSculptures(marks,entry);
+    try {replaceSculptures(marks,entry);}
+    catch(error) {
+      currentSourceData=previousSource;
+      paintTexture.dispose();sideTexture.dispose();
+      throw error;
+    }
+    currentArtworkTexture?.dispose();
+    currentSideTexture?.dispose();
+    currentArtworkTexture=paintTexture;
+    currentSideTexture=sideTexture;
     currentMarks=marks;
     $('thumb').src=url;
     $('caption').textContent=entry.title||entry.seed;
@@ -291,7 +377,7 @@ async function choosePainting(filename){
     const q=new URL(location.href);
     q.searchParams.set('date',currentDate);q.searchParams.set('image',filename);
     history.replaceState(null,'',q);
-    status((renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
+    status((renderMode()==='surface'?'Source painting textured onto its own 3D shape':renderMode()==='jscad'?'JSCAD / fused CSG':'Rules / separate solids')+
       ' • '+marks.length+' pigment regions · '+(window.__sculptureLabStatus.methods[0].sourceTraceCount||0)+
       ' sculpted strokes · '+window.__sculptureLabStatus.methods[0].sourceOrigin);
   } catch(e) {
@@ -330,7 +416,11 @@ $('orbitToggle').addEventListener('click',()=>{
 });
 $('depth').addEventListener('input',()=>{$('depthValue').textContent=$('depth').value+'%';});
 $('depth').addEventListener('change',rebuild);
-$('geometryMode').addEventListener('change',rebuild);
+$('geometryMode').addEventListener('change',()=>{
+  $('resemblance').disabled=renderMode()==='surface';
+  $('sourceMode').disabled=renderMode()==='surface';
+  rebuild();
+});
 $('sourceMode').addEventListener('change',rebuild);
 $('settingsToggle').addEventListener('click',()=>{
   const open=$('depth-controls').classList.toggle('expanded');
@@ -364,6 +454,8 @@ function frame(now){
   controls.update();renderer.render(scene,camera);
 }
 requestAnimationFrame(frame);
+$('resemblance').disabled=renderMode()==='surface';
+$('sourceMode').disabled=renderMode()==='surface';
 try{
   const response=await fetch('../archive.json');
   if(!response.ok)throw Error('Gallery archive index missing');
