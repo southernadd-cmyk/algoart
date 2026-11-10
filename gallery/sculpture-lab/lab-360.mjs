@@ -249,9 +249,11 @@ function replaceSculptures(marks,entry){
     stages[i].add(candidates[i],newSupports[i]);
   }
   if(compareBodies){
+    $('focus').querySelectorAll('option').forEach((el,i)=>{if(i>0)el.textContent=i+' · '+bodyTitles[i-1];});
     $('legend').querySelectorAll('span').forEach((el,i)=>el.textContent=
       String(i+1).padStart(2,'0')+' · '+bodyTitles[i]+' / museum pin');
   }else{
+    $('focus').querySelectorAll('option').forEach((el,i)=>{if(i>0)el.textContent=i+' · '+SUPPORT_VARIANTS[i-1].title;});
     $('legend').querySelectorAll('span').forEach((el,i)=>el.textContent=
       String(i+1).padStart(2,'0')+' · '+SUPPORT_VARIANTS[i].title);
   }
@@ -304,7 +306,7 @@ function replaceSculptures(marks,entry){
       });
       return {
         method:c.userData.method,bodyProfile:c.userData.bodyProfile||'original',meshes,polys,
-        supportVariant:SUPPORT_VARIANTS[i].id,
+        supportVariant:compareBodies?'pin':SUPPORT_VARIANTS[i].id,
         elementCounts:c.userData.elementCounts||null,
         sourceAnchors:c.userData.sourceAnchors,
         extent:[size.x,size.y,size.z],
