@@ -5,10 +5,10 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
-import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs';
+import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs?v=3-finish-1';
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
-import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs';
+import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs?v=3-finish-1';
 
 const $=id=>document.getElementById(id);
 const canvas=$('view'),scene=new THREE.Scene();
@@ -18,7 +18,7 @@ const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'h
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.55));
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=1.33;
+renderer.toneMappingExposure=1.16;
 const camera=new THREE.PerspectiveCamera(49,1,.08,55);
 camera.position.set(0,2.24,12.8);
 const orbit=new OrbitControls(camera,canvas);
@@ -28,8 +28,8 @@ orbit.autoRotateSpeed=.55;
 function resize(){renderer.setSize(innerWidth,innerHeight,false);
   camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 addEventListener('resize',resize);resize();
-scene.add(new THREE.HemisphereLight('#fff7e9','#72706a',2.5));
-for(const [c,p,intensity] of [['#ffeed6',[-5,7,5],3],['#c4d7e3',[4,5,-5],2]]){
+scene.add(new THREE.HemisphereLight('#fff7e9','#72706a',1.65));
+for(const [c,p,intensity] of [['#ffeed6',[-5,7,5],2.2],['#c4d7e3',[4,5,-5],1.25]]){
   const light=new THREE.DirectionalLight(c,intensity);light.position.set(...p);scene.add(light);
 }
 function block(w,h,d,x,y,z,col,metalness=0){
@@ -234,7 +234,7 @@ async function choosePainting(file){
     const previous=loaded;
     const paper=mat.params.paper||'#f5f0e6';
     const traced=traceVisiblePigmentContours(pixels,{
-      material:mat.type,paper,maxPaths:105
+      material:mat.type,paper,maxPaths:70
     });
     loaded={pixels,texture,material:mat.type,paper,
       strokes:traced,recordedStrokesCount:0,tracedContourCount:traced.length};

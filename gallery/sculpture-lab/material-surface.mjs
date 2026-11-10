@@ -170,7 +170,7 @@ function fieldAt(field,method,x,y,z,depth,bodyProfile='original'){
 }
 export function buildMaterialSculpture(method,imageData,texture,{
   depth=1,material='marker',paper='#f5f0e6',quality='desktop',sideTexture=null,
-  bodyProfile='original'
+  bodyProfile='original',smoothness=0
 }={}){
   if(!['original',...ROUNDED_BODY_PROFILES].includes(bodyProfile))
     throw Error('Unknown rounded body profile '+bodyProfile);
@@ -178,8 +178,26 @@ export function buildMaterialSculpture(method,imageData,texture,{
   if(!['petal','ribbon','pigment','hybrid'].includes(method))
     throw Error('Unsupported 360° sculpting method '+method);
   const field=pigmentField(imageData,{material,paper});
+  // V3-only opt-in: low-pass the continuous volumetric field, not the
+  // source painting, UV texture or fidelity reference mask.
+  // Default zero means all existing archive/tower callers remain identical.
+  const passes=Math.min(2,Math.max(0,Math.floor(smoothness)));
+  for(let pass=0;pass<passes;pass++){
+    const next=new Float32Array(field.ink.length);
+    for(let y=0;y<field.height;y++)for(let x=0;x<field.width;x++){
+      let sum=0;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+        const xx=clamp(x+dx,0,field.width-1);
+        const yy=clamp(y+dy,0,field.height-1);
+        const weight=(dx===0?2:1)*(dy===0?2:1);
+        sum+=field.ink[yy*field.width+xx]*weight;
+      }
+      next[y*field.width+x]=sum/16;
+    }
+    field.ink.set(next);
+  }
   const mobile=quality==='mobile';
-  const nx=mobile?60:82,ny=mobile?88:116,nz=mobile?21:26;
+  const nx=mobile?60:86,ny=mobile?88:122,nz=mobile?21:28;
   const sizex=1.88,sizey=2.35;
   const plane=(nx+1)*(ny+1);
   const count=plane*(nz+1);

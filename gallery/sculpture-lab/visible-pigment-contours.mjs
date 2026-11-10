@@ -2,6 +2,7 @@
 // This is NOT a guessed line between pigment centroids. Edges are read from
 // the final archived artwork, using the material-specific pigment mask.
 import {pigmentField} from './material-surface.mjs';
+import {smoothClosedContour} from './sculpture-v3-finishing.mjs';
 const W=1.34,H=1.88;
 const key=(x,y)=>x+','+y;
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -46,7 +47,7 @@ export function traceVisiblePigmentContours(imageData,{
       perimeter+=Math.hypot(b[0]-a[0],b[1]-a[1]);
     }
     const area=Math.abs(signed)*.5;
-    if(area<5||perimeter<16)continue;
+    if(area<9||perimeter<18)continue;
     const sample=coords[Math.floor(coords.length/4)];
     let colour='#685b4d';
     outer:for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){
@@ -58,13 +59,16 @@ export function traceVisiblePigmentContours(imageData,{
         break outer;
       }
     }
-    const stride=Math.max(1,Math.floor(coords.length/95));
-    const selected=coords.filter((_,i)=>i%stride===0);
+    // Retain the TRUE pigment silhouette, but remove one-pixel stair steps.
+    // Closed-loop resampling keeps its topology instead of inventing strokes.
+    const selected=smoothClosedContour(coords,{
+      passes:3,spacing:2.2,maxPoints:82
+    });
     const points=selected.map(([x,y])=>({
       x:(x/w-.5)*W,y:(.5-y/h)*H
     }));
     if(points.length<3)continue;
-    points.push({...points[0]});
+    // The finishing utility already returns a closed contour.
     loops.push({
       sourceKind:'pigment-contour',
       sourceIndex:loops.length,

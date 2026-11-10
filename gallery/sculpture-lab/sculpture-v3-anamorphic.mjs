@@ -3,7 +3,8 @@
 // The front XY of every recorded stroke remains unchanged. All new folds, ribs and
 // returns are continuous solids growing BACKWARDS from those actual source marks.
 import * as THREE from 'three';
-import {buildMaterialSculpture,disposeMaterialSculpture,pigmentField} from './material-surface.mjs';
+import {buildMaterialSculpture,pigmentField} from './material-surface.mjs';
+import {interpolatePath,selectBalancedMarks} from './sculpture-v3-finishing.mjs';
 
 export const V3_METHODS=Object.freeze(['armature','fold','mass','hybrid']);
 const PHI=(1+Math.sqrt(5))/2;
@@ -13,9 +14,12 @@ const FRONT=.26;
 const W=1.34,H=1.88;
 
 function colour(hex,bronze=false){
-  const m=new THREE.MeshStandardMaterial({
-    color:bronze?'#967c57':hex||'#61513d',roughness:bronze?.43:.66,
-    metalness:bronze?.33:.015,side:THREE.DoubleSide
+  const m=new THREE.MeshPhysicalMaterial({
+    color:bronze?'#967c57':hex||'#61513d',
+    roughness:bronze?.46:.64,
+    metalness:bronze?.32:.025,
+    clearcoat:bronze?.15:.24,clearcoatRoughness:.46,
+    side:THREE.DoubleSide
   });
   m.userData.ppV3Owned=true;
   return m;
@@ -50,16 +54,15 @@ function sourceMarks(strokes,features){
   const own=Array.isArray(strokes)?strokes:[];
   const input=own.length>=3?own:
     [...own,...(features.gestures||[]).filter(g=>g.source==='pigment-region')];
-  return input.map((s,i)=>({...s,points:cleanPoints(s),sourceId:s.sourceIndex??i}))
-    .filter(s=>s.points.length>=2)
-    .sort((a,b)=>(b.score||b.weight||b.length||0)-(a.score||a.weight||a.length||0))
-    .slice(0,115);
+  const candidates=input.map((s,i)=>({...s,points:cleanPoints(s),sourceId:s.sourceIndex??i}))
+    .filter(s=>s.points.length>=2);
+  return selectBalancedMarks(candidates,64);
 }
 function makeTube(group,pts,radius,material,name,segments=40){
   if(pts.length<2)return;
   const curve=new THREE.CatmullRomCurve3(pts,false,'centripetal');
   const geometry=new THREE.TubeGeometry(curve,
-    Math.max(8,Math.min(90,segments)),radius,7,false);
+    Math.max(14,Math.min(105,segments)),radius,11,false);
   const mesh=new THREE.Mesh(geometry,material);
   mesh.name=name;mesh.userData.ppV3Owned=true;group.add(mesh);
 }
@@ -85,9 +88,16 @@ function pigmentFrontSampler(pixels,material,paper,depth,hasBody){
     return clamp(physical+.007,.03,.52);
   };
 }
-function originalMarks(group,marks,bronze,quality,surfaceZ){
+function originalMarks(group,marks,bronze,quality,surfaceZ,kind,material){
   const cache=new Map();
-  const count=Math.min(marks.length,quality==='mobile'?62:115);
+  // A finished sculpture needs a hierarchy. The pigment body already carries
+  // every little painted fleck, so avoid outlining each speck in thick wire.
+  const inkOnly=material==='marker';
+  const budget=inkOnly?(quality==='mobile'?46:64):
+    kind==='armature'?(quality==='mobile'?18:30):
+    kind==='fold'?(quality==='mobile'?12:19):
+    kind==='hybrid'?(quality==='mobile'?9:13):7;
+  const count=Math.min(marks.length,budget);
   for(let i=0;i<count;i++){
     const s=marks[i],r=clamp((s.width||.012)*.78,.0038,.043);
     const pts=s.points.map(p=>new THREE.Vector3(p.x,p.y,surfaceZ(p)+.002*(i%4)));
@@ -97,56 +107,81 @@ function originalMarks(group,marks,bronze,quality,surfaceZ){
   return count;
 }
 function returnRibs(group,marks,bronze,{fidelity,depth,phiPull,quality,surfaceZ,multiplier=1}){
-  const cache=new Map(),count=Math.min(marks.length,quality==='mobile'?13:24);
-  const drift=.012+.13*(1-fidelity);
+  const cache=new Map(),count=Math.min(marks.length,quality==='mobile'?5:9);
+  const drift=.016+.12*(1-fidelity);
   for(let i=0;i<count;i++){
     const s=marks[i],p=s.points;
     if(p.length<3)continue;
     const angle=i*GOLDEN_ANGLE*phiPull;
-    const a=p[0],q=p[Math.floor((p.length-1)/3)],
-      b=p[Math.floor((p.length-1)*2/3)],z=p[p.length-1];
-    const r=clamp((s.width||.012)*.53,.008,.029)*multiplier;
-    const shape=[
-      new THREE.Vector3(a.x,a.y,surfaceZ(a)),
-      new THREE.Vector3(q.x,q.y,.16),
-      new THREE.Vector3(q.x+drift*Math.cos(angle),q.y+drift*Math.sin(angle),-depth*.62),
-      new THREE.Vector3(b.x+drift*Math.cos(angle+GOLDEN_ANGLE),b.y+drift*Math.sin(angle+GOLDEN_ANGLE),-depth),
-      new THREE.Vector3(z.x,z.y,-depth*.12),
-      new THREE.Vector3(z.x,z.y,surfaceZ(z))
-    ];
+    const a=interpolatePath(p,.08),b=interpolatePath(p,.72);
+    const r=clamp((s.width||.012)*.62,.006,.022)*multiplier;
+    // Each support is an arch joining two ACTUAL points on the same
+    // recorded source stroke. No invented diagonal to a distant pigment.
+    const shape=[];
+    for(let j=0;j<=12;j++){
+      const t=j/12;
+      const q=interpolatePath(p,.08+.64*t);
+      const tangent0=interpolatePath(p,Math.max(0,.08+.64*t-.02));
+      const tangent1=interpolatePath(p,Math.min(1,.08+.64*t+.02));
+      const vx=tangent1.x-tangent0.x,vy=tangent1.y-tangent0.y;
+      const norm=Math.max(.000001,Math.hypot(vx,vy));
+      const outward=Math.sin(Math.PI*t)*drift*Math.sin(angle+t*GOLDEN_ANGLE);
+      const z=(1-t)*surfaceZ(a)+t*surfaceZ(b)-
+        Math.sin(Math.PI*t)*(depth*.83);
+      shape.push(new THREE.Vector3(
+        q.x-vy/norm*outward,q.y+vx/norm*outward,z
+      ));
+    }
     makeTube(group,shape,r,materialFor(cache,s,bronze),
       'Source-attached rear structural rib',45);
   }
 }
 function foldedMembranes(group,marks,bronze,{fidelity,depth,phiPull,quality,surfaceZ}){
   const cache=new Map();
-  const count=Math.min(marks.length,quality==='mobile'?11:19);
+  const count=Math.min(marks.length,quality==='mobile'?4:7);
   for(let i=0;i<count;i++){
     const s=marks[i],pts=s.points;
     if(pts.length<3)continue;
-    const positions=[],indices=[];
-    const rows=Math.min(46,pts.length),bands=6;
-    const amplitude=(.032+.23*(1-fidelity))*(i%3===0?PHI:1);
+    const positions=[],indices=[],rows=quality==='mobile'?38:54,bands=10;
+    const amplitude=(.07+.23*(1-fidelity))*(i%3===0?1.17:1);
     const roll=i*GOLDEN_ANGLE*phiPull;
     for(let j=0;j<rows;j++){
-      const t=j/(rows-1),ix=Math.round(t*(pts.length-1));
-      const p=pts[ix],before=pts[Math.max(0,ix-1)],after=pts[Math.min(pts.length-1,ix+1)];
+      const t=j/(rows-1);
+      const p=interpolatePath(pts,t);
+      const before=interpolatePath(pts,Math.max(0,t-.013));
+      const after=interpolatePath(pts,Math.min(1,t+.013));
       const dx=after.x-before.x,dy=after.y-before.y;
       const norm=Math.max(1e-8,Math.hypot(dx,dy)),nx=-dy/norm,ny=dx/norm;
       for(let k=0;k<=bands;k++){
         const v=k/bands;
         const fold=Math.sin(Math.PI*v)*Math.sin(t*Math.PI*2+roll);
-        const lateral=amplitude*v*(.3+.7*Math.sin(Math.PI*t)**2)+amplitude*.45*fold;
-        // v=0 exactly matches the source curve; every other vertex goes into Z.
+        const lateral=amplitude*Math.sin(v*Math.PI*.5)*
+          (.35+.65*Math.sin(Math.PI*t)**2)+amplitude*.26*fold;
         const x=p.x+nx*lateral,y=p.y+ny*lateral;
         const front=surfaceZ(p);
-        const z=front-v*(front+depth*(.52+.4*Math.sin(t*Math.PI+roll)**2));
+        const z=front-v*(front+depth*(.55+.30*Math.sin(t*Math.PI+roll)**2));
         positions.push(x,y,z);
       }
+    }
+    const n=positions.length/3,offset=.009;
+    // Back skin and closed rims give the ribbon physical thickness. Flat
+    // double-sided triangles produced ragged paper-cut edges in V3.
+    for(let q=0;q<n;q++){
+      positions.push(positions[q*3],positions[q*3+1],positions[q*3+2]-offset);
     }
     for(let j=0;j<rows-1;j++)for(let k=0;k<bands;k++){
       const a=j*(bands+1)+k,b=(j+1)*(bands+1)+k;
       indices.push(a,b,a+1,b,b+1,a+1);
+      indices.push(a+n,a+1+n,b+n,b+n,a+1+n,b+1+n);
+    }
+    const rim=[];
+    for(let k=0;k<=bands;k++)rim.push(k);
+    for(let j=1;j<rows;j++)rim.push(j*(bands+1)+bands);
+    for(let k=bands-1;k>=0;k--)rim.push((rows-1)*(bands+1)+k);
+    for(let j=rows-2;j>0;j--)rim.push(j*(bands+1));
+    for(let q=0;q<rim.length;q++){
+      const a=rim[q],b=rim[(q+1)%rim.length];
+      indices.push(a,a+n,b,b,a+n,b+n);
     }
     const geometry=new THREE.BufferGeometry();
     geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
@@ -165,7 +200,8 @@ function pigmentBody(group,kind,{pixels,texture,material,paper,depth,quality,bro
   const profile=kind==='fold'?'fold':kind==='armature'?'spiral':
     kind==='mass'?'pebble':'shoulder';
   const body=buildMaterialSculpture(mode,pixels,texture,{
-    depth:Math.max(.45,depth*.86),material,paper,quality,bodyProfile:profile
+    depth:Math.max(.45,depth*.86),material,paper,quality,
+    bodyProfile:profile,smoothness:1
   });
   if(bronze)body.traverse(o=>{
     if(o.isMesh&&o.material){
@@ -204,7 +240,7 @@ export function buildAnamorphicSculpture(kind,{
   }
   const surfaceZ=pigmentFrontSampler(pixels,material,paper,opt.depth*.86,body);
   opt.surfaceZ=surfaceZ;
-  const count=originalMarks(group,marks,bronze,quality,surfaceZ);
+  const count=originalMarks(group,marks,bronze,quality,surfaceZ,kind,material);
   if(kind==='armature'){
     returnRibs(group,marks,bronze,{...opt,multiplier:1});
   }else if(kind==='fold'){
