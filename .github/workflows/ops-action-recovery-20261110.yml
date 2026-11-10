@@ -1,0 +1,96 @@
+name: Recover missing 10 November Action social posts
+
+on:
+  push:
+    branches: [ops/recover-action-2026-11-10]
+    paths: [.github/workflows/ops-action-recovery-20261110.yml]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: pp-action-recovery-2026-11-10
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      github.ref == 'refs/heads/ops/recover-action-2026-11-10' &&
+      (github.event.head_commit.message == 'Preflight Action recovery 2026-11-10' ||
+       github.event.head_commit.message == 'Dispatch Action recovery 2026-11-10')
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify today's selection, immutable asset and duplicate markers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST: ${{ github.event.head_commit.message }}
+          ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          ACTION_BLOB: 'aa4e14db256b9f20f23e555b91d1b367edd837af'
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$(TZ=Europe/London date +%F)" == '2026-11-10' ]] || fail "This recovery is valid only on 10 November (London time)."
+          [[ "$ARMED_DATE" == '2026-11-11' ]] || fail "Do not alter the armed R2 canary date."
+          [[ "$(git rev-parse HEAD:automation/action-slot.mjs)" == "$ACTION_BLOB" ]] || fail "Action publisher changed after validation."
+          node --input-type=module <<'JS'
+          import {socialPublishDecision} from './automation/social-publish-policy.mjs';
+          const a=socialPublishDecision({date:'2026-11-10',slot:'0',job:'action-landscape'});
+          const b=socialPublishDecision({date:'2026-11-10',slot:'0',job:'action-portrait'});
+          const assert=(ok,message)=>{if(!ok)throw Error(message)};
+          assert(a.instagram && !a.threads && !a.bluesky && !a.pinterest,'Landscape selection changed');
+          assert(b.bluesky && !b.instagram && !b.threads && !b.pinterest,'Portrait selection changed');
+          JS
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/action-live.yml" --jq .state)" == active ]] || fail 'The Action workflow is not active.'
+          ASSETS="$(gh release view algoart-social-2026-11 --json assets --jq '.assets[].name')"
+          grep -Fxq 'action-landscape-2026-11-10-queue.json' <<< "$ASSETS" || fail 'Frozen landscape queue missing from media release.'
+          grep -Eq '^2026-11-10-action-landscape-01-.*\.jpg$' <<< "$ASSETS" || fail 'Frozen landscape JPEG missing from media release.'
+          printf 'Verified Action 10 November: Instagram landscape and Bluesky portrait; frozen landscape JPEG present.\n' >> "$GITHUB_STEP_SUMMARY"
+          if [[ "$REQUEST" == 'Preflight Action recovery 2026-11-10' ]]; then
+            echo 'Preflight only: no posts or workflow dispatches.'
+            exit 0
+          fi
+          [[ "$REQUEST" == 'Dispatch Action recovery 2026-11-10' && "$GITHUB_RUN_ATTEMPT" == '1' ]] || fail 'This is not the approved first attempt.'
+          in_flight="$(gh run list --workflow action-live.yml --event workflow_dispatch --limit 20 --json status | jq '[.[] | select(.status=="queued" or .status=="in_progress" or .status=="waiting" or .status=="pending")] | length')"
+          [[ "$in_flight" == 0 ]] || fail 'Another manual Action publishing run is in flight.'
+      - name: Dispatch missed posts sequentially, preserving completion markers
+        if: github.event.head_commit.message == 'Dispatch Action recovery 2026-11-10'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RELEASE_TAG=algoart-social-2026-11
+          for specification in 'landscape instagram' 'portrait bluesky'; do
+            read -r ORIENTATION PLATFORM <<< "$specification"
+            [[ "$(TZ=Europe/London date +%F)" == '2026-11-10' ]] || { echo '::error::The date has changed'; exit 1; }
+            MARKER="done-2026-11-10-action-${ORIENTATION}-slot0-${PLATFORM}.txt"
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+            if grep -Fxq "$MARKER" <<< "$ASSETS"; then
+              echo "$MARKER already complete; no duplicate post."
+              continue
+            fi
+            baseline="$(gh run list --workflow action-live.yml --event workflow_dispatch --limit 40 --json databaseId | jq '[.[].databaseId] | max // 0')"
+            gh workflow run action-live.yml --ref main -f slot=0 -f orientation="$ORIENTATION" -f live=true -f repost_deleted=false
+            NEW_RUN=''
+            for i in {1..30}; do
+              NEW_RUN="$(gh run list --workflow action-live.yml --event workflow_dispatch --limit 40 --json databaseId | jq -r --argjson baseline "$baseline" '[.[]|select(.databaseId>$baseline)|.databaseId] | max // empty')"
+              if [[ -n "$NEW_RUN" ]]; then break; fi
+              sleep 6
+            done
+            [[ -n "$NEW_RUN" ]] || { echo "::error::Dispatched Action workflow did not appear"; exit 1; }
+            echo "Dispatched $ORIENTATION: https://github.com/$GITHUB_REPOSITORY/actions/runs/$NEW_RUN" >> "$GITHUB_STEP_SUMMARY"
+            gh run watch "$NEW_RUN" --exit-status --interval 20
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+            grep -Fxq "$MARKER" <<< "$ASSETS" || { echo "::error::The expected completion marker was not created: $MARKER"; exit 1; }
+            echo "Verified $MARKER" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo 'Action recovery complete; no duplicate completion markers overwritten.' >> "$GITHUB_STEP_SUMMARY"
