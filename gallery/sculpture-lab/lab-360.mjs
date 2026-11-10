@@ -210,6 +210,7 @@ function replaceSculptures(marks,entry){
         sourceTraceCount:c.userData.sourceTraceCount||0,
         sourceOrigin:c.userData.sourceOrigin||null,
         originalPointCount:c.userData.sourceOriginalPoints||0,
+        fineLinePaths:c.userData.fineLinePaths||0,
         materialContours:c.userData.materialContours||0,
         sourceDetailAnchors:c.userData.sourceDetailAnchors||[],
         csgPolygons:c.userData.csgPolygons||0,
@@ -271,7 +272,7 @@ async function choosePainting(filename){
         strokes=prepareOriginalStrokes(capture,{
           material,imageData:{...pixels,
             sourceWidth:capture.width,sourceHeight:capture.height},
-          maxPaths:quality==='mobile'?64:100,
+          maxPaths:quality==='mobile'?130:230,
           minimumCoverage:material==='marker'?0:.27
         });
       }catch(error){captureError=error.message;console.warn(error);}
