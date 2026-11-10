@@ -275,6 +275,7 @@ function replaceSculptures(marks,entry){
         sourceDetailAnchors:c.userData.sourceDetailAnchors||[],
         csgPolygons:c.userData.csgPolygons||0,
         sourceTextureOnBody:c.userData.sourceTextureOnBody===true,
+        sideTextureOnBody:c.userData.sideTextureOnBody===true,
         separatePaintingOverlay:c.userData.separatePaintingOverlay===true,
         paintedCells:c.userData.paintedCells||0,
         frontIndices:c.userData.frontIndices||0,
