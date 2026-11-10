@@ -27,6 +27,85 @@ function inside(point,points){
   }
   return yes;
 }
+// Small isolated source marks can fall below the smoothed isocontour's area
+// threshold. Recover ONLY source-occupied pixels not represented by any
+// contour; use exact boundary edges instead of inventing a generic dot.
+export function recoverUnrepresentedPigment(r,rings){
+  const unseen=new Uint8Array(r.mask.length);
+  let missing=0;
+  for(const j of r.ids){
+    const p={x:r.minX+(j%r.rw)+.5,y:r.minY+Math.floor(j/r.rw)+.5};
+    let covered=false;
+    for(const ring of rings)if(inside(p,ring))covered=!covered;
+    if(!covered){unseen[j]=1;missing++;}
+  }
+  if(!missing)return rings;
+  const visited=new Uint8Array(unseen.length),width=r.rw,height=r.rh;
+  const neighbours=[[-1,0],[1,0],[0,-1],[0,1]];
+  const recovered=[];
+  for(const first of r.ids){
+    if(!unseen[first]||visited[first])continue;
+    const queue=[first],members=new Set([first]);
+    visited[first]=1;
+    for(let at=0;at<queue.length;at++){
+      const i=queue[at],x=i%width,y=(i/width)|0;
+      for(const [dx,dy] of neighbours){
+        const xx=x+dx,yy=y+dy;
+        if(xx<0||yy<0||xx>=width||yy>=height)continue;
+        const j=yy*width+xx;
+        if(unseen[j]&&!visited[j]){
+          visited[j]=1;members.add(j);queue.push(j);
+        }
+      }
+    }
+    const edges=[],byStart=new Map();
+    const add=(a,b)=>{
+      const index=edges.length;
+      edges.push({a,b,used:false});
+      const k=key(a.x,a.y);
+      if(!byStart.has(k))byStart.set(k,[]);
+      byStart.get(k).push(index);
+    };
+    const occupied=(x,y)=>x>=0&&x<width&&y>=0&&y<height&&
+      members.has(y*width+x);
+    for(const i of queue){
+      const lx=i%width,ly=(i/width)|0;
+      const x=r.minX+lx,y=r.minY+ly;
+      if(!occupied(lx,ly-1))add({x,y},{x:x+1,y});
+      if(!occupied(lx+1,ly))add({x:x+1,y},{x:x+1,y:y+1});
+      if(!occupied(lx,ly+1))add({x:x+1,y:y+1},{x,y:y+1});
+      if(!occupied(lx-1,ly))add({x,y:y+1},{x,y});
+    }
+    for(const firstEdge of edges){
+      if(firstEdge.used)continue;
+      const start=key(firstEdge.a.x,firstEdge.a.y);
+      const poly=[];
+      let edge=firstEdge,closed=false,guard=0;
+      while(edge&&!edge.used&&guard++<=edges.length){
+        edge.used=true;
+        poly.push(edge.a);
+        const end=key(edge.b.x,edge.b.y);
+        if(end===start){closed=true;break;}
+        const next=byStart.get(end)||[];
+        edge=next.map(i=>edges[i]).find(e=>!e.used);
+      }
+      if(!closed||poly.length<3)continue;
+      // Remove zero-angle collinear vertices, preserving exact pixel areas.
+      for(let changes=true;changes&&poly.length>3;){
+        changes=false;
+        for(let i=0;i<poly.length&&poly.length>3;i++){
+          const a=poly[(i+poly.length-1)%poly.length],
+            b=poly[i],c=poly[(i+1)%poly.length];
+          const cross=(b.x-a.x)*(c.y-b.y)-(b.y-a.y)*(c.x-b.x);
+          if(Math.abs(cross)<1e-9){poly.splice(i,1);changes=true;i--;}
+        }
+      }
+      if(Math.abs(signedArea(poly))>=.05)recovered.push(poly);
+    }
+  }
+  return [...rings,...recovered];
+}
+
 export function extractContours(r,step=.5){
   const nx=Math.ceil((r.rw+2)/step),ny=Math.ceil((r.rh+2)/step);
   // Avoid the exact half-occupancy pixel-edge isovalue.
@@ -112,7 +191,10 @@ export function extractContours(r,step=.5){
     }
     if(Math.abs(signedArea(p))>.025)rings.push(p);
   }
-  return rings.sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
+  // A source pixel that has no enclosing reconstructed contour is still
+  // paint. Keep its exact lattice silhouette as a separate physical solid.
+  return recoverUnrepresentedPigment(r,rings)
+    .sort((a,b)=>Math.abs(signedArea(b))-Math.abs(signedArea(a)));
 }
 function makeGroups(rings){
   const entries=rings.map((ring,i)=>({ring,i,parent:-1,depth:0}));

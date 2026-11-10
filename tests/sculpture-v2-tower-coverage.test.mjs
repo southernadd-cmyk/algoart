@@ -64,6 +64,8 @@ test('frozen V2 topology retains even isolated micro-islands',async()=>{
     const j=(y*w+x)*4;
     data[j]=94;data[j+1]=38;data[j+2]=132;
   }
+  const {extractContours}=await import(
+    '../gallery/sculpture-v2-test/engine/v4-contours.mjs');
   for(const maxRegions of [48,72]){
     const topology=segmentPainting({width:w,height:h,data},{
       material:'marker',maxRegions});
@@ -74,6 +76,11 @@ test('frozen V2 topology retains even isolated micro-islands',async()=>{
     assert.equal(topology.omittedRegions,0);
     assert.ok(topology.groupedSmallIslands>0,
       'Expected grouped, not silently discarded, small islands');
+    for(const region of topology.regions){
+      const rings=extractContours(region,.75);
+      assert.ok(rings.length>0,
+        'Original pigment region must reconstruct a physical contour');
+    }
   }
 });
 test('single-pixel pigment islands can produce actual closed sculpture geometry',async()=>{

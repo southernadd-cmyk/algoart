@@ -58,3 +58,7 @@
 - The V2-only marching-squares minimum area is 0.025 source pixels
   (rather than the lab's 0.25) so isolated source dots survive contour
   triangulation. An explicit tiny-island solid test covers this case.
+
+- Where smoothing cannot trace an occupied pixel island, the V2-only
+  contour fallback reconstructs its exact outer pixel boundary and
+  triangulates that boundary. It never manufactures extra source pigment.
