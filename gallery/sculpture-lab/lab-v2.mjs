@@ -5,6 +5,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
 import {recordOriginalComposition} from './source-bridge.mjs';
 import {prepareOriginalStrokes} from './recorded-gestures.mjs';
+import {traceVisiblePigmentContours} from './visible-pigment-contours.mjs';
 import {createHybridSupport,disposeHybridSupport} from './hybrid-supports.mjs';
 import {buildSourceFeatures} from './sculpture-v2-features.mjs';
 import {V3_METHODS,buildAnamorphicSculpture,measureFrontSilhouette,disposeAnamorphicSculpture} from './sculpture-v3-anamorphic.mjs';
@@ -145,7 +146,8 @@ function publishStatus(models,scores,features){
     ready:true,version:3,engine:'source-anchored-v3',
     date:currentDate,imageFile:selectedImage,
     material:features.material,sourceKind:features.sourceKind,
-    originalStrokes:loaded?.strokes?.length||0,
+    originalStrokes:loaded?.recordedStrokesCount||0,
+    visiblePigmentContours:loaded?.tracedContourCount||0,
     sourcePigmentRegions:features.regions.length,
     methods,options:uiOptions()
   };
@@ -193,8 +195,9 @@ function renderSculptures(){
       Math.round(m.sourceOverlap.iou*100)+'%':'n/a').join(' / ');
     $('frontScore').textContent='Measured front silhouette overlap (IoU): '+pct+
       ' · 01 Armature / 02 Fold / 03 Pigment / 04 Hybrid';
-    status('V3 source-anchored · '+(loaded.strokes?.length||0)+
-      ' recorded paths · front overlap '+pct);
+    status('V3 source-anchored · '+(loaded.recordedStrokesCount||0)+
+      ' recorded paths / '+(loaded.tracedContourCount||0)+
+      ' traced pigment contours · front overlap '+pct);
   }catch(error){
     candidates.forEach((c,i)=>clearCandidate(c,pins[i],overlays[i]));
     status('V3 construction failed: '+error.message);
@@ -227,14 +230,19 @@ async function choosePainting(file){
     const texture=new THREE.Texture(image);
     texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;
     const previous=loaded;
-    loaded={pixels,texture,material:mat.type,
-      paper:mat.params.paper||'#f5f0e6',strokes:[]};
+    const paper=mat.params.paper||'#f5f0e6';
+    const traced=traceVisiblePigmentContours(pixels,{
+      material:mat.type,paper,maxPaths:105
+    });
+    loaded={pixels,texture,material:mat.type,paper,
+      strokes:traced,recordedStrokesCount:0,tracedContourCount:traced.length};
     currentFeatures=buildSourceFeatures(pixels,{
-      material:mat.type,paper:loaded.paper,maxGestures:90
+      material:mat.type,paper,strokes:traced,maxGestures:90,maxRegions:32
     });
     $('thumb').src=url;$('caption').textContent=entry.title||entry.seed;
     $('source').href=entry.shareUrl;
-    $('sourceEvidence').textContent='Provisional pigment-derived geometry — retrieving original marks…';
+    $('sourceEvidence').textContent=traced.length+
+      ' contours traced from finished pigment · checking original renderer paths…';
     renderSculptures();
     if(previous?.texture)previous.texture.dispose();
     const link=new URL(location.href);
@@ -248,8 +256,9 @@ async function choosePainting(file){
           sourceHeight:capture.height},maxPaths:165,
         minimumCoverage:mat.type==='marker'?0:.22
       });
-      loaded.strokes=strokes;
       if(strokes.length>=2){
+        loaded.strokes=strokes;
+        loaded.recordedStrokesCount=strokes.length;
         currentFeatures=buildSourceFeatures(pixels,{
           material:mat.type,paper:loaded.paper,strokes,
           maxRegions:32,maxGestures:90
@@ -258,11 +267,13 @@ async function choosePainting(file){
         $('sourceEvidence').textContent=strokes.length+
           ' actual renderer marks + original pigment · front XY preserved';
       }else{
-        $('sourceEvidence').textContent='No usable vector paths; source pigment geometry only';
+        $('sourceEvidence').textContent=traced.length+
+          ' actual visible-pigment contours (original engine paths not available)';
       }
     }catch(e){
       if(me!==ticket)return;
-      $('sourceEvidence').textContent='Archive source recorder unavailable: '+e.message;
+      $('sourceEvidence').textContent=traced.length+
+        ' actual visible-pigment contours · recorder unavailable: '+e.message;
       console.warn(e);
     }
   }catch(error){
