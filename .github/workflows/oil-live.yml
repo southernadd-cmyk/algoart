@@ -110,6 +110,25 @@ jobs:
           date: ${{ steps.gate.outputs.date }}
           canary_date: ${{ vars.PP_R2_CANARY_DATE }}
 
+      - name: Detect R2-only gallery publication
+        if: steps.gate.outputs.should_run == 'true'
+        id: storage
+        env:
+          DAY: ${{ steps.gate.outputs.date }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          d=os.environ['DAY']; p=Path('gallery')/d/'media-publication.json'
+          ok=False
+          if p.is_file():
+              m=json.loads(p.read_text())
+              ok=m.get('date')==d and m.get('published') is True and m.get('pagesFallback') is False and len(m.get('mediaAssets',[]))==m.get('count',0)*3+1
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('art_only='+str(ok).lower()+'\\n')
+          print('R2_MATERIAL_SOCIAL_MODE',d,ok)
+          PY
+
       - name: Ensure media release and check duplicate markers
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         id: state
@@ -175,6 +194,16 @@ jobs:
           mkdir -p "$DIR"
           READY=false
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          if [[ "${{ steps.storage.outputs.art_only }}" == true ]]; then
+            if printf '%s\\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
+              gh release download "$RELEASE_TAG" --pattern "$MANIFEST" -D "$DIR" --clobber
+              mv "$DIR/$MANIFEST" "$DIR/queue.json"
+              python3 automation/social-r2-queue.py restore --date "$DATE" --directory "$DIR"
+              READY=true
+            fi
+            echo "ready=$READY" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if printf '%s\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
             gh release download "$RELEASE_TAG" --pattern "$MANIFEST" -D "$DIR" --clobber
             mv "$DIR/$MANIFEST" "$DIR/queue.json"
@@ -250,11 +279,25 @@ jobs:
       - name: Freeze the complete single-artwork daily oil batch
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true' && steps.cached.outputs.ready != 'true'
         shell: bash
+        env:
+          R2_SOCIAL_ART_ONLY: ${{ steps.storage.outputs.art_only }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           DATE="${{ steps.gate.outputs.date }}"
           DIR="social-output/$DATE/oil/${{ inputs.orientation }}"
           # Upload images first, then a manifest last. A manifest is the
           # atomic completion marker for the entire validated daily batch.
+          if [[ "${{ steps.storage.outputs.art_only }}" == true ]]; then
+            python3 -m pip install 'boto3>=1.37,<2'
+            python3 automation/social-r2-queue.py freeze --date "$DATE" \
+              --job "oil-${{ inputs.orientation }}" --directory "$DIR"
+          cp "$DIR/queue.json" "$DIR/oil-${{ inputs.orientation }}-$DATE-queue.json"
+            gh release upload "$RELEASE_TAG" "$DIR/oil-${{ inputs.orientation }}-$DATE-queue.json" --clobber
+            exit 0
+          fi
           for IMAGE in "$DIR"/*.jpg; do
             gh release upload "$RELEASE_TAG" "$IMAGE" --clobber
           done
@@ -262,14 +305,14 @@ jobs:
           gh release upload "$RELEASE_TAG" "$DIR/oil-${{ inputs.orientation }}-$DATE-queue.json" --clobber
 
       - name: Build daily gallery and SEO pages
-        if: steps.gate.outputs.should_run == 'true'
+        if: steps.storage.outputs.art_only != 'true' && steps.gate.outputs.should_run == 'true'
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run gallery:build
 
       - name: Publish gallery update to GitHub Pages source
         id: gallery_commit
-        if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
+        if: steps.storage.outputs.art_only != 'true' && github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -309,6 +352,14 @@ jobs:
         id: host
         shell: bash
         run: |
+          if [[ "${{ steps.storage.outputs.art_only }}" == true ]]; then
+            DATE="${{ steps.gate.outputs.date }}"
+            DIR="social-output/$DATE/oil/${{ inputs.orientation }}"
+            python3 automation/social-r2-queue.py lookup --date "$DATE" \
+              --directory "$DIR" --asset "${{ steps.select.outputs.asset_name }}" \
+              --instagram-asset "${{ steps.select.outputs.instagram_asset_name }}"
+            exit 0
+          fi
           ASSET="${{ steps.select.outputs.asset_name }}"
           IG_ASSET="${{ steps.select.outputs.instagram_asset_name }}"
           URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG/$ASSET"
