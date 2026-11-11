@@ -152,10 +152,15 @@ def connect():
     recovery = (event == "workflow_dispatch" and
                 os.environ.get("V2_RECOVERY_DATE") == "2026-11-11" and
                 os.environ.get("V2_PUBLISH_DATE") == "2026-11-11")
+    art_only = (event == "workflow_dispatch" and
+                os.environ.get("R2_ART_ONLY") == "true" and
+                os.environ.get("V2_PUBLISH_DATE") == os.environ.get("PP_R2_ART_ONLY_DATE") and
+                bool(os.environ.get("PP_R2_ART_ONLY_DATE")) and
+                os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true")
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
             os.environ.get("GITHUB_REF") == "refs/heads/main" and
-            (event == "workflow_run" or recovery),
-            "Only upstream daily runs or the explicitly pinned 11 Nov recovery may write R2 V2")
+            (event == "workflow_run" or recovery or art_only),
+            "Only successful upstream gallery runs or explicitly armed manual editions may publish V2")
     account = os.environ["R2_ACCOUNT_ID"]
     require(re.fullmatch(r"[a-fA-F0-9]{32}",account) is not None,
             "Invalid existing Cloudflare R2 account")
