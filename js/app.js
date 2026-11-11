@@ -1623,11 +1623,25 @@ function loadWelcomeArtworks(){
       var heading=card.querySelector('.art-info h2');
       if(!img||!heading)return null;
       var imageUrl=new URL(img.getAttribute('src'),result.url);
-      if(imageUrl.origin!==location.origin)return null;
+      // R2-hosted immutable originals are part of the public daily archive.
+      // Do not discard every study just because its image is no longer on Pages.
+      var onThisSite=imageUrl.origin===location.origin;
+      var trustedR2=imageUrl.origin==='https://proportion-piece-media.mr-adam-clement.workers.dev'&&
+        /^\\/editions\\/\\d{4}-\\d{2}-\\d{2}\\/[A-Za-z0-9_-]+\\/original-[a-f0-9]{64}\\.(?:jpe?g|png)$/i.test(imageUrl.pathname);
+      if(!onThisSite&&!trustedR2)return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
-      if(!artUrl||artUrl.origin!==location.origin||artUrl.pathname!==soloEditorPath)return null;
-      return {src:imageUrl.href,alt:img.alt||'A PROPORTION PIECE solo drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl.href};
+      if(!artUrl||artUrl.pathname!==soloEditorPath)return null;
+      // The archived share URL is canonical to Pages. Only inside this
+      // preview, open the exact same state on the current origin instead.
+      if(artUrl.origin!==location.origin){
+        if(artUrl.origin!=='https://southernadd-cmyk.github.io')return null;
+        artUrl=new URL(artUrl.pathname+artUrl.search+artUrl.hash,location.origin);
+      }
+      var fallbackFile=img.getAttribute('data-image-file')||'';
+      var fallbackSrc=trustedR2&&/^[A-Za-z0-9][A-Za-z0-9._-]{0,180}\\.(?:jpe?g|png|webp)$/i.test(fallbackFile)?
+        new URL(fallbackFile,result.url).href:null;
+      return {src:imageUrl.href,fallbackSrc:fallbackSrc,alt:img.alt||'A PROPORTION PIECE solo drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl.href};
     }).filter(Boolean);
   }).catch(function(){return [];});
   return welcomeArtworkPromise;
@@ -1657,7 +1671,12 @@ function chooseWelcomeArtwork(){
   image.style.height='';
   caption.textContent='';
   loadWelcomeArtworks().then(function(artworks){
-    if(serial!==welcomeSelectionSerial||!artworks.length||splash.hidden)return;
+    if(serial!==welcomeSelectionSerial||splash.hidden)return;
+    if(!artworks.length){
+      frame.classList.remove('welcome-loading');
+      caption.textContent='Today\'s artwork is unavailable.';
+      return;
+    }
     var index=Math.floor(Math.random()*artworks.length);
     if(artworks.length>1&&index===welcomeLastArtwork)index=(index+1)%artworks.length;
     welcomeLastArtwork=index;
@@ -1690,24 +1709,35 @@ function chooseWelcomeArtwork(){
       image.style.visibility='visible';
       caption.textContent=selected.title;
       frame.classList.remove('welcome-loading');
+      // Let the selected JPEG visibly paint before any potentially expensive
+      // Oil V8 pre-render blocks the main thread. The Begin button can still
+      // navigate to the exact share state if it is clicked first.
+      if(selected.artUrl)requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          if(serial!==welcomeSelectionSerial||splash.hidden)return;
+          Promise.resolve().then(function(){
+            var selectedUrl=new URL(selected.artUrl,location.href);
+            if(selectedUrl.origin!==location.origin)return;
+            history.replaceState(null,'',selectedUrl.href);
+            if(!loadSettingsFromURL())return;
+            commitRegenerate();
+            if(serial===welcomeSelectionSerial)welcomePreparedArtworkUrl=selectedUrl.href;
+          }).catch(function(error){console.warn('Welcome artwork pre-render failed:',error)});
+        });
+      });
     };
     candidate.onerror=function(){
-      if(serial===welcomeSelectionSerial){
-        frame.classList.remove('welcome-loading');
-        caption.textContent='Artwork could not be loaded.';
+      if(serial!==welcomeSelectionSerial||splash.hidden)return;
+      if(selected.fallbackSrc&&candidate.src!==selected.fallbackSrc){
+        var localBackup=selected.fallbackSrc;
+        selected.fallbackSrc=null;
+        candidate.src=localBackup;
+        return;
       }
+      frame.classList.remove('welcome-loading');
+      caption.textContent='Artwork could not be loaded.';
     };
     candidate.src=selected.src;
-    // Prepare the corresponding editor state without blocking image download.
-    if(selected.artUrl)Promise.resolve().then(function(){
-      if(serial!==welcomeSelectionSerial||splash.hidden)return;
-      var selectedUrl=new URL(selected.artUrl,location.href);
-      if(selectedUrl.origin!==location.origin)return;
-      history.replaceState(null,'',selectedUrl.href);
-      if(!loadSettingsFromURL())return;
-      commitRegenerate();
-      if(serial===welcomeSelectionSerial)welcomePreparedArtworkUrl=selectedUrl.href;
-    }).catch(function(error){console.warn('Welcome artwork pre-render failed:',error)});
   });
 }
 (function initIntroSplash(){
