@@ -157,3 +157,41 @@ jobs:
                   print(f'ASSET_PROGRESS {i}/{len(assets)} all GET+HEAD+SHA256 pass',flush=True)
           print('ALL_ASSETS_PASS '+str(len(assets)),flush=True)
           PY
+
+  validate-r2-verifier-fix:
+    if: github.ref == 'refs/heads/ops/r2-canary-2026-11-11' && github.event.head_commit.message == 'Validate R2 verifier fix 2026-11-11'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 8
+    steps:
+      - name: Checkout isolated PR fix (no writes)
+        uses: actions/checkout@v4
+        with:
+          ref: fix/r2-verifier-cloudflare-1010-20261111
+          persist-credentials: false
+      - name: Install verifier test dependency
+        run: python3 -m pip install --break-system-packages 'boto3>=1.37,<2'
+      - name: Run R2 verifier regression tests
+        run: python3 -m unittest discover -s tests -p test_r2_daily_media.py -v
+      - name: Download full original canary inventory
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 42984459816 --repo "$GITHUB_REPOSITORY" --name r2-canary-2026-11-11 --dir "$RUNNER_TEMP/r2-verified"
+      - name: Read back all original R2 media objects with exact patched verifier
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, json, importlib.util
+          from pathlib import Path
+          src=Path('automation/r2-daily-media.py')
+          spec=importlib.util.spec_from_file_location('r2_verified',src)
+          module=importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          manifest=json.loads((Path(os.environ['RUNNER_TEMP'])/'r2-verified/media-publication.json').read_text())
+          assert manifest['count']==14 and len(manifest['mediaAssets'])==44
+          assert module.PUBLIC_VERIFY_USER_AGENT=='Mozilla/5.0'
+          module.verify_public(manifest['mediaAssets'])
+          print('R2_PATCHED_FULL_PUBLIC_VERIFY_PASS 44 objects GET+HEAD+sha256+content-length+origin')
+          PY
