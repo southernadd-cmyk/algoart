@@ -8,6 +8,7 @@ import {createHash} from 'node:crypto';
  */
 const worker=(process.env.V2_WORKER_URL||'').replace(/\/$/,'');
 const PAGES='https://southernadd-cmyk.github.io';
+const CANARY='https://proportion-piece-web-canary.mr-adam-clement.workers.dev';
 const PREFIX='sculptures-v2/v4.2.1-20261110/';
 const CATALOG_SHA='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f';
 assert.match(worker,/^https:\/\/proportion-piece-sculpture-v2\.[a-z0-9-]+\.workers\.dev$/);
@@ -78,6 +79,29 @@ for(const [entry,mime] of [
     assert.equal(asset.readUInt32BE(16),1000);
     assert.equal(asset.readUInt32BE(20),1400);
   }
+}
+// Existing GitHub Pages remains the production origin. The separate Cloudflare
+// website canary must also load catalog JSON, V2 meshes and reception PNG.
+for(const entry of [
+  catalog.reception.image,catalog.reception.desktop,
+  catalog.days['2026-11-10'].qualities.desktop
+]){
+  const url=entry.url;
+  const get=await fetch(url,{headers:{Origin:CANARY},signal:AbortSignal.timeout(25000)});
+  assert.equal(get.status,200,'Canary V2 asset GET '+url);
+  assert.equal(get.headers.get('Access-Control-Allow-Origin'),CANARY,
+    'Cloudflare canary CORS denial '+url);
+  assert.equal(get.headers.get('Vary'),'Origin','Missing origin-specific cache variation');
+  await get.body?.cancel();
+  const head=await fetch(url,{method:'HEAD',headers:{Origin:CANARY},signal:AbortSignal.timeout(25000)});
+  assert.equal(head.status,200,'Canary V2 asset HEAD '+url);
+  assert.equal(head.headers.get('Access-Control-Allow-Origin'),CANARY);
+  const preflight=await fetch(url,{method:'OPTIONS',headers:{
+    Origin:CANARY,'Access-Control-Request-Method':'GET'
+  },signal:AbortSignal.timeout(25000)});
+  assert.equal(preflight.status,204,'Canary V2 preflight '+url);
+  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),CANARY);
+  console.log('V2_CANARY_CORS_OK '+url);
 }
 const denied=await fetch(worker+'/private-recovery/test',{headers:{Origin:PAGES}});
 assert.equal(denied.status,404,'Private paths must not be exposed');
