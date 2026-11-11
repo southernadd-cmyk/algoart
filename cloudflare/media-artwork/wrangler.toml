@@ -1,0 +1,19 @@
+# Source of record for the EXISTING "proportion-piece-media" artwork Worker.
+# Not Git-connected: nothing deploys this automatically. Deploy only on purpose.
+# Separate from the root wrangler.toml (social-preview Worker) and from
+# cloudflare/media-read-only (Sculpture V2 gateway).
+# Reuses the EXISTING public-media R2 bucket; private backup is NEVER bound.
+name = "proportion-piece-media"
+main = "src/worker.mjs"
+compatibility_date = "2026-11-09"
+workers_dev = true
+preview_urls = false
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "proportion-piece-media-test"
+
+# Workers Cache is supported on *.workers.dev with Wrangler >=4.69.
+# Only SHA-addressed immutable media gets a cacheable response.
+[cache]
+enabled = true
