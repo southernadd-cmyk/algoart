@@ -50,35 +50,19 @@ try {
     document.querySelector('#world')?.focus({preventScroll:true});
     return {yaw,pitch};
   });
-  const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
-  async function steer(axis,targetAngle) {
-    const current=await page.evaluate(axis=>{
-      const x=window.__PP_EXPORT_SCENE__;
-      return axis==='yaw'?x.rig.rotation.y:x.camera.rotation.x;
-    },axis);
-    const delta=axis==='yaw'?angleDelta(targetAngle,current):targetAngle-current;
-    if(Math.abs(delta)<0.018)return;
-    const positive=delta>0;
-    const key=axis==='yaw'
-      ? (positive?'ArrowLeft':'ArrowRight')
-      : (positive?'ArrowUp':'ArrowDown');
-    await page.keyboard.down(key);
-    try {
-      await page.waitForFunction(({axis,targetAngle,positive})=>{
-        const x=window.__PP_EXPORT_SCENE__;
-        const value=axis==='yaw'?x.rig.rotation.y:x.camera.rotation.x;
-        const diff=axis==='yaw'
-          ?Math.atan2(Math.sin(targetAngle-value),Math.cos(targetAngle-value))
-          :targetAngle-value;
-        return positive?diff<=0.015:diff>=-0.015;
-      },{axis,targetAngle,positive},{polling:16,timeout:14000});
-    }finally{
-      await page.keyboard.up(key);
+  // Lock the document camera for photography. The live navigation tick keeps
+  // its own yaw/pitch state and would otherwise immediately override an
+  // externally set view; changing only this temporary browser camera is safe.
+  await page.evaluate(({yaw,pitch})=>{
+    const {rig,camera}=window.__PP_EXPORT_SCENE__;
+    rig.rotation.y=yaw;
+    camera.rotation.x=pitch;
+    for(const [euler,axis,angle] of [[rig.rotation,'y',yaw],[camera.rotation,'x',pitch]]){
+      Object.defineProperty(euler,axis,{configurable:true,enumerable:true,
+        get(){return angle;},set(){}});
     }
-    await page.waitForTimeout(100);
-  }
-  await steer('yaw',targetPose.yaw);
-  await steer('pitch',targetPose.pitch);
+  },targetPose);
+  await page.waitForTimeout(800);
   const composition=await page.evaluate(()=>{
     const x=window.__PP_EXPORT_SCENE__,square=x.scene.getObjectByName('phi-tagged-square');
     x.rig.updateWorldMatrix(true,true);
