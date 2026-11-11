@@ -15,6 +15,13 @@ on:
       - '.github/workflows/social-live.yml'
       - '.github/workflows/confluence-social.yml'
       - 'tests/test_r2_social_media.py'
+      - 'tests/test_r2_social_queue.py'
+      - 'automation/social-r2-queue.py'
+      - '.github/workflows/portrait-live.yml'
+      - '.github/workflows/watercolor-live.yml'
+      - '.github/workflows/watercolour-live.yml'
+      - '.github/workflows/oil-live.yml'
+      - '.github/workflows/action-live.yml'
       - 'tests/r2-*.mjs'
       - 'automation/prepare-r2-daily.mjs'
       - 'tests/test_r2_daily_media.py'
@@ -44,6 +51,7 @@ jobs:
           python -m pip install --disable-pip-version-check 'boto3>=1.37,<2'
           python -m unittest discover -s tests -p test_r2_daily_media.py
           python -m unittest discover -s tests -p test_r2_social_media.py
+          python -m unittest discover -s tests -p test_r2_social_queue.py
           node --test tests/r2-art-only-publishing.test.mjs tests/r2-art-only-prune.test.mjs tests/r2-art-only-workflow.test.mjs tests/r2-publisher.test.mjs tests/confluence-daily-publishing.test.mjs tests/social-publish-policy.test.mjs tests/gallery-public-launch.test.mjs
       - name: Build the staged gallery and tower using the frozen historical fixture
         run: |
