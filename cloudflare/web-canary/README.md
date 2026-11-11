@@ -6,7 +6,7 @@ The site already has Cloudflare Git integration for its **existing social-previe
 
 ## What this branch prepares
 
-- `cloudflare/web-canary/wrangler.toml` declares an entirely different Worker, `proportion-piece-web-canary`, with static assets under `/algoart/`.
+- `cloudflare/web-canary/wrangler.toml` declares an entirely different Worker, `proportion-piece-web-canary`, with assets under a physical `/algoart/` directory (account rejects non-root `assets.base_path`).
 - `bash cloudflare/web-canary/build.sh` rebuilds gallery bundles, validates the archive, packages the **same public site tree** used by GitHub Pages, and rejects missing routes or oversized assets.
 - The GitHub Actions **canary preflight** runs the build without Cloudflare secrets or a deployment, and does not change `main`.
 
@@ -43,3 +43,17 @@ build after the canary's production branch has been set to
 R2 bucket, and existing Workers are deliberately untouched. Check the new
 Cloudflare Build History entry for this branch and review the live canary
 before considering any production changes.
+
+## Cloudflare upload error 100343 — fix
+
+The first actual Cloudflare upload succeeded for **2,607 new assets**, but
+the Worker versions API rejected `assets.base_path = "/algoart"` as unsupported
+for this account (`100343`). This was a failed deploy, not a live website.
+
+The build now produces `_cf_assets/algoart/` with byte-identical Pages files,
+and `assets.directory = "../../_cf_assets"`, **without** any `assets.base_path`.
+Static asset routing follows the physical URL path without an account upgrade.
+GitHub CI tests the actual local Wrangler server and package parity first.
+
+The website is still a separate Worker and **must not** become production
+until public asset/browser checks and video byte-range handling are validated.

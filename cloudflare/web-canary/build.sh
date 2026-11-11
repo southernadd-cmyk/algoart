@@ -45,3 +45,21 @@ if len(files) > 20000 or oversized:
     raise SystemExit(f'Exceeded Cloudflare static asset limits: {len(files)} files; oversized {oversized}')
 print(f'CANARY STATIC PARITY: {len(files)} files, {sum(p.stat().st_size for p in files):,} bytes; all under Cloudflare file limits')
 PY
+
+# This account does not support non-root assets.base_path.
+# Mirror the byte-identical Pages tree under a physical /algoart/ directory.
+rm -rf _cf_assets
+mkdir -p _cf_assets
+if ! cp -al _site _cf_assets/algoart; then
+  rm -rf _cf_assets/algoart
+  cp -a _site _cf_assets/algoart
+fi
+test -s _cf_assets/algoart/index.html
+test -s _cf_assets/algoart/confluence/index.html
+test -s _cf_assets/algoart/gallery/2026-11-11/index.html
+test -s _cf_assets/algoart/gallery/sculpture-lab/lab-v2.mjs
+test -s _cf_assets/algoart/gallery/visit/gallery-phi-bundle.js
+cmp _site/index.html _cf_assets/algoart/index.html
+cmp _site/gallery/archive.json _cf_assets/algoart/gallery/archive.json
+test ! -e _cf_assets/index.html
+echo "CANARY_SUBDIRECTORY_ASSETS_READY: physical /algoart/ tree matches Pages source"

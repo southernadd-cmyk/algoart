@@ -5,7 +5,8 @@ compatibility_date = "2026-10-13"
 workers_dev = true
 
 [assets]
-directory = "../../_site"
-base_path = "/algoart"
+# Package /algoart as a physical subfolder of the asset directory.
+# Account rejects non-root assets.base_path (API error 100343).
+directory = "../../_cf_assets"
 html_handling = "auto-trailing-slash"
 not_found_handling = "404-page"
