@@ -97,3 +97,9 @@ test('R2 integration and sculpture baker avoid apt dependencies',()=>{
   }
   assert.match(integration,/R2_BROWSERS=chromium node tests\/r2-gallery-browser\.mjs --fixture/);
 });
+
+test('R2-only guard rejects all gallery binary updates, not only the daily folder',()=>{
+  assert.ok(workflow.includes('grep -E "^gallery/.*'));
+  assert.ok(!workflow.includes('grep -E "^gallery/$SOCIAL_DATE/.*'));
+  assert.match(workflow,/R2-only commit still contains artwork bytes/);
+});

@@ -522,9 +522,9 @@ jobs:
             node automation/activate-r2-daily.mjs
             node automation/prune-r2-art-only.mjs
             git add -A gallery sitemap.xml robots.txt
-            # Artwork storage means ZERO new binary art blobs in the Git commit.
+            # R2-only editions must not stage changed/new images anywhere in the gallery.
             if git diff --cached --name-only --diff-filter=ACM | \
-                grep -E "^gallery/$SOCIAL_DATE/.*\\.(jpg|jpeg|png|webp|gif|json\\.gz)$"; then
+                grep -E "^gallery/.*\\.(jpg|jpeg|png|webp|gif|json\\.gz)$"; then
               echo "::error::R2-only commit still contains artwork bytes"
               exit 1
             fi
