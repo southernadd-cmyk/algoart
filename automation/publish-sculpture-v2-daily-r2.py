@@ -154,10 +154,14 @@ def put_verified(client,item):
 def connect():
     import boto3
     from botocore.config import Config
+    event = os.environ.get("GITHUB_EVENT_NAME")
+    recovery = (event == "workflow_dispatch" and
+                os.environ.get("V2_RECOVERY_DATE") == "2026-11-11" and
+                os.environ.get("V2_PUBLISH_DATE") == "2026-11-11")
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
             os.environ.get("GITHUB_REF") == "refs/heads/main" and
-            os.environ.get("GITHUB_EVENT_NAME") == "workflow_run",
-            "Only successful upstream daily workflow_run may write R2 V2")
+            (event == "workflow_run" or recovery),
+            "Only upstream daily runs or the explicitly pinned 11 Nov recovery may write R2 V2")
     account = os.environ["R2_ACCOUNT_ID"]
     require(re.fullmatch(r"[a-fA-F0-9]{32}",account) is not None,
             "Invalid existing Cloudflare R2 account")
