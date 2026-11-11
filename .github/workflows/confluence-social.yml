@@ -17,6 +17,8 @@ jobs:
   post:
     if: ${{ inputs.slot == '0' || inputs.slot == '2' }}
     runs-on: ubuntu-latest
+    # Only the explicitly armed R2-only rollout receives scoped test-bucket credentials.
+    environment: ${{ github.ref == 'refs/heads/main' && vars.PP_R2_ART_ONLY_SOCIAL_READY == 'true' && vars.PP_R2_ART_ONLY_DATE != '' && 'archive-media-test' || '' }}
     timeout-minutes: 35
     env:
       GH_TOKEN: ${{ github.token }}

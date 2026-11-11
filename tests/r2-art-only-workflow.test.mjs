@@ -103,3 +103,18 @@ test('R2-only guard rejects all gallery binary updates, not only the daily folde
   assert.ok(!workflow.includes('grep -E "^gallery/$SOCIAL_DATE/.*'));
   assert.match(workflow,/R2-only commit still contains artwork bytes/);
 });
+
+test('R2 social credentials are available only when the rollout is explicitly armed on main',()=>{
+  for(const name of ['social','portrait','watercolor','watercolour','oil','action','confluence-social']){
+    const path='.github/workflows/'+(name==='social'?'social-live':name==='confluence-social'?'confluence-social':name+'-live')+'.yml';
+    const src=readFileSync(path,'utf8');
+    const line=src.split('\n').find(text=>text.trim().startsWith('environment:'));
+    assert.ok(line,'Missing scoped R2 environment gate: '+path);
+    for(const marker of ["github.ref == 'refs/heads/main'",
+      "vars.PP_R2_ART_ONLY_SOCIAL_READY == 'true'",
+      "vars.PP_R2_ART_ONLY_DATE != ''",
+      "'archive-media-test' || ''"]){
+      assert.ok(line.includes(marker),'Missing '+marker+' in '+path);
+    }
+  }
+});

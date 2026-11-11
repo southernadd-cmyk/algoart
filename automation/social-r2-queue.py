@@ -118,7 +118,7 @@ def main():
         output=os.environ.get("GITHUB_OUTPUT")
         if output:
             with open(output,"a") as out:
-                for key,value in rows.items():out.write(key+"="+value+"\\n")
+                for key,value in rows.items():out.write(key+"="+value+"\n")
         else:
             print(json.dumps(rows))
 if __name__=="__main__":main()

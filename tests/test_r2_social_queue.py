@@ -70,6 +70,21 @@ class SocialQueueTests(unittest.TestCase):
         self.assertEqual(urls,[q["r2Media"]["main.jpg"]["url"],q["r2Media"]["meta.jpg"]["url"]])
         (self.directory/"main.jpg").write_bytes(b"tampered")
         with self.assertRaises(ValueError):queue_module.lookup(self.day,self.directory,"main.jpg","meta.jpg")
+    def test_lookup_writes_separate_github_output_lines(self):
+        queue=json.loads((self.directory/"queue.json").read_text())
+        queue["r2Media"]=self.mapping()
+        (self.directory/"queue.json").write_text(json.dumps(queue))
+        output=self.directory/"github-output.txt"
+        with patch.dict("os.environ",{"GITHUB_OUTPUT":str(output)}):
+            with patch("sys.argv",["social-r2-queue.py","lookup",
+                    "--date",self.day,"--directory",str(self.directory),
+                    "--asset","main.jpg","--instagram-asset","meta.jpg"]):
+                queue_module.main()
+        self.assertEqual(output.read_text(),
+            "media_url="+queue["r2Media"]["main.jpg"]["url"]+"\n"+
+            "instagram_media_url="+queue["r2Media"]["meta.jpg"]["url"]+"\n")
+        self.assertEqual(len(output.read_text().splitlines()),2)
+
     def test_reject_untrusted_frozen_url(self):
         q=json.loads((self.directory/"queue.json").read_text())
         q["r2Media"]=self.mapping()
