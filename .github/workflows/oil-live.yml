@@ -60,7 +60,7 @@ concurrency:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
@@ -244,7 +244,20 @@ jobs:
         if: steps.gate.outputs.should_run == 'true'
         run: |
           npm install
-          npx playwright install --with-deps chromium
+          npx playwright install --only-shell chromium
+          node --input-type=module <<'PLAYWRIGHT_SMOKE'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          try {
+            const page = await browser.newPage();
+            await page.setContent('<canvas width="4" height="4"></canvas>');
+            const ok = await page.evaluate(() => document.querySelector('canvas').toDataURL('image/png').startsWith('data:image/png;base64,'));
+            if (!ok) throw Error('Chromium canvas smoke failed');
+            console.log('PLAYWRIGHT_CHROMIUM_SMOKE_OK');
+          } finally {
+            await browser.close();
+          }
+          PLAYWRIGHT_SMOKE
 
       - name: Start local ALGO ART
         if: steps.gate.outputs.should_run == 'true'
