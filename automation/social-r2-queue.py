@@ -80,18 +80,45 @@ def restore(day,directory,opener=None):
         target.write_bytes(data)
     print("R2_SOCIAL_QUEUE_RESTORED "+json.dumps({"date":day,"images":len(saved)}))
 
+def lookup(day,directory,asset,instagram):
+    queue=json.loads((directory/"queue.json").read_text())
+    if queue.get("date")!=day:raise ValueError("Queue date mismatch")
+    mapping=queue.get("r2Media",{})
+    results=[]
+    for name in (asset,instagram):
+        if name not in queue_files(queue) or name not in mapping:
+            raise ValueError("Selected social artwork missing frozen R2 identity")
+        row=mapping[name]
+        actual=(directory/name).read_bytes()
+        if hashlib.sha256(actual).hexdigest()!=row["sha256"] or len(actual)!=row["bytes"]:
+            raise ValueError("Selected social artwork differs from frozen R2 media")
+        results.append(row["url"])
+    return results
+
 def main():
     p=argparse.ArgumentParser()
-    p.add_argument("command",choices=("freeze","restore"))
+    p.add_argument("command",choices=("freeze","restore","lookup"))
     p.add_argument("--date",required=True)
     p.add_argument("--directory",type=Path,required=True)
     p.add_argument("--job")
     p.add_argument("--dry-run",action="store_true")
+    p.add_argument("--asset")
+    p.add_argument("--instagram-asset")
     a=p.parse_args()
     if a.command=="freeze":
         if not a.job:raise ValueError("Freeze requires --job")
         freeze(a.date,a.job,a.directory,a.dry_run)
-    else:
+    elif a.command=="restore":
         if a.dry_run:raise ValueError("Restore uses the immutable public R2")
         restore(a.date,a.directory)
+    else:
+        if not a.asset or not a.instagram_asset:raise ValueError("Lookup requires selected assets")
+        original,instagram=lookup(a.date,a.directory,a.asset,a.instagram_asset)
+        rows={"media_url":original,"instagram_media_url":instagram}
+        output=os.environ.get("GITHUB_OUTPUT")
+        if output:
+            with open(output,"a") as out:
+                for key,value in rows.items():out.write(key+"="+value+"\\n")
+        else:
+            print(json.dumps(rows))
 if __name__=="__main__":main()
