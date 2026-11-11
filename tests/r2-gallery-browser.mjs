@@ -89,6 +89,14 @@ for (const name of (process.env.R2_BROWSERS || 'chromium,webkit').split(',')) {
       await probe.decode();
       if (probe.naturalWidth !== 840 || probe.naturalHeight !== 600) throw Error('Wrong cover dimensions');
     }, meta.mediaCover);
+    // R2-only editions publish V2 meshes after the gallery images have passed
+    // this stage. Do not demand unpublished sculptures during precommit tests.
+    if (!live && manifest?.pagesFallback === false) {
+      assert.deepEqual(failedMedia, []);
+      assert.deepEqual(errors, []);
+      console.log(name, date, meta.count, 'R2 artwork verified before V2 mesh upload');
+      continue;
+    }
     assert((await page.goto(GALLERY + 'visit/?debug=1&date=' + date, {
       waitUntil: 'domcontentloaded', timeout: 60_000
     })).ok());
