@@ -59,6 +59,12 @@ test -s _cf_assets/algoart/confluence/index.html
 test -s _cf_assets/algoart/gallery/2026-11-11/index.html
 test -s _cf_assets/algoart/gallery/sculpture-lab/lab-v2.mjs
 test -s _cf_assets/algoart/gallery/visit/gallery-phi-bundle.js
+# Retarget only dated gallery HTML anchors inside the isolated preview tree.
+# This runs AFTER the hard-linked copy and uses atomic file replacements so it
+# cannot mutate _site or the repository's immutable archive/share URLs.
+node --test cloudflare/web-canary/rewrite-daily-links.test.mjs
+node cloudflare/web-canary/rewrite-daily-links.mjs _cf_assets/algoart/gallery
+cmp _site/gallery/2026-11-11/meta.json _cf_assets/algoart/gallery/2026-11-11/meta.json
 cmp _site/index.html _cf_assets/algoart/index.html
 cmp _site/gallery/archive.json _cf_assets/algoart/gallery/archive.json
 test ! -e _cf_assets/index.html
