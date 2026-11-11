@@ -35,6 +35,73 @@ jobs:
           python3 -m py_compile automation/publish-sculpture-v2-daily-r2.py
           python3 -m unittest discover -s tests -p test_sculpture_v2_daily_r2.py -v
 
+  # Explicit full rehearsal of the already-published 11 Nov gallery.
+  # Runs on a PR with no secrets, no R2 writes, no git push and no V1 bake.
+  dry-run-11nov:
+    if: github.event_name == 'pull_request'
+    needs: safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      AWS_EC2_METADATA_DISABLED: 'true'
+      V2_BAKE_OUT: ${{ runner.temp }}/v2-dry-run-11nov
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify published 11 November paintings without requiring any V1 pack
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          day=Path('gallery/2026-11-11')
+          meta=json.loads((day/'meta.json').read_text())
+          assert meta['date']=='2026-11-11'
+          solo=[entry for entry in meta['entries'] if entry.get('orientation')=='portrait' and entry.get('material')!='confluence']
+          assert len(solo)==6, f'Expected six solo portraits, got {len(solo)}'
+          assert len({e['imageFile'] for e in solo})==len(solo)
+          assert all((day/e['imageFile']).is_file() for e in solo)
+          print('V2_REHEARSAL_SOURCE_OK portraits=',len(solo),'v1_not_required=true')
+          PY
+      - name: Install browser baker and start local read-only gallery
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v2-dryrun-11nov-http.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null
+          node automation/build-sculpture-v2-baker.mjs
+      - name: Rebuild and validate BOTH complete V2 quality packs, in scratch only
+        run: |
+          node automation/build-sculpture-v2-packs.mjs --date 2026-11-11 --quality both --out "$V2_BAKE_OUT"
+          node --test tests/sculpture-v2-packs.test.mjs
+          python3 -m pip install 'boto3>=1.37,<2'
+          python3 automation/publish-sculpture-v2-daily-r2.py --date 2026-11-11 --out "$V2_BAKE_OUT" --dry-run
+      - name: Prove no source archive modifications and no V1 output
+        run: |
+          test -z "$(git status --porcelain -- gallery)"
+          test ! -e "$V2_BAKE_OUT/2026-11-11/3d/sculptures.json.gz"
+          test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.desktop.json.gz"
+          test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.mobile.json.gz"
+          test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/manifest.json"
+          echo 'V2_ONLY_DRY_RUN_OK date=2026-11-11 r2_writes=0 gallery_changes=0 v1_bakes=0'
+      - name: Preserve small bake audit only, not generated meshes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-only-11nov-dry-run-audit
+          path: ${{ runner.temp }}/v2-dry-run-11nov/bake-report.json
+          retention-days: 7
+          if-no-files-found: warn
+
   bake-after-gallery-success:
     if: >-
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
