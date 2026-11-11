@@ -4,6 +4,15 @@ set -euo pipefail
 npm ci
 npm run gallery:bundle
 npm run gallery:bundle:phi
+# Keep this source tree consistent with the production Pages artifact.
+if ! node automation/build-hybrid-tower-test.mjs; then
+  echo "::warning::Hybrid tower preview not available"
+  rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
+fi
+if ! node automation/build-sculpture-v2-test.mjs; then
+  echo "::warning::V2 prepared tower preview not available"
+  rm -f gallery/sculpture-v2-test/index.html gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+fi
 node --check gallery/visit/gallery-bundle.js
 node --check gallery/visit/gallery-phi-bundle.js
 node automation/validate-phi-archive.mjs
@@ -20,6 +29,12 @@ test -s _site/index.html
 test -s _site/confluence/index.html
 test -s _site/gallery/visit/gallery-phi-bundle.js
 test -s _site/gallery/sculpture-lab/lab-v2.mjs
+test -s _site/gallery/sculpture-v2-test/index.html
+node --test tests/sculpture-v2-r2-loader.test.mjs tests/sculpture-v2-tower-coverage.test.mjs
+if find _site/gallery -type f -path '*/3d/v2/sculptures.*.json.gz' | grep -q .; then
+  echo "::error::Prepared V2 mesh pack must remain in R2, not Pages or the canary"
+  exit 1
+fi
 test -s _site/preview/tissue-v8/index.html
 test ! -e _site/test
 python3 - <<'PY'
