@@ -95,3 +95,65 @@ jobs:
               grep -iE '^(content-type|content-length|access-control-allow-origin|cache-control):' "$RUNNER_TEMP/r2-public.headers" || true
             done
           done
+
+  diagnose-all-r2:
+    if: github.ref == 'refs/heads/ops/r2-canary-2026-11-11' && github.event.head_commit.message == 'Diagnose all R2 assets 2026-11-11'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    timeout-minutes: 6
+    steps:
+      - name: Download failed canary inventory, read-only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 42984459816 --repo "$GITHUB_REPOSITORY" --name r2-canary-2026-11-11 --dir "$RUNNER_TEMP/r2-public-audit"
+      - name: Reproduce exact Python HTTP request for every immutable asset
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, json, hashlib
+          import urllib.request as u
+          from urllib.error import HTTPError, URLError
+          from pathlib import Path
+          class NoRedirects(u.HTTPRedirectHandler):
+              def redirect_request(self, request, fp, code, msg, headers, url):
+                  return None
+          opener=u.build_opener(NoRedirects())
+          assets=json.loads((Path(os.environ['RUNNER_TEMP'])/'r2-public-audit/media-publication.json').read_text())['mediaAssets']
+          origin='https://southernadd-cmyk.github.io'
+          for i,item in enumerate(assets,1):
+              for method in ('GET','HEAD'):
+                  try:
+                      req=u.Request(item['url'], headers={'Origin':origin}, method=method)
+                      with opener.open(req,timeout=18) as r:
+                          if r.status!=200:
+                              raise ValueError('unexpected HTTP status '+str(r.status))
+                          if method=='GET':
+                              data=r.read(item['bytes']+1)
+                              if len(data)!=item['bytes'] or hashlib.sha256(data).hexdigest()!=item['sha256']:
+                                  raise ValueError('wrong length or hash')
+                  except Exception as e:
+                      print(f'ASSET_FAIL index={i}/{len(assets)} role={item["role"]} key={item["key"]} method={method} error={type(e).__name__} status={getattr(e,"code","n/a")}',flush=True)
+                      if isinstance(e,HTTPError):
+                          print('ERROR_HEADERS '+str({k:v for k,v in e.headers.items() if k.lower() in ('server','cf-ray','content-type','access-control-allow-origin')}),flush=True)
+                          print('ERROR_BODY '+repr(e.read(250)),flush=True)
+                      for agent in ('curl/8.7.1','Mozilla/5.0'):
+                          try:
+                              req=u.Request(item['url'],headers={'Origin':origin,'User-Agent':agent},method=method)
+                              with opener.open(req,timeout=18) as r:
+                                  print('UA_RETRY '+agent+' status='+str(r.status),flush=True)
+                          except Exception as error:
+                              print('UA_RETRY '+agent+' error='+type(error).__name__+' status='+str(getattr(error,'code','n/a')),flush=True)
+                      alt=item['url'].replace('proportion-piece-media.','proportion-piece-sculpture-v2.')
+                      try:
+                          req=u.Request(alt,headers={'Origin':origin},method=method)
+                          with opener.open(req,timeout=18) as r:
+                              print('ALT_WORKER status='+str(r.status),flush=True)
+                      except Exception as error:
+                          print('ALT_WORKER error='+type(error).__name__+' status='+str(getattr(error,'code','n/a')),flush=True)
+                      raise SystemExit(0)
+              if i%10==0:
+                  print(f'ASSET_PROGRESS {i}/{len(assets)} all GET+HEAD+SHA256 pass',flush=True)
+          print('ALL_ASSETS_PASS '+str(len(assets)),flush=True)
+          PY
