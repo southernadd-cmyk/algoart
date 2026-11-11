@@ -76,6 +76,10 @@ jobs:
           }
           PLAYWRIGHT_SMOKE
           npm run gallery:bundle:phi
+          # The live visitor HTML imports this V2 module, not gallery-phi-bundle.js.
+          # Build only inside this CI checkout; never publish from this PR.
+          node automation/build-sculpture-v2-test.mjs
+          test -s gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           node automation/prepare-r2-daily.mjs
       - name: Verify staged gallery and tower with local R2 media fixtures in Chromium
         run: R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs --fixture
