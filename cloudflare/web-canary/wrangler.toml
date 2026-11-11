@@ -1,7 +1,7 @@
 # ISOLATED PREVIEW ONLY. Do not attach to the public domain or Pages routes.
 # This Worker is distinct from the existing social-preview and R2 media Workers.
 name = "proportion-piece-web-canary"
-compatibility_date = "2026-11-10"
+compatibility_date = "2026-10-13"
 workers_dev = true
 
 [assets]
