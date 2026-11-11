@@ -46,7 +46,7 @@ jobs:
       contents: read
     env:
       AWS_EC2_METADATA_DISABLED: 'true'
-      V2_BAKE_OUT: ${{ runner.temp }}/v2-dry-run-11nov
+      V2_BAKE_OUT: /tmp/v2-dry-run-11nov
     steps:
       - uses: actions/checkout@v4
         with:
@@ -98,7 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: v2-only-11nov-dry-run-audit
-          path: ${{ runner.temp }}/v2-dry-run-11nov/bake-report.json
+          path: /tmp/v2-dry-run-11nov/bake-report.json
           retention-days: 7
           if-no-files-found: warn
 
