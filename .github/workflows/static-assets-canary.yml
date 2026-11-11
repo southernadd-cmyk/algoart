@@ -1,0 +1,144 @@
+name: Isolated website canary preflight (Cloudflare Git integration)
+# Testing ONLY: fetch latest published source without modifying main or the R2 canary.
+# No Cloudflare credentials, GitHub Pages deploy, domain changes, or Worker publish.
+on:
+  push:
+    branches: [experiment/cloudflare-static-assets-canary-20261110]
+    paths:
+      - '.github/workflows/static-assets-canary.yml'
+      - 'cloudflare/web-canary/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: independent-static-site-canary-preflight
+  cancel-in-progress: false
+jobs:
+  stage:
+    if: github.repository == 'southernadd-cmyk/algoart'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare current main without changing live repository
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin refs/heads/main
+          git worktree add --detach /tmp/pp-web-canary-current-main FETCH_HEAD
+          mkdir -p /tmp/pp-web-canary-current-main/cloudflare/web-canary
+          cp cloudflare/web-canary/build.sh cloudflare/web-canary/wrangler.toml cloudflare/web-canary/rewrite-daily-links.mjs cloudflare/web-canary/rewrite-daily-links.test.mjs /tmp/pp-web-canary-current-main/cloudflare/web-canary/
+          # The canary-only welcome repair is deliberately absent from main.
+          # Overlay exactly that source file for the preview test, never production.
+          cp js/app.js /tmp/pp-web-canary-current-main/js/app.js
+          cp cloudflare/web-canary/welcome-r2.browser.mjs /tmp/pp-web-canary-current-main/cloudflare/web-canary/
+          node --check /tmp/pp-web-canary-current-main/js/app.js
+          node --check /tmp/pp-web-canary-current-main/cloudflare/web-canary/welcome-r2.browser.mjs
+          echo "SOURCE_SHA=$(git -C /tmp/pp-web-canary-current-main rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "Canary test of current main SHA: $(git -C /tmp/pp-web-canary-current-main rev-parse HEAD)"
+      - name: Build and validate the actual current public website
+        working-directory: /tmp/pp-web-canary-current-main
+        run: bash cloudflare/web-canary/build.sh
+      - name: Verify isolated Worker identity, base path and dry-run configuration
+        working-directory: /tmp/pp-web-canary-current-main
+        run: |
+          set -euo pipefail
+          grep -q '^name = "proportion-piece-web-canary"$' cloudflare/web-canary/wrangler.toml
+          grep -q '^directory = "../../_cf_assets"$' cloudflare/web-canary/wrangler.toml
+          if grep -q '^base_path' cloudflare/web-canary/wrangler.toml; then
+            echo "::error::Non-root assets.base_path unsupported (100343)"
+            exit 1
+          fi
+          test -s _cf_assets/algoart/index.html
+          cmp _site/index.html _cf_assets/algoart/index.html
+          cmp _site/gallery/archive.json _cf_assets/algoart/gallery/archive.json
+          # Dated HTML anchors intentionally differ ONLY in preview; source archive remains intact.
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            import {rewriteDailyPageLinks,PREVIEW} from "./cloudflare/web-canary/rewrite-daily-links.mjs";
+            for (const date of ["2026-11-10","2026-11-11"]) {
+              const original=fs.readFileSync("_site/gallery/"+date+"/index.html","utf8");
+              const preview=fs.readFileSync("_cf_assets/algoart/gallery/"+date+"/index.html","utf8");
+              const result=rewriteDailyPageLinks(original);
+              assert.ok(result.changed>0,"No artwork links were rewritten for "+date);
+              assert.equal(preview,result.html,"Preview not correctly rewritten for "+date);
+              assert.ok(preview.includes(PREVIEW));
+            }
+          '
+          test ! -e _cf_assets/index.html
+          npx --yes wrangler@4.160.0 deploy --dry-run --config cloudflare/web-canary/wrangler.toml --outdir /tmp/pp-canary-wrangler-dry-run
+          echo "WRANGLER_DRY_RUN_OK; no Cloudflare deployment performed"
+      - name: Test actual Cloudflare local asset routing, cache-busting and media behavior
+        working-directory: /tmp/pp-web-canary-current-main
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.0 dev --local --ip 127.0.0.1 --config cloudflare/web-canary/wrangler.toml --port 8787 >/tmp/pp-wrangler-dev.log 2>&1 &
+          CHILD=$!
+          trap 'kill $CHILD 2>/dev/null || true' EXIT
+          READY=false
+          for n in {1..20}; do
+            if curl -fsS 'http://127.0.0.1:8787/algoart/' -o /tmp/pp-test-home.html 2>/dev/null; then READY=true; break; fi
+            if ! kill -0 "$CHILD" 2>/dev/null; then
+              echo "::error::Local Wrangler exited before becoming ready"
+              cat /tmp/pp-wrangler-dev.log
+              exit 1
+            fi
+            sleep 2
+          done
+          if [[ "$READY" != true ]]; then
+            echo "::error::Wrangler dev failed to bind to 127.0.0.1:8787"
+            cat /tmp/pp-wrangler-dev.log
+            exit 1
+          fi
+          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/' -o /tmp/pp-test-lab.html
+          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/lab-v2.mjs?pp-test=123' -o /tmp/pp-test-lab.mjs
+          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/2026-11-11/' -o /tmp/pp-test-day.html
+          curl -fsS 'http://127.0.0.1:8787/algoart/confluence/' -o /tmp/pp-test-confluence.html
+          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/visit/' -o /tmp/pp-test-tower.html
+          cmp /tmp/pp-test-home.html _site/index.html
+          cmp /tmp/pp-test-lab.html _site/gallery/sculpture-lab/index.html
+          cmp /tmp/pp-test-day.html _cf_assets/algoart/gallery/2026-11-11/index.html
+          grep -q 'href="https://proportion-piece-web-canary.mr-adam-clement.workers.dev/algoart/?v=10' /tmp/pp-test-day.html
+          if grep -Eq '<a [^>]*href="https://southernadd-cmyk.github.io/algoart/(\\?|confluence/\\?)' /tmp/pp-test-day.html; then
+            echo "::error::Daily artwork links still escape to GitHub Pages"
+            exit 1
+          fi
+          grep -q 'PROPORTION PIECE' /tmp/pp-test-home.html
+          grep -q 'SCULPTURE LAB' /tmp/pp-test-lab.html
+          grep -q 'Confluence' /tmp/pp-test-confluence.html
+          code="$(curl -sS -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8787/algoart/this-route-must-not-exist-20261111')"
+          test "$code" = 404
+          echo "CANARY_ROUTING_OK: current home, lab module, daily archive, Confluence, tower, 404"
+          file="$(find _site/gallery/visit -type f \( -name '*.webm' -o -name '*.mp4' \) -print -quit)"
+          if [[ -n "$file" ]]; then
+            relative="${file#_site/}"
+            status="$(curl -sS -H 'Range: bytes=0-99' -o /dev/null -w '%{http_code}' "http://127.0.0.1:8787/algoart/$relative")"
+            echo "MEDIA_RANGE_RESULT=$status (206 is required by some Safari players; 200 is a release blocker)"
+          fi
+      - name: Test current Sculpture Lab V4 using headless Chromium
+        working-directory: /tmp/pp-web-canary-current-main
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory _site >/tmp/pp-browser-server.log 2>&1 &
+          SERVER=$!
+          trap 'kill $SERVER 2>/dev/null || true' EXIT
+          for n in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/gallery/sculpture-lab/ -o /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/sculpture-v4-lab.browser.mjs
+          echo "CHROMIUM_SCULPTURE_V4_DESKTOP_MOBILE_OK"
+          node cloudflare/web-canary/welcome-r2.browser.mjs
+      - name: Validate public Cloudflare deployment, hashes, R2 CORS and Range
+        working-directory: /tmp/pp-web-canary-current-main
+        run: |
+          set -euo pipefail
+          cp "${{ github.workspace }}/cloudflare/web-canary/public-smoke.mjs" cloudflare/web-canary/public-smoke.mjs
+          node cloudflare/web-canary/public-smoke.mjs

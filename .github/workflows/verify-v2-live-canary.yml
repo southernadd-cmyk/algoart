@@ -1,0 +1,31 @@
+name: Verify mounted V2 sculptures on Cloudflare website canary
+# Read-only. No R2 writes, Worker deploys, Pages deploys, or public redirects.
+on:
+  push:
+    branches: [experiment/cloudflare-static-assets-canary-20261110]
+    paths:
+      - 'cloudflare/web-canary/v2-live-mount.browser.mjs'
+      - '.github/workflows/verify-v2-live-canary.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v2-canary-live-mount
+  cancel-in-progress: true
+jobs:
+  live-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked browser environment
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Check public Cloudflare test tower mounts actual V2 R2 geometry
+        run: node cloudflare/web-canary/v2-live-mount.browser.mjs
