@@ -6,6 +6,8 @@ const workflow=readFileSync('.github/workflows/gallery-daily.yml','utf8');
 const v2=readFileSync('.github/workflows/sculpture-v2-postpublish-daily.yml','utf8');
 const publisher=readFileSync('automation/prepare-r2-daily.mjs','utf8');
 const cleanup=readFileSync('automation/prune-r2-art-only.mjs','utf8');
+const soloSocial=readFileSync('.github/workflows/social-live.yml','utf8');
+const confluenceSocial=readFileSync('.github/workflows/confluence-social.yml','utf8');
 
 test('R2-only rollout is explicit and manual, never scheduled by default',()=>{
   assert.match(workflow,/r2_art_only:/);
@@ -35,4 +37,22 @@ test('V2 post-publishing rehydrates R2-only paintings before roster and bake',()
     v2.indexOf('Verify published gallery date and solo portrait roster'));
   assert.match(v2,/automation\/r2-daily-media\.py restore/);
   assert.match(v2,/V2_SOURCE_R2_ONLY_RESTORED/);
+});
+
+test('social artwork is R2-only and never recommitted by main social job',()=>{
+  assert.match(soloSocial,/name: Identify verified R2-only artwork edition/);
+  assert.match(soloSocial,/steps\.storage\.outputs\.art_only != 'true'/);
+  assert.match(soloSocial,/python3 automation\/publish-social-r2\.py/);
+  assert.match(soloSocial,/R2_SOCIAL_ART_ONLY:/);
+  assert.match(confluenceSocial,/name: Identify verified R2-only Confluence edition/);
+  assert.match(confluenceSocial,/python3 automation\/publish-social-r2\.py/);
+  assert.match(confluenceSocial,/original=\$R2_MEDIA_URL/);
+});
+test('R2-only gallery commit requires verified painting and both sculpture qualities',()=>{
+  assert.match(workflow,/Prepare and verify R2-only V2 sculptures before publishing gallery/);
+  assert.match(workflow,/--quality both/);
+  assert.match(workflow,/automation\/publish-sculpture-v2-daily-r2\.py/);
+  assert.ok(workflow.indexOf('Prepare and verify R2-only V2 sculptures before publishing gallery')<
+    workflow.indexOf('Persist gallery archive'));
+  assert.match(workflow,/R2-only commit still contains artwork bytes/);
 });
