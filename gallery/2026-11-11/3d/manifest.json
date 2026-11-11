@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-11-11-G01-action-rects-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G01-action-rects-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G01-action-rects-portrait-640.webp"
+    },
+    "2026-11-11-G02-marker-organic-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G02-marker-organic-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G02-marker-organic-portrait-640.webp"
+    },
+    "2026-11-11-G03-action-rects-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G03-action-rects-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G03-action-rects-landscape-640.webp"
+    },
+    "2026-11-11-G04-marker-field-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G04-marker-field-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G04-marker-field-landscape-640.webp"
+    },
+    "2026-11-11-G05-marker-organic-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G05-marker-organic-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G05-marker-organic-landscape-640.webp"
+    },
+    "2026-11-11-G06-action-rects-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G06-action-rects-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G06-action-rects-portrait-640.webp"
+    },
+    "2026-11-11-G07-watercolor-scribble-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G07-watercolor-scribble-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G07-watercolor-scribble-landscape-640.webp"
+    },
+    "2026-11-11-G08-oil-scribble-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G08-oil-scribble-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G08-oil-scribble-portrait-640.webp"
+    },
+    "2026-11-11-G09-watercolour-field-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G09-watercolour-field-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G09-watercolour-field-portrait-640.webp"
+    },
+    "2026-11-11-G10-marker-geometric-portrait.jpg": {
+      "desktop": "3d/2026-11-11-G10-marker-geometric-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-G10-marker-geometric-portrait-640.webp"
+    },
+    "2026-11-11-G11-watercolour-rects-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G11-watercolour-rects-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G11-watercolour-rects-landscape-640.webp"
+    },
+    "2026-11-11-G12-watercolour-burst-landscape.jpg": {
+      "desktop": "3d/2026-11-11-G12-watercolour-burst-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-G12-watercolour-burst-landscape-640.webp"
+    },
+    "2026-11-11-C01-portrait.jpg": {
+      "desktop": "3d/2026-11-11-C01-portrait-1100.webp",
+      "mobile": "3d/2026-11-11-C01-portrait-640.webp"
+    },
+    "2026-11-11-C02-landscape.jpg": {
+      "desktop": "3d/2026-11-11-C02-landscape-1100.webp",
+      "mobile": "3d/2026-11-11-C02-landscape-640.webp"
+    }
+  }
+}

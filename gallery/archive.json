@@ -2,6 +2,22 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-11",
+      "cover": "2026-11-11-G01-action-rects-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Golden Trajectories",
+        "Growth Systems",
+        "Orbital Studies",
+        "Automatic Marks",
+        "Constructed Forms",
+        "Recursive Divisions",
+        "Radiant Systems",
+        "Confluence"
+      ]
+    },
+    {
       "date": "2026-11-10",
       "cover": "2026-11-10-G01-action-field-landscape.jpg",
       "coverOrientation": "landscape",
