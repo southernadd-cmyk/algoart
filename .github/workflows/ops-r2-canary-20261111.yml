@@ -216,3 +216,63 @@ jobs:
           if(res.ok) console.log('SOCIAL_NODE_BYTES',(await res.arrayBuffer()).byteLength);
           else console.log('SOCIAL_NODE_ERROR_BODY',(await res.text()).slice(0,140));
           JS
+
+  retry-failed-r2-canary:
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      github.ref == 'refs/heads/ops/r2-canary-2026-11-11' &&
+      (github.event.head_commit.message == 'Preflight retry R2 canary 2026-11-11' ||
+       github.event.head_commit.message == 'Retry R2 canary 2026-11-11')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: |
+            .github/workflows
+            automation/r2-daily-media.py
+          persist-credentials: false
+      - name: Confirm exactly one failed R2 attempt and a tested verifier before retry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST: ${{ github.event.head_commit.message }}
+          ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          CANARY_DATE: '2026-11-11'
+          DAILY_WORKFLOW_BLOB: '419e5685e53caca2751b1f9af72b6d736d5fe850'
+          PATCHED_UPLOADER_BLOB: 'ac78eb18eb53fc90f089e4a83a6d178b9e15f89a'
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "::error::$1"; exit 1; }
+          [[ "$(TZ=Europe/London date +%F)" == "$CANARY_DATE" && "$ARMED_DATE" == "$CANARY_DATE" ]] ||
+            fail "Date is not the armed canary day"
+          [[ "$(git rev-parse HEAD:.github/workflows/gallery-daily.yml)" == "$DAILY_WORKFLOW_BLOB" ]] ||
+            fail "Daily gallery workflow changed"
+          [[ "$(git rev-parse HEAD:automation/r2-daily-media.py)" == "$PATCHED_UPLOADER_BLOB" ]] ||
+            fail "The live uploader is not the independently verified Cloudflare 1010 fix"
+          [[ -z "$(git ls-tree HEAD -- "gallery/$CANARY_DATE")" ]] ||
+            fail "Gallery already exists; never retry a published edition"
+          endpoint="repos/$GITHUB_REPOSITORY/actions/workflows/gallery-daily.yml"
+          [[ "$(gh api "$endpoint" --jq .state)" == active ]] || fail "Daily workflow is unavailable"
+          runs="$(gh api --method GET "$endpoint/runs" -f branch=main -f event=workflow_dispatch -f "created=>=${CANARY_DATE}T00:00:00Z" -f per_page=100)"
+          count="$(jq -r '.total_count' <<<"$runs")"
+          id="$(jq -r '.workflow_runs[0].id // 0' <<<"$runs")"
+          state="$(jq -r '.workflow_runs[0].status // ""' <<<"$runs")"
+          conclusion="$(jq -r '.workflow_runs[0].conclusion // ""' <<<"$runs")"
+          [[ "$count" == 1 && "$id" == 42984459816 && "$state" == completed && "$conclusion" == failure ]] ||
+            fail "Not exactly one known completed failed canary: refusing duplicate publication risk"
+          if [[ "$REQUEST" == "Preflight retry R2 canary $CANARY_DATE" ]]; then
+            echo "R2_RETRY_PREFLIGHT_PASS one failed unpublished attempt with exact patched verifier"
+            exit 0
+          fi
+          [[ "$REQUEST" == "Retry R2 canary $CANARY_DATE" && "$GITHUB_RUN_ATTEMPT" == 1 ]] ||
+            fail "Retry requires its dedicated first-attempt commit"
+          response="$(jq -nc --arg date "$CANARY_DATE" '{ref:"main",inputs:{date:$date,r2_canary:"true"}}' |
+            gh api --method POST "$endpoint/dispatches" -H 'X-GitHub-Api-Version: 2026-03-10' --input -)"
+          run_id="$(jq -er '.workflow_run_id | numbers | select(. > 0)' <<< "$response")"
+          echo "GUARDED_R2_RETRY_RUN_ID=$run_id"
+          printf 'Started guarded [R2 canary retry](https://github.com/%s/actions/runs/%s).\n' "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
