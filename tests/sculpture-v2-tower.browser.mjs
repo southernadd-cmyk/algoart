@@ -24,10 +24,20 @@ try{
     const errors=[],requests=[];
     page.on('pageerror',error=>errors.push(error.message));
     page.on('request',request=>requests.push(request.url()));
-    if(spec.fallback)await page.route(
-      'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/**',
-      route=>route.abort('failed')
-    );
+    // This CI preview is served on localhost. Public R2 correctly permits
+    // only https://southernadd-cmyk.github.io. Relay the REAL public bytes
+    // and substitute only the response CORS header for local functional tests.
+    // The in-browser SHA-256 check still runs on untouched response bodies.
+    const workerRoute=
+      'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/**';
+    if(spec.fallback)await page.route(workerRoute,route=>route.abort('failed'));
+    else await page.route(workerRoute,async route=>{
+      const response=await route.fetch({timeout:60000});
+      await route.fulfill({response,headers:{
+        ...response.headers(),
+        'access-control-allow-origin':'http://127.0.0.1:4173'
+      }});
+    });
     try{
       await page.goto('http://127.0.0.1:4173/gallery/sculpture-v2-test/?'+
         (spec.date==='reception'?'':'date='+spec.date+'&')+
@@ -82,7 +92,11 @@ try{
           'Outage was not reported as Pages fallback');
       }else{
         assert.ok(requests.some(url=>url.includes(r2Path)),
-          'Tower did not actually download its R2 mesh pack');
+          'Tower did not download its R2 mesh pack: '+JSON.stringify({
+            requests:requests.filter(x=>x.includes('sculptures-v2')),
+            transport:state.transport,
+            errors:state.builds.filter(x=>x.state==='failed')
+          }));
         assert.ok(!requests.some(url=>url.includes(localPack)),
           'R2 succeeded but tower still downloaded legacy Pages geometry');
         assert.ok(state.builds.some(item=>item.state==='complete'&&
