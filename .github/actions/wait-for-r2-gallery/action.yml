@@ -14,9 +14,10 @@ runs:
       env:
         EDITION_DATE: ${{ inputs.date }}
         ARMED_DATE: ${{ inputs.canary_date }}
+        ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
       run: |
         [[ "$EDITION_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
-        if [[ "$EDITION_DATE" == "$ARMED_DATE" || -f "gallery/$EDITION_DATE/media-publication.json" ]]; then
+        if [[ "$EDITION_DATE" == "$ARMED_DATE" || "$EDITION_DATE" == "$ART_ONLY_DATE" || -f "gallery/$EDITION_DATE/media-publication.json" ]]; then
           node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
           git fetch origin main
           git checkout -B main origin/main

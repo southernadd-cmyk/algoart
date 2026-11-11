@@ -86,12 +86,15 @@ jobs:
             MODE=r2-only
           elif [[ "$CANARY_REQUESTED" == true ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
-               "$DAY" == "$ARMED_DATE" && "$DAY" > "2026-11-09" ]]
+               "$DAY" == "$ARMED_DATE" && "$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09" ]]
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "::error::The canary requires a new edition date."
               exit 1
             fi
             MODE=canary
+          elif [[ -n "$ART_ONLY_DATE" && "$DAY" == "$ART_ONLY_DATE" ]]; then
+            echo "R2-only date reserved for manual publication; scheduled legacy build held." >> "$GITHUB_STEP_SUMMARY"
+            MODE=hold
           elif [[ "$DAY" == "$ARMED_DATE" ]]; then
             echo "This edition date is armed for a manual R2 canary." >> "$GITHUB_STEP_SUMMARY"
             MODE=hold

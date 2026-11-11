@@ -118,3 +118,15 @@ test('R2 social credentials are available only when the rollout is explicitly ar
     }
   }
 });
+
+test('armed R2-only date blocks scheduled legacy gallery and gates all social URLs',()=>{
+  const wait=readFileSync('.github/actions/wait-for-r2-gallery/action.yml','utf8');
+  const manual=workflow.indexOf('elif [[ "$ART_ONLY_REQUESTED" == true ]]');
+  const reserved=workflow.indexOf('elif [[ -n "$ART_ONLY_DATE" && "$DAY" == "$ART_ONLY_DATE" ]]; then');
+  assert.ok(manual>0 && reserved>manual,'Explicit manual R2-only takes priority over the scheduled hold');
+  assert.ok(workflow.includes('R2-only date reserved for manual publication; scheduled legacy build held.'));
+  assert.ok(workflow.includes('"$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09"'));
+  assert.ok(wait.includes('ART_ONLY_DATE:') && wait.includes('vars.PP_R2_ART_ONLY_DATE'));
+  assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
+  assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));
+});
