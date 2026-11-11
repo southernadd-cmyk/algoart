@@ -57,6 +57,10 @@ class MediaTests(unittest.TestCase):
         opener.open.side_effect = deliver
         MEDIA.verify_public([self.asset], opener)
         self.assertEqual([call.args[0].method for call in opener.open.call_args_list], ["GET", "HEAD"])
+        self.assertTrue(all(call.args[0].get_header("User-agent") == MEDIA.PUBLIC_VERIFY_USER_AGENT
+                            for call in opener.open.call_args_list))
+        self.assertTrue(all(call.args[0].get_header("Origin") == MEDIA.PAGES
+                            for call in opener.open.call_args_list))
         opener.open.side_effect = lambda *_args, **_kw: PublicResponse(b"z" * 1500, self.asset, MEDIA.PAGES)
         with self.assertRaisesRegex(ValueError, "Public bytes differ"):
             MEDIA.verify_public([self.asset], opener)
