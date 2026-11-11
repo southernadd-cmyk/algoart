@@ -169,3 +169,125 @@ export function downloadV2Reception(quality,{fetcher=fetch}={}){
     fetcher,base,allowReception:true
   });
 }
+
+
+// Permanent R2 storage is the preferred source for the isolated test tower.
+// The historical Pages packs remain a *test-only* fallback while the R2
+// integration is qualified. Do not use this module in the production V1 tower.
+export const V2_R2_CATALOG_URL=
+  'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/'+
+  'sculptures-v2/v4.2.1-20261110/catalog/'+
+  'a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f.json';
+const CATALOG_SHA='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f';
+const R2_ORIGIN='https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev';
+const R2_PREFIX='/sculptures-v2/v4.2.1-20261110/';
+const hex=bytes=>Array.from(new Uint8Array(bytes),
+  byte=>byte.toString(16).padStart(2,'0')).join('');
+async function verifiedBytes(response,expected,desc){
+  if(!response.ok)throw Error(desc+' HTTP '+response.status);
+  if(!/^[a-f0-9]{64}$/.test(expected))throw Error('Missing V2 SHA-256');
+  if(!globalThis.crypto?.subtle)throw Error('Cannot verify R2 SHA-256 in this browser');
+  const bytes=await response.arrayBuffer();
+  const actual=hex(await globalThis.crypto.subtle.digest('SHA-256',bytes));
+  if(actual!==expected)throw Error('V2 R2 SHA-256 mismatch: '+desc);
+  return bytes;
+}
+async function decodeFloor(compressed,date,quality){
+  if(typeof DecompressionStream==='undefined')
+    throw Error('Browser does not support compressed V2 packs');
+  const decoded=await new Response(
+    new Blob([compressed]).stream().pipeThrough(new DecompressionStream('gzip'))
+  ).json();
+  if(decoded.schema!=='pp-sculpture-v2-floor'||decoded.version!==2||
+    decoded.date!==date||decoded.quality!==quality||!decoded.complete||
+    decoded.method!=='assembly'||
+    decoded.geometryRevision!=='v4.2.1-v2-pigment-island-fix')
+    throw Error('V2 prepared floor has an invalid or incomplete manifest');
+  if(Object.keys(decoded.studies||{}).length!==decoded.expectedPortraits)
+    throw Error('V2 prepared floor portrait count mismatch');
+  return decoded;
+}
+let canonicalCatalog=null;
+let canonicalCatalogRequest=null;
+export async function getV2R2Catalog({fetcher=fetch}={}){
+  // Only cache the real browser fetch. Injected fetchers in tests are isolated.
+  const shared=fetcher===fetch;
+  if(shared&&canonicalCatalog)return canonicalCatalog;
+  if(shared&&canonicalCatalogRequest)return canonicalCatalogRequest;
+  const task=(async()=>{
+    const response=await fetcher(V2_R2_CATALOG_URL);
+    const bytes=await verifiedBytes(response,CATALOG_SHA,'immutable catalog');
+    const catalog=JSON.parse(new TextDecoder().decode(bytes));
+    if(catalog.schema!=='pp-sculpture-v2-r2-catalog'||catalog.version!==1||
+      catalog.release!=='v4.2.1-20261110'||catalog.worker!==R2_ORIGIN||
+      Object.keys(catalog.days||{}).length!==37)
+      throw Error('Unapproved V2 R2 catalog');
+    if(shared)canonicalCatalog=catalog;
+    return catalog;
+  })();
+  if(shared)canonicalCatalogRequest=task;
+  try{return await task}
+  finally{if(shared&&canonicalCatalogRequest===task)canonicalCatalogRequest=null}
+}
+async function readR2Pack(date,quality,{fetcher=fetch}={}){
+  const catalog=await getV2R2Catalog({fetcher});
+  const isReception=date==='reception';
+  const spec=isReception?catalog.reception?.[quality]:
+    catalog.days?.[date]?.qualities?.[quality];
+  if(!spec)throw Error('R2 catalog does not contain '+date+'/'+quality);
+  if(!Number.isSafeInteger(spec.bytes)||spec.bytes<1000||spec.bytes>45*1048576)
+    throw Error('Invalid R2 pack size');
+  const url=new URL(spec.url);
+  if(url.origin!==R2_ORIGIN||!url.pathname.startsWith(R2_PREFIX)||
+     !url.pathname.endsWith('.json.gz')||url.search||url.hash)
+    throw Error('R2 catalog contains an unexpected pack URL');
+  const started=performance.now();
+  const response=await fetcher(url.href);
+  const bytes=await verifiedBytes(response,spec.sha256,date+'/'+quality);
+  if(bytes.byteLength!==spec.bytes)throw Error('V2 R2 pack length mismatch');
+  const pack=await decodeFloor(bytes,date,quality);
+  if(pack.expectedPortraits!==(isReception?1:catalog.days[date].portraits))
+    throw Error('V2 R2 catalog portrait count mismatch');
+  Object.defineProperty(pack,'__v2Transport',{enumerable:false,value:{
+    source:'r2',fallback:false,
+    downloadMs:Math.round(performance.now()-started),bytes:bytes.byteLength
+  }});
+  return pack;
+}
+/** R2-first isolated prepared meshes; Pages is the legacy test-only fallback.
+ * A broken/missing R2 asset is never treated as successful R2 delivery.
+ */
+export async function downloadV2Prepared(date,quality,{
+  fetcher=fetch,mode='r2',localBase
+}={}){
+  if(!(/^\d{4}-\d{2}-\d{2}$/.test(date)||date==='reception')||
+      !['mobile','desktop'].includes(quality))
+    throw Error('Invalid V2 prepared request');
+  if(!['r2','pages','r2-only'].includes(mode))
+    throw Error('Invalid V2 source selection');
+  let fallbackReason=null;
+  if(mode!=='pages'){
+    try{return await readR2Pack(date,quality,{fetcher})}
+    catch(error){
+      if(mode==='r2-only')throw error;
+      fallbackReason=String(error?.message||error).slice(0,250);
+      console.warn('[V2 isolated tower] R2 unavailable, using Pages test pack',
+        date,quality,fallbackReason);
+    }
+  }
+  const started=performance.now();
+  const base=localBase||new URL('../',location.href).pathname;
+  const path=date==='reception'
+    ?base+'sculpture-v2-test/reception/sculptures.'+quality+'.json.gz'
+    :base+date+'/3d/v2/sculptures.'+quality+'.json.gz';
+  const response=await fetcher(path);
+  if(!response.ok)throw Error('Both V2 sources unavailable: Pages HTTP '+
+    response.status+' (R2: '+(fallbackReason||'not requested')+')');
+  const bytes=await response.arrayBuffer();
+  const pack=await decodeFloor(bytes,date,quality);
+  Object.defineProperty(pack,'__v2Transport',{enumerable:false,value:{
+    source:'pages',fallback:!!fallbackReason,reason:fallbackReason,
+    downloadMs:Math.round(performance.now()-started),bytes:bytes.byteLength
+  }});
+  return pack;
+}
