@@ -16,7 +16,10 @@ const good=[
   [release+'reception/source/'+h+'.json','application/json'],
   [release+'reception/manifest/'+h+'.json','application/json'],
   [release+'reception/desktop/'+h+'.json.gz','application/gzip'],
-  [release+'reception/mobile/'+h+'.json.gz','application/gzip']
+  [release+'reception/mobile/'+h+'.json.gz','application/gzip'],
+  ['sculptures-v2/daily/v4.2.1/2026-11-11/manifest.json','application/json'],
+  ['sculptures-v2/daily/v4.2.1/2026-11-11/desktop/'+h+'.json.gz','application/gzip'],
+  ['sculptures-v2/daily/v4.2.1/2026-11-11/mobile/'+h+'.json.gz','application/gzip']
 ];
 const bytes=Uint8Array.from([1,2,3,4,5,6,7,8]);
 function service(){
@@ -63,6 +66,10 @@ test('private backups and all non-whitelisted non-SHA paths are never accessed',
     release+'catalog/latest.json',
     release+'reception/private/'+h+'.json',
     'sculptures-v2/v4.2.2-20261111/catalog/'+h+'.json',
+    'sculptures-v2/daily/v4.2.1/2026-11-11/notes.json',
+    'sculptures-v2/daily/v4.2.1/2026-11-11/desktop/unhashed.json.gz',
+    'sculptures-v2/daily/v4.2.2/2026-11-11/manifest.json',
+    'sculptures-v2/daily/v4.2.1/2026-11-11/portrait.jpg',
     'archive-backup/private/'+h+'.json',
     'editions/2026-11-09/../secrets',
     legacy+'?download=1',
