@@ -50,12 +50,15 @@ for (const name of (process.env.R2_BROWSERS || 'chromium,webkit').split(',')) {
     const errors = [];
     const failedMedia = [];
     const textures = new Set();
+    // The fixture supplies only the edition under test; the archive index may
+    // also display newer covers, which are not part of this frozen fixture.
+    const testedMediaPrefix = MEDIA + '/editions/' + date + '/';
     page.on('pageerror', error => errors.push(error.message));
     page.on('requestfailed', request => {
-      if (request.url().startsWith(MEDIA)) failedMedia.push(request.url());
+      if (request.url().startsWith(testedMediaPrefix)) failedMedia.push(request.url());
     });
     page.on('response', response => {
-      if (!response.url().startsWith(MEDIA)) return;
+      if (!response.url().startsWith(testedMediaPrefix)) return;
       if (!response.ok()) failedMedia.push(response.url());
       if (response.ok() && response.url().endsWith('.webp')) textures.add(response.url());
     });
