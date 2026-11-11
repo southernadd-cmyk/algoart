@@ -62,11 +62,13 @@ def inspect_manifest(manifest_path, published, root, *, restoring=False):
           set(textures["images"]) == {entry["imageFile"] for entry in entries},
           "Texture manifest differs from the edition inventory")
 
+    art_only = manifest.get("pagesFallback") is False
     assets = manifest["mediaAssets"]
     keys = set()
     roles = set()
     for item in assets:
         role, artwork = item["role"], item["artworkId"]
+        check(not (art_only and role == "sculptures"), "Legacy V1 sculpture in R2-only edition")
         extension, content_type = TYPES[role]
         sha256 = item["sha256"]
         check(re.fullmatch(r"[a-f0-9]{64}", sha256), "Invalid media hash")
@@ -111,8 +113,12 @@ def inspect_manifest(manifest_path, published, root, *, restoring=False):
         check(len(data) == item["bytes"] and len(data) > 1000 and digest(data) == sha256,
               f"Pages fallback differs from the original: {source}")
     expected = {(artwork, role) for artwork in entries_by_id for role in
-                ("original", "desktop", "mobile")} | {(None, "cover"), (None, "sculptures")}
+                ("original", "desktop", "mobile")} | {(None, "cover")}
+    if not art_only:
+        expected.add((None, "sculptures"))
     check(roles == expected, "Incomplete edition media inventory")
+    if art_only and published:
+        check("mediaSculptures" not in meta, "R2-only metadata still points to V1")
     return manifest, digest(raw)
 
 
