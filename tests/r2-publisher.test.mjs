@@ -101,3 +101,17 @@ test('social publishing waits for the deployed page to use the verified media', 
   html = '<img src="' + url + '">';
   assert.deepEqual(await waitForPublishedR2Edition(date, {attempts: 1}), receipt);
 });
+
+test('social publishing accepts a complete R2 artwork-only edition without V1 geometry', async t => {
+  const url = MEDIA + '/editions/' + date + '/test.jpg';
+  const receipt = {schemaVersion:2,date,count:1,published:true,stageOnly:false,
+    pagesFallback:false,workerBase:MEDIA,mediaAssets:[
+      {role:'original',url},
+      {role:'desktop',url:MEDIA+'/editions/'+date+'/desktop.webp'},
+      {role:'mobile',url:MEDIA+'/editions/'+date+'/mobile.webp'},
+      {role:'cover',url:MEDIA+'/editions/'+date+'/cover.jpg'}
+    ]};
+  t.mock.method(globalThis,'fetch',async address=>new URL(address).pathname.endsWith('.json')
+    ? Response.json(receipt) : new Response('<img src="'+url+'">'));
+  assert.deepEqual(await waitForPublishedR2Edition(date,{attempts:1}),receipt);
+});
