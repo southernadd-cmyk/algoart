@@ -127,8 +127,10 @@ test('candidate pack process never alters existing V1 sculpture files',async()=>
   const report=JSON.parse(await readFile(join(root,'bake-report.json')));
   for(const day of report.days){
     if(!day.eligible)continue;
-    const v1=join('gallery',day.date,'3d','sculptures.json.gz');
-    assert.ok(await exists(v1),'Historical V1 pack missing: '+day.date);
+    const newlyBuiltV1=join(root,day.date,'3d','sculptures.json.gz');
+    assert.equal(await exists(newlyBuiltV1),false,
+      'V2 bake must never create a V1 pack: '+day.date);
+    // Existing V1 archives may exist or be absent: neither is a V2 dependency.
     const manifest=join(root,day.date,'3d','v2','manifest.json');
     assert.ok(await exists(manifest),'V2 manifest missing: '+day.date);
   }
