@@ -9,6 +9,7 @@ on:
       - 'automation/publish-sculpture-v2-daily-r2.py'
       - 'tests/test_sculpture_v2_daily_r2.py'
       - '.github/workflows/sculpture-v2-postpublish-daily.yml'
+  workflow_dispatch: # Explicit, date-pinned recovery for 11 November only
   workflow_run:
     workflows: ['Build ALGO ART daily gallery']
     types: [completed]
@@ -36,17 +37,19 @@ jobs:
 
   bake-after-gallery-success:
     if: >-
-      github.event_name == 'workflow_run' &&
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'schedule' &&
-      github.event.workflow_run.head_branch == 'main'
+      github.event.workflow_run.head_branch == 'main')
     needs: safety
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: archive-media-test
     env:
-      UPSTREAM_STARTED: ${{ github.event.workflow_run.run_started_at }}
-      UPSTREAM_RUN: ${{ github.event.workflow_run.id }}
+      UPSTREAM_STARTED: ${{ github.event.workflow_run.run_started_at || '2026-11-11T08:00:00Z' }}
+      UPSTREAM_RUN: ${{ github.event.workflow_run.id || github.run_id }}
+      V2_RECOVERY_DATE: ${{ github.event_name == 'workflow_dispatch' && '2026-11-11' || '' }}
       AWS_EC2_METADATA_DISABLED: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -64,6 +67,10 @@ jobs:
           test -n "$UPSTREAM_STARTED"
           DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
           test "$DAY" \> "2026-11-10"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            test "$DAY" == "2026-11-11"
+            echo "V2_11_NOV_RECOVERY_ONLY"
+          fi
           # An armed R2 canary deliberately holds the scheduled gallery build.
           # A successful no-op upstream run MUST NOT trigger any V2 baking
           # or produce a misleading error before the manual canary.
@@ -120,6 +127,7 @@ jobs:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          V2_PUBLISH_DATE: ${{ steps.roster.outputs.date }}
         run: |
           python3 -m pip install 'boto3>=1.37,<2'
           python3 automation/publish-sculpture-v2-daily-r2.py \
