@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Action Painting V5 | physical-paint comparison | PROPORTION PIECE</title>
+<style>
+:root{color-scheme:light;background:#f5f0e6;color:#28231e;font-family:Georgia,serif}
+*{box-sizing:border-box}body{max-width:1600px;margin:auto;padding:24px}
+h1{font-size:clamp(28px,4vw,52px);font-weight:normal}p{line-height:1.55;max-width:900px}
+form{display:flex;gap:14px;align-items:end;flex-wrap:wrap;margin:24px 0}label{display:grid;gap:5px}
+button,input,select{padding:8px;font:inherit;color:inherit;background:#fffaf2;border:1px solid #b4ab9e}
+button{cursor:pointer}.comparison{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+figure{margin:0;min-width:0}canvas{display:block;width:100%;height:auto;background:#f5f0e6}
+figcaption{padding:10px 0;line-height:1.4}#status{min-height:1.6em}a{color:inherit}
+@media(max-width:750px){body{padding:14px}.comparison{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Action Painting: paint physics study</h1>
+<p>This opt-in experiment compares the existing V4 material with V5 on the <strong>same seed, source paths, colour settings and φ composition</strong>. V5 changes only paint deposition: depletion, dry beads, motion-related droplets and occasional slow-turn pools. No archival artworks, studio defaults or publishing rules are changed.</p>
+<p><a href="../../">Back to studio</a></p>
+<form id="controls">
+<label>Seed<input id="seed" value="PAINT-STUDY-1618"></label>
+<label>Composition<select id="mode"><option value="field">Orbital Studies</option><option value="spiral">Golden Trajectories</option><option value="rects" selected>Recursive Divisions</option><option value="burst">Radiant Systems</option><option value="network">Connected Fields</option><option value="organic">Growth Systems</option><option value="geometric">Constructed Forms</option><option value="scribble">Automatic Marks</option></select></label>
+<label>Palette<select id="palette"><option value="warm" selected>Warm</option><option value="neon">Neon</option><option value="earth">Earth</option><option value="cold">Cold</option><option value="golden">Golden</option><option value="mono">Monochrome</option></select></label>
+<label>φ pull (0–100)<input id="phi" type="number" min="0" max="100" value="91"></label>
+<label>Orientation<select id="orientation"><option value="landscape">Landscape</option><option value="portrait">Portrait</option></select></label>
+<button type="submit" id="draw">Compare paint</button>
+</form>
+<p role="status" aria-live="polite" id="status">Ready.</p>
+<div class="comparison" id="results">
+<figure><canvas id="old" aria-label="V4 baseline"></canvas><figcaption id="oldInfo">V4 baseline</figcaption></figure>
+<figure><canvas id="new" aria-label="V5 material physics"></canvas><figcaption id="newInfo">V5: experimental paint physics</figcaption></figure>
+</div>
+<script src="../../js/random.js"></script><script src="../../js/phi.js"></script>
+<script src="../../js/palettes.js"></script><script src="../../js/marker.js"></script>
+<script src="../../js/phi-sheet-fit.js"></script><script src="../../js/generator.js"></script>
+<script src="../../js/oil-pigment.js"></script>
+<script src="../../js/action-painting-v4.js"></script>
+<script src="../../js/action-painting-v5.js"></script>
+<script>
+const A=window.AlgoArt,$=id=>document.getElementById(id);
+A.rendererVersion=9;A.phiFramingEnabled=false;
+const q=new URLSearchParams(location.search);
+for(const id of ['seed','mode','palette','orientation','phi']){
+ const el=$(id),value=q.get(id);
+ if(value!==null&&(id==='seed'||id==='phi'||[...el.options].some(o=>o.value===value)))el.value=value;
+}
+function settings(){
+ return {seed:$('seed').value.trim()||'PAINT-STUDY-1618',mode:$('mode').value,
+ orientation:$('orientation').value,elements:36,density:53,complexity:71,
+ negativeSpace:41,phiStrength:Math.max(0,Math.min(100,Number($('phi').value))),
+ recursion:4,spiralInfluence:63,goldenAngle:93,nesting:44,
+ pen:'fine',thickness:13,wobble:32,overdraw:3,opacity:70,pressure:36,dryness:19,
+ curveBias:91,shapeAmount:68,overlap:65,rotation:91,
+ lines:true,circles:true,rectangles:true,polygons:true,arcs:true,
+ palette:$('palette').value,colourCount:5,saturation:86,brightness:59,
+ paper:'#f5f0e6',grain:13};
+}
+async function run(){
+ $('draw').disabled=true;$('status').textContent='Rendering same composition in both materials…';
+ await new Promise(resolve=>requestAnimationFrame(resolve));
+ try{
+  const s=settings(),scale=.5,prior=JSON.stringify(s),start=performance.now();
+  const oldMeta=A.renderActionPaintingV4($('old'),s,scale,false);
+  const oldStats=A.lastActionPaintingStatsV4,mid=performance.now();
+  const newMeta=A.renderActionPaintingV5($('new'),s,scale,false);
+  const newStats=A.lastActionPaintingStatsV5,end=performance.now();
+  if(JSON.stringify(s)!==prior)throw Error('Input settings changed');
+  if(JSON.stringify(oldMeta)!==JSON.stringify(newMeta))throw Error('Source composition metadata changed');
+  for(const key of ['pathCount','anchorCount','layers','skippedCrowded','bowedSourceThrows','softenedStraightRuns'])
+   if(oldStats[key]!==newStats[key])throw Error('Geometry mismatch: '+key);
+  $('oldInfo').textContent='V4 baseline · '+Math.round(mid-start)+' ms';
+  $('newInfo').textContent='V5 paint physics · '+Math.round(end-mid)+' ms · '+newStats.dryBeads+
+    ' dry beads · '+newStats.speedDroplets+' kinetic droplets · '+newStats.slowPools+' slow-turn deposits';
+  for(const id of ['seed','mode','palette','orientation','phi'])q.set(id,$(id).value);
+  history.replaceState(null,'','?'+q);
+  $('status').textContent='Passed: identical source composition and structural decisions. Compare only the material treatment.';
+  return {oldMeta,newMeta,oldStats,newStats};
+ }catch(error){$('status').textContent='Comparison failed: '+error.message;throw error}
+ finally{$('draw').disabled=false}
+}
+$('controls').addEventListener('submit',event=>{event.preventDefault();run().catch(console.error)});
+window.actionPhysicsStudy={run,settings};
+if(q.get('run')==='1')run().catch(console.error);
+</script></body></html>
