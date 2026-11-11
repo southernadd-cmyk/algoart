@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths:
       - 'confluence/**'
+      - 'automation/confluence-daily-variation.mjs'
+      - 'automation/generate-gallery-confluence.mjs'
+      - 'tests/confluence-daily-publishing.test.mjs'
+      - 'tests/confluence-daily-random-browser.mjs'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
       - 'tests/confluence-completion-browser.mjs'
@@ -23,6 +27,10 @@ on:
   pull_request:
     paths:
       - 'confluence/**'
+      - 'automation/confluence-daily-variation.mjs'
+      - 'automation/generate-gallery-confluence.mjs'
+      - 'tests/confluence-daily-publishing.test.mjs'
+      - 'tests/confluence-daily-random-browser.mjs'
       - 'tests/confluence-browser.test.mjs'
       - 'tests/confluence-capacity-audit.mjs'
       - 'tests/confluence-completion-browser.mjs'
@@ -51,6 +59,8 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npx playwright install chromium
+      - name: Verify deterministic daily engines, materials, palettes and drawing controls
+        run: node --test tests/confluence-daily-publishing.test.mjs
       - name: Verify native material bridge contracts
         run: node --test tests/confluence-material.test.mjs tests/confluence-adaptive.test.mjs tests/confluence-ui.test.mjs
       - name: Audit real drawing-turn capacities across all eight systems
@@ -65,3 +75,38 @@ jobs:
         run: node tests/confluence-v8-parity-browser.mjs
       - name: Measure saved monochrome Tissue atmosphere over 27 turns
         run: node tests/confluence-tissue-accumulation-browser.mjs
+
+  daily-pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install chromium
+      - name: Verify both exact 11 November daily Confluence studies render correctly
+        run: node tests/confluence-daily-random-browser.mjs
+
+  daily-archive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: End-to-end synthetic daily edition and immutable social archive
+        env:
+          ALGOART_LOCAL_URL: http://127.0.0.1:4173/
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/daily-confluence-server.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          node tests/daily-gallery-random-12.test.mjs
