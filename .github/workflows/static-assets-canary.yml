@@ -51,13 +51,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.148.0 dev --local --config cloudflare/web-canary/wrangler.toml --port 8787 >/tmp/pp-wrangler-dev.log 2>&1 &
+          npx --yes wrangler@4.148.0 dev --local --ip 127.0.0.1 --config cloudflare/web-canary/wrangler.toml --port 8787 >/tmp/pp-wrangler-dev.log 2>&1 &
           CHILD=$!
           trap 'kill $CHILD 2>/dev/null || true' EXIT
-          for n in {1..45}; do
-            if curl -fsS 'http://127.0.0.1:8787/algoart/' -o /tmp/pp-test-home.html; then break; fi
+          READY=false
+          for n in {1..20}; do
+            if curl -fsS 'http://127.0.0.1:8787/algoart/' -o /tmp/pp-test-home.html 2>/dev/null; then READY=true; break; fi
+            if ! kill -0 "$CHILD" 2>/dev/null; then
+              echo "::error::Local Wrangler exited before becoming ready"
+              cat /tmp/pp-wrangler-dev.log
+              exit 1
+            fi
             sleep 2
           done
+          if [[ "$READY" != true ]]; then
+            echo "::error::Wrangler dev failed to bind to 127.0.0.1:8787"
+            cat /tmp/pp-wrangler-dev.log
+            exit 1
+          fi
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/' -o /tmp/pp-test-lab.html
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/lab-v2.mjs?pp-test=123' -o /tmp/pp-test-lab.mjs
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/2026-11-11/' -o /tmp/pp-test-day.html
