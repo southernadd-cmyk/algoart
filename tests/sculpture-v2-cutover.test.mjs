@@ -18,6 +18,8 @@ test('Release bundle is required and the test mirror retains exact source anchor
   assert.match(deploy,/test -s _site\/gallery\/visit\/gallery-phi-sculpture-v2-test-bundle\.js/);
   assert.doesNotMatch(deploy,/Optional Sculpture V2 test tower failed to build/);
   assert.match(builder,/assert\.equal\(rendererReplacements,1/);
+  assert.match(builder,/Promise\.resolve\(\{\}\)/);
+  assert.match(builder,/Expected exactly one legacy V1 pack request/);
 });
 test('Future daily editions no longer generate or require V1 sculpture packs',()=>{
   assert.doesNotMatch(daily,/node automation\/build-gallery-sculptures\.mjs/);
