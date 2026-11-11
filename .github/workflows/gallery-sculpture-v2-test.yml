@@ -3,6 +3,9 @@ name: Sculpture V2 isolated tower preview checks
 on:
   pull_request:
     paths:
+      - 'gallery/visit/index.html'
+      - '.github/workflows/deploy-pages.yml'
+      - 'tests/sculpture-v2-cutover.test.mjs'
       - 'gallery/sculpture-v2-test/**'
       - 'automation/build-sculpture-v2-test.mjs'
       - 'automation/build-reception-v2.mjs'
@@ -41,7 +44,7 @@ jobs:
           node --check gallery/sculpture-v2-test/engine/v4-contours.mjs
           node --check gallery/sculpture-v2-test/engine/v4-surface.mjs
           node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
-          node --test tests/sculpture-v4.test.mjs tests/sculpture-v2-tower-coverage.test.mjs tests/sculpture-v2-r2-loader.test.mjs
+          node --test tests/sculpture-v4.test.mjs tests/sculpture-v2-tower-coverage.test.mjs tests/sculpture-v2-r2-loader.test.mjs tests/sculpture-v2-cutover.test.mjs
       - name: Build isolated full exhibition with frozen V4.2 geometry
         run: |
           node automation/build-sculpture-v2-test.mjs
