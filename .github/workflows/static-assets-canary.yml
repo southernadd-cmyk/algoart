@@ -32,6 +32,12 @@ jobs:
           git worktree add --detach /tmp/pp-web-canary-current-main FETCH_HEAD
           mkdir -p /tmp/pp-web-canary-current-main/cloudflare/web-canary
           cp cloudflare/web-canary/build.sh cloudflare/web-canary/wrangler.toml /tmp/pp-web-canary-current-main/cloudflare/web-canary/
+          # The canary-only welcome repair is deliberately absent from main.
+          # Overlay exactly that source file for the preview test, never production.
+          cp js/app.js /tmp/pp-web-canary-current-main/js/app.js
+          cp cloudflare/web-canary/welcome-r2.browser.mjs /tmp/pp-web-canary-current-main/cloudflare/web-canary/
+          node --check /tmp/pp-web-canary-current-main/js/app.js
+          node --check /tmp/pp-web-canary-current-main/cloudflare/web-canary/welcome-r2.browser.mjs
           echo "SOURCE_SHA=$(git -C /tmp/pp-web-canary-current-main rev-parse HEAD)" >> "$GITHUB_ENV"
           echo "Canary test of current main SHA: $(git -C /tmp/pp-web-canary-current-main rev-parse HEAD)"
       - name: Build and validate the actual current public website
@@ -110,6 +116,7 @@ jobs:
           done
           node tests/sculpture-v4-lab.browser.mjs
           echo "CHROMIUM_SCULPTURE_V4_DESKTOP_MOBILE_OK"
+          node cloudflare/web-canary/welcome-r2.browser.mjs
       - name: Validate public Cloudflare deployment, hashes, R2 CORS and Range
         working-directory: /tmp/pp-web-canary-current-main
         run: |
