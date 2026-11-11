@@ -72,13 +72,13 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
+          node automation/build-sculpture-v2-baker.mjs
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/v2-dryrun-11nov-http.log 2>&1 &
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null; then break; fi
             sleep 1
           done
           curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null
-          node automation/build-sculpture-v2-baker.mjs
       - name: Rebuild and validate BOTH complete V2 quality packs, in scratch only
         run: |
           node automation/build-sculpture-v2-packs.mjs --date 2026-11-11 --quality both --out "$V2_BAKE_OUT"
