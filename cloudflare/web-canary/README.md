@@ -34,3 +34,12 @@ Cloudflare Workers Builds then authenticates through its existing Git connection
 5. Only after verified parity, design a phased route migration with immediate rollback to the existing GitHub Pages site. **Never delete archived media or replace the live social Worker.**
 
 No public hosting migration has been executed.
+
+## Test deployment trigger — 11 November 2026
+
+This documentation-only commit triggers the existing Cloudflare Git-connected
+build after the canary's production branch has been set to
+`experiment/cloudflare-static-assets-canary-20261110`. The working public site,
+R2 bucket, and existing Workers are deliberately untouched. Check the new
+Cloudflare Build History entry for this branch and review the live canary
+before considering any production changes.
