@@ -85,3 +85,15 @@ test('skip optional graffiti for R2-only and use the verified Chromium-only runn
   assert.match(workflow,/R2_BROWSERS=chromium node tests\/r2-gallery-browser\.mjs --live/);
   assert.match(workflow,/R2-only commit still contains artwork bytes/);
 });
+
+test('R2 integration and sculpture baker avoid apt dependencies',()=>{
+  const integration=readFileSync('.github/workflows/r2-publisher-integration.yml','utf8');
+  const sculpture=readFileSync('.github/workflows/sculpture-v2-postpublish-daily.yml','utf8');
+  for(const src of [integration,sculpture]){
+    assert.match(src,/npx playwright install --only-shell chromium/);
+    assert.match(src,/R2_CHROMIUM_SMOKE_OK/);
+    assert.doesNotMatch(src,/playwright install --with-deps/);
+    assert.match(src,/runs-on: ubuntu-24\.04/);
+  }
+  assert.match(integration,/R2_BROWSERS=chromium node tests\/r2-gallery-browser\.mjs --fixture/);
+});
