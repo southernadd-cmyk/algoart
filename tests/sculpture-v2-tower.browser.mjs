@@ -9,6 +9,8 @@ const browser=await chromium.launch({
 try{
   for(const spec of [
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,method:'assembly'},
+    {date:'2026-11-11',quality:'desktop',width:1100,height:740,method:'assembly'},
+    {date:'2026-11-11',quality:'mobile',width:390,height:844,method:'assembly'},
     {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'},
     {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'reception',quality:'mobile',width:390,height:844,method:'assembly'},
@@ -73,8 +75,12 @@ try{
         window.__sculptureV2TowerStatus?.failed>0,null,{timeout:120000});
       const state=await page.evaluate(()=>window.__sculptureV2TowerStatus);
       assert.ok(state.attempted>0,'No V2 source sculpture attempted');
-      assert.ok(requests.some(url=>url.includes('/sculptures-v2/v4.2.1-20261110/catalog/')),
-        'Tower did not request SHA-pinned R2 catalog');
+      const daily=spec.date>='2026-11-11'&&spec.date!=='reception';
+      const manifestPath=daily
+        ?'/sculptures-v2/daily/v4.2.1/'+spec.date+'/manifest.json'
+        :'/sculptures-v2/v4.2.1-20261110/catalog/';
+      assert.ok(requests.some(url=>url.includes(manifestPath)),
+        'Tower did not request appropriate R2 catalog/daily manifest: '+manifestPath);
       const localGeometry=url=>
         url.includes('/3d/v2/sculptures.')||
         url.includes('/sculpture-v2-test/reception/sculptures.');
@@ -95,10 +101,12 @@ try{
       }
       assert.equal(state.failed,0,'V2 sculpture failed: '+JSON.stringify(state.builds));
       assert.ok(state.complete>0,'No V2 sculpture completed');
-      const r2Path='/sculptures-v2/v4.2.1-20261110/'+
-        (spec.date==='reception'
-          ?'reception/'+spec.quality+'/'
-          :'floors/'+spec.date+'/'+spec.quality+'/');
+      const r2Path=daily
+        ?'/sculptures-v2/daily/v4.2.1/'+spec.date+'/'+spec.quality+'/'
+        :'/sculptures-v2/v4.2.1-20261110/'+
+          (spec.date==='reception'
+            ?'reception/'+spec.quality+'/'
+            :'floors/'+spec.date+'/'+spec.quality+'/');
       assert.ok(requests.some(url=>url.includes(r2Path)),
         'Tower did not download its R2 mesh pack: '+JSON.stringify({
           requests:requests.filter(x=>x.includes('sculptures-v2')),
