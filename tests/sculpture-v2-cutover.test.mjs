@@ -5,16 +5,26 @@ import {readFileSync} from 'node:fs';
 const html=readFileSync('gallery/visit/index.html','utf8');
 const deploy=readFileSync('.github/workflows/deploy-pages.yml','utf8');
 const builder=readFileSync('automation/build-sculpture-v2-test.mjs','utf8');
-test('V2 default is explicit and V1 is a reversible URL override',()=>{
-  assert.match(html,/get\('sculptures'\)==='v1'/);
-  assert.match(html,/await import\(useV1[\s\S]*?gallery-phi-bundle\.js\?v=classical-aac-20261107[\s\S]*?: '\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-preview-01'/);
-  assert.equal(html.split('./gallery-phi-bundle.js?v=classical-aac-20261107').length-1,2,
-    'Preview mirror builder requires precisely two V1 bundle anchors');
+const daily=readFileSync('.github/workflows/gallery-daily.yml','utf8');
+const follower=readFileSync('.github/workflows/sculpture-v2-postpublish-daily.yml','utf8');
+const publisher=readFileSync('automation/publish-sculpture-v2-daily-r2.py','utf8');
+const loader=readFileSync('gallery/sculpture-v2-test/v2-pack-loader.mjs','utf8');
+test('Production uses V2 exclusively, not a permanent V1 fallback',()=>{
+  assert.equal(html.split('./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111').length-1,2);
+  assert.doesNotMatch(html,/get\('sculptures'\)|await import\(useV1/);
+  assert.doesNotMatch(html,/gallery-phi-bundle\.js\?v=classical-aac/);
 });
-test('Pages keeps BOTH bundles and blocks cutover without V2',()=>{
-  assert.match(deploy,/node automation\/build-sculpture-v2-test\.mjs/);
-  assert.match(deploy,/test -s _site\/gallery\/visit\/gallery-phi-bundle\.js/);
+test('Release bundle is required and the test mirror retains exact source anchors',()=>{
   assert.match(deploy,/test -s _site\/gallery\/visit\/gallery-phi-sculpture-v2-test-bundle\.js/);
   assert.doesNotMatch(deploy,/Optional Sculpture V2 test tower failed to build/);
   assert.match(builder,/assert\.equal\(rendererReplacements,1/);
+});
+test('Future daily editions no longer generate or require V1 sculpture packs',()=>{
+  assert.doesNotMatch(daily,/node automation\/build-gallery-sculptures\.mjs/);
+  assert.doesNotMatch(daily,/test -s "gallery\/\$DAY\/3d\/sculptures\.json\.gz"/);
+  assert.doesNotMatch(follower,/test -s "gallery\/\$DAY\/3d\/sculptures\.json\.gz"/);
+  assert.doesNotMatch(follower,/V2_DAILY_V1_PUBLISHED_OK/);
+  assert.doesNotMatch(publisher,/v1_path|v1_bytes|v1Sha256/);
+  assert.doesNotMatch(loader,/test\(m\.v1Sha256/);
+  assert.match(publisher,/metaSha256/);
 });
