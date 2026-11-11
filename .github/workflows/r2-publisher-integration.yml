@@ -26,6 +26,11 @@ on:
       - 'automation/prepare-r2-daily.mjs'
       - 'tests/test_r2_daily_media.py'
 
+# Cancel outdated PR checks; never cancel an unrelated branch or production run.
+concurrency:
+  group: r2-publisher-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
