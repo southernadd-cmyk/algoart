@@ -4,6 +4,7 @@ import gateway from '../cloudflare/media-read-only/src/worker.mjs';
 
 const host='https://proportion-piece-media.example.workers.dev/';
 const pages='https://southernadd-cmyk.github.io';
+const preview='https://proportion-piece-web-canary.mr-adam-clement.workers.dev';
 const h='a'.repeat(64);
 const legacy='editions/2026-11-09/2026-11-09-G01/original-'+h+'.jpg';
 const release='sculptures-v2/v4.2.1-20261110/';
@@ -108,4 +109,40 @@ test('missing R2 binding or missing object safely returns no-store',async()=>{
   const res=await gateway.fetch(req(good[2][0].replace(h,'b'.repeat(64))),env);
   assert.equal(res.status,404);
   assert.equal(res.headers.get('Cache-Control'),'no-store');
+});
+
+test('Cloudflare preview can fetch all 3 V2 types and immutable archived models without changing Pages',async()=>{
+  const cases=[release+'catalog/'+h+'.json',release+'reception/image/'+h+'.png',release+'reception/desktop/'+h+'.json.gz',release+'floors/2026-11-10/mobile/'+h+'.json.gz'];
+  for(const key of cases)for(const origin of [pages,preview]){
+    const {env,calls}=service();
+    for(const method of ['GET','HEAD']){
+      const r=await gateway.fetch(req(key,method,origin),env);
+      assert.equal(r.status,200,method+' '+key+' '+origin);
+      assert.equal(r.headers.get('Access-Control-Allow-Origin'),origin);
+      assert.equal(r.headers.get('Vary'),'Origin');
+      assert.equal(r.headers.get('Cross-Origin-Resource-Policy'),'cross-origin');
+      await r.body?.cancel();
+    }
+    assert.deepEqual(calls,[['get',key],['head',key]]);
+    for(const method of ['GET','HEAD']){
+      const preflight=await gateway.fetch(req(key,'OPTIONS',origin,
+        {'Access-Control-Request-Method':method}),env);
+      assert.equal(preflight.status,204);
+      assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),origin);
+      assert.equal(preflight.headers.get('Vary'),'Origin');
+    }
+  }
+});
+test('foreign origins and credentialed wildcards are never granted access',async()=>{
+  const {env,calls}=service();
+  for(const origin of ['https://evil.example','null','https://proportion-piece-web-canary.mr-adam-clement.workers.dev.evil.example','http://proportion-piece-web-canary.mr-adam-clement.workers.dev']){
+    const r=await gateway.fetch(req(good[2][0],'GET',origin),env);
+    assert.equal(r.headers.get('Access-Control-Allow-Origin'),null,origin);
+    assert.equal(r.headers.get('Vary'),'Origin');
+    await r.body?.cancel();
+    const preflight=await gateway.fetch(req(good[2][0],'OPTIONS',origin,{'Access-Control-Request-Method':'GET'}),env);
+    assert.equal(preflight.status,403);
+    assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),null);
+  }
+  assert.equal(calls.length,4);
 });
