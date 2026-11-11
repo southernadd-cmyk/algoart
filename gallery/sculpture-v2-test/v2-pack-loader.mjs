@@ -229,16 +229,73 @@ export async function getV2R2Catalog({fetcher=fetch}={}){
   try{return await task}
   finally{if(shared&&canonicalCatalogRequest===task)canonicalCatalogRequest=null}
 }
+const DAILY_V2_PREFIX='/sculptures-v2/daily/v4.2.1/';
+const dailyRequests=new Map();
+export async function getV2DailyManifest(date,{fetcher=fetch}={}){
+  if(!/^20\d\d-\d\d-\d\d$/.test(date)||date<'2026-11-11')
+    throw Error('Invalid daily V2 date');
+  const url=R2_ORIGIN+DAILY_V2_PREFIX+date+'/manifest.json';
+  const shared=fetcher===fetch;
+  if(shared&&dailyRequests.has(date))return dailyRequests.get(date);
+  const task=(async()=>{
+    const response=await fetcher(url);
+    if(!response.ok)throw Error('Daily V2 manifest '+date+' HTTP '+response.status);
+    const m=await response.json();
+    if(m.schema!=='pp-sculpture-v2-daily-r2-manifest'||
+       m.version!==1||m.date!==date||
+       m.revision!=='v4.2.1-v2-pigment-island-fix'||
+       m.worker!==R2_ORIGIN||m.ready!==true||
+       m.confluenceExcluded!==true||
+       !Number.isInteger(m.portraits)||m.portraits<=0||
+       !/^[a-f0-9]{64}$/.test(m.metaSha256||'')||
+       !/^[a-f0-9]{64}$/.test(m.v1Sha256||'')||
+       !m.qualities||Object.keys(m.qualities).sort().join(',')!=='desktop,mobile')
+      throw Error('Unapproved daily V2 manifest');
+    for(const quality of ['desktop','mobile']){
+      const item=m.qualities[quality];
+      if(!item||!/^[a-f0-9]{64}$/.test(item.sha256||'')||
+          !Number.isSafeInteger(item.bytes)||item.bytes<1000||
+          item.bytes>45*1048576||
+          item.url!==R2_ORIGIN+DAILY_V2_PREFIX+date+'/'+quality+'/'+
+            item.sha256+'.json.gz')
+        throw Error('Daily V2 manifest has invalid '+quality+' link');
+    }
+    return m;
+  })();
+  if(shared){
+    dailyRequests.set(date,task);
+    for(const other of dailyRequests.keys())
+      if(other!==date)dailyRequests.delete(other);
+  }
+  try{return await task}
+  catch(error){
+    if(shared&&dailyRequests.get(date)===task)dailyRequests.delete(date);
+    throw error;
+  }
+}
 async function readR2Pack(date,quality,{fetcher=fetch}={}){
-  const catalog=await getV2R2Catalog({fetcher});
   const isReception=date==='reception';
-  const spec=isReception?catalog.reception?.[quality]:
-    catalog.days?.[date]?.qualities?.[quality];
+  const isDaily=!isReception&&date>='2026-11-11';
+  let spec,portraitCount;
+  if(isDaily){
+    const daily=await getV2DailyManifest(date,{fetcher});
+    spec=daily.qualities[quality];
+    portraitCount=daily.portraits;
+  }else{
+    const catalog=await getV2R2Catalog({fetcher});
+    spec=isReception?catalog.reception?.[quality]:
+      catalog.days?.[date]?.qualities?.[quality];
+    portraitCount=isReception?1:catalog.days?.[date]?.portraits;
+  }
   if(!spec)throw Error('R2 catalog does not contain '+date+'/'+quality);
   if(!Number.isSafeInteger(spec.bytes)||spec.bytes<1000||spec.bytes>45*1048576)
     throw Error('Invalid R2 pack size');
   const url=new URL(spec.url);
-  if(url.origin!==R2_ORIGIN||!url.pathname.startsWith(R2_PREFIX)||
+  const required=isDaily
+    ?DAILY_V2_PREFIX+date+'/'+quality+'/'+spec.sha256+'.json.gz'
+    :null;
+  if(url.origin!==R2_ORIGIN||
+     !(isDaily?url.pathname===required:url.pathname.startsWith(R2_PREFIX))||
      !url.pathname.endsWith('.json.gz')||url.search||url.hash)
     throw Error('R2 catalog contains an unexpected pack URL');
   const started=performance.now();
@@ -246,7 +303,7 @@ async function readR2Pack(date,quality,{fetcher=fetch}={}){
   const bytes=await verifiedBytes(response,spec.sha256,date+'/'+quality);
   if(bytes.byteLength!==spec.bytes)throw Error('V2 R2 pack length mismatch');
   const pack=await decodeFloor(bytes,date,quality);
-  if(pack.expectedPortraits!==(isReception?1:catalog.days[date].portraits))
+  if(pack.expectedPortraits!==portraitCount)
     throw Error('V2 R2 catalog portrait count mismatch');
   Object.defineProperty(pack,'__v2Transport',{enumerable:false,value:{
     source:'r2',fallback:false,
