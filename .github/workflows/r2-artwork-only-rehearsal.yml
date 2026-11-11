@@ -50,11 +50,18 @@ jobs:
           restored=Path(receipt['restoredTo'])/'gallery/2026-11-11'
           day=Path('gallery/2026-11-11')
           meta=json.loads((day/'meta.json').read_text())
-          textures=json.loads((day/'3d/manifest.json').read_text())
-          files={e['imageFile'] for e in meta['entries']}
-          for variants in textures['images'].values():
-              files.update(variants.values())
-          files.add('archive-preview.jpg')
+          publication=json.loads((day/'media-publication.json').read_text())
+          assert publication['published'] and publication['date']=='2026-11-11'
+          files=set()
+          for asset in publication['mediaAssets']:
+              if asset['role'] not in ('original','desktop','mobile','cover'):
+                  continue
+              source=asset['sourcePath']
+              prefix='gallery/2026-11-11/'
+              assert source.startswith(prefix) and '..' not in source
+              files.add(source[len(prefix):])
+          assert {e['imageFile'] for e in meta['entries']}.issubset(files)
+          assert len(files)==43, f'Expected 14 original + 28 texture + 1 cover, got {len(files)}'
           for name in files:
               dest=day/name
               assert dest.is_file(),f'Original checkout asset absent: {name}'
