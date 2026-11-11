@@ -64,6 +64,15 @@ jobs:
           test -n "$UPSTREAM_STARTED"
           DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
           test "$DAY" \> "2026-11-10"
+          # An armed R2 canary deliberately holds the scheduled gallery build.
+          # A successful no-op upstream run MUST NOT trigger any V2 baking
+          # or produce a misleading error before the manual canary.
+          if [[ ! -e "gallery/$DAY/meta.json" &&
+                ! -e "gallery/$DAY/3d/sculptures.json.gz" ]]; then
+            printf 'date=%s\neligible=0\n' "$DAY" >> "$GITHUB_OUTPUT"
+            echo "V2_DAILY_SKIPPED_UPSTREAM_HOLD date=$DAY"
+            exit 0
+          fi
           test -s "gallery/$DAY/meta.json"
           test -s "gallery/$DAY/3d/sculptures.json.gz"
           DAY="$DAY" python3 - <<'PY'
