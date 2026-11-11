@@ -2,7 +2,7 @@
 // importing gallery/visit/sculpture-render-traced.mjs and V1 baked packs.
 // This adapter preserves the real tower's createPortraitSculpture contract.
 import * as THREE from 'three';
-import {downloadV2Floor,downloadV2Reception,reconstructV2Study,disposePreparedV2}
+import {downloadV2Prepared,reconstructV2Study,disposePreparedV2}
   from './v2-pack-loader.mjs';
 import {createHybridSupport,disposeHybridSupport,PLINTH_TOP_LOCAL_Y}
   from '../sculpture-lab/hybrid-supports.mjs';
@@ -20,7 +20,8 @@ const status={
   mode:'test-only-prepared-v2',variant:'v2.0-prepared-archive',
   geometry:'sculpture-lab-v4.2.1',connector:'pin',method:V2_TEST_METHOD,
   attempted:0,complete:0,failed:0,cancelled:0,byDate:{},
-  builds:[],modelSource:'audited-historical-v2-packs',
+  builds:[],modelSource:'sha-verified-r2-first',
+  transport:{r2:0,pages:0,fallbacks:0},r2CatalogVerified:true,
   productionUnchanged:true
 };
 if(typeof window!=='undefined')window.__sculptureV2TowerStatus=status;
@@ -57,11 +58,16 @@ function sourceImage(study){
 // Shared archive requests; only the most recently visited date of each
 // quality remains cached, avoiding retained geometry from all 37 floors.
 const floors=new Map();
+const querySource=typeof location!=='undefined'
+  ?new URLSearchParams(location.search).get('v2source')||'r2':'r2';
+if(!['r2','r2-only','pages'].includes(querySource))
+  throw Error('Unknown isolated V2 source override');
+status.requestedSource=querySource;
 function preparedFloor(date,quality){
   const key=quality+':'+date;
   if(floors.has(key))return floors.get(key);
   for(const k of floors.keys())if(k.startsWith(quality+':'))floors.delete(k);
-  const loading=downloadV2Floor(date,quality).catch(error=>{
+  const loading=downloadV2Prepared(date,quality,{mode:querySource}).catch(error=>{
     if(floors.get(key)===loading)floors.delete(key);
     throw error;
   });
@@ -130,9 +136,8 @@ export function createPortraitSculpture({
     const date=study.receptionPrepared?'reception':archiveDate(study);
     const name=sourceFileOf(study);
     const requestedQuality=quality==='desktop'?'desktop':'mobile';
-    const floor=study.receptionPrepared
-      ?await downloadV2Reception(requestedQuality)
-      :await preparedFloor(date,requestedQuality);
+    const floor=await preparedFloor(date,requestedQuality);
+    const transport=floor.__v2Transport||{source:'unknown',fallback:false};
     const prepared=floor.studies[name];
     if(!prepared)throw Error('Verified V2 pack omits '+date+'/'+name);
     if(prepared.quality!==requestedQuality||prepared.method!=='assembly'||
@@ -170,6 +175,9 @@ export function createPortraitSculpture({
       for(const mesh of body.children)if(mesh.isMesh)onArtworkMesh?.(mesh);
       const stats={
         prepared:true,reception:!!study.receptionPrepared,
+        transport:transport.source,r2Fallback:transport.fallback,
+        r2Failure:transport.reason||null,networkMs:transport.downloadMs,
+        compressedBytes:transport.bytes,
         regions:body.userData.regionCount,
         omittedCells:body.userData.omittedCells,
         triangles:body.userData.polygonTriangles,
@@ -187,6 +195,8 @@ export function createPortraitSculpture({
         sculptureV2Connector:'pin',sculptureV2Metrics:stats,
         sculptureV2Texture:true
       });
+      status.transport[transport.source]=(status.transport[transport.source]||0)+1;
+      if(transport.fallback)status.transport.fallbacks++;
       count(study,'complete',stats);
       onComplete?.({strokeCount:0,pigmentCount:stats.regions,prepared:true,v2:true});
     }finally{
