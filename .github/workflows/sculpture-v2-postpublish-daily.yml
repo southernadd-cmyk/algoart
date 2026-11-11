@@ -59,6 +59,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore R2-only painting sources to ephemeral runner for V2 sculpture bake
+        shell: bash
+        run: |
+          set -euo pipefail
+          DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
+          MANIFEST="gallery/$DAY/media-publication.json"
+          if [[ ! -f "$MANIFEST" ]]; then
+            echo "V2_SOURCE_LEGACY_CHECKOUT date=$DAY"
+            exit 0
+          fi
+          if ! python3 - "$MANIFEST" <<'PY'
+          import json,sys
+          manifest=json.load(open(sys.argv[1]))
+          assert manifest['published'] is True
+          sys.exit(0 if manifest.get('pagesFallback') is False else 1)
+          PY
+          then
+            echo "V2_SOURCE_DUAL_WRITE_CHECKOUT date=$DAY"
+            exit 0
+          fi
+          python3 automation/r2-daily-media.py restore "$MANIFEST" \
+            --restore-to "$RUNNER_TEMP" > "$RUNNER_TEMP/v2-r2-restore.json"
+          SRC=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["restoredTo"])' "$RUNNER_TEMP/v2-r2-restore.json")
+          test -d "$SRC/gallery/$DAY"
+          cp -a "$SRC/gallery/$DAY/." "gallery/$DAY/"
+          echo "V2_SOURCE_R2_ONLY_RESTORED date=$DAY"
       - name: Verify published gallery date and solo portrait roster
         id: roster
         shell: bash
