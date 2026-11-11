@@ -27,7 +27,8 @@ test('public metadata and essential production assets exist',()=>{
   assert.match(html,/<title>Virtual Exhibition \| PROPORTION PIECE<\/title>/);
   assert.match(html,/rel="canonical" href="https:\/\/southernadd-cmyk\.github\.io\/algoart\/gallery\/visit\/"/);
   assert.doesNotMatch(html,/noindex/);
-  assert.match(html,/gallery-phi-bundle\.js\?v=/);
+  assert.match(html,/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-20261111/);
+  assert.doesNotMatch(html,/gallery-phi-bundle\.js\?v=classical-aac/);
   const receptionFlag=html.indexOf('globalThis.__phiReceptionTestRefresh=true');
   // The bundle is selected by a test-query conditional, so the import is dynamic.
   // Check that reception is initialised before that import statement itself.

@@ -213,7 +213,6 @@ export async function getV2DailyManifest(date,{fetcher=fetch}={}){
        m.confluenceExcluded!==true||
        !Number.isInteger(m.portraits)||m.portraits<=0||
        !/^[a-f0-9]{64}$/.test(m.metaSha256||'')||
-       !/^[a-f0-9]{64}$/.test(m.v1Sha256||'')||
        !m.qualities||Object.keys(m.qualities).sort().join(',')!=='desktop,mobile')
       throw Error('Unapproved daily V2 manifest');
     for(const quality of ['desktop','mobile']){

@@ -1,7 +1,7 @@
 name: Sculpture V2 post-publication daily archive
 
-# Independently follows an already SUCCESSFUL scheduled V1 gallery build.
-# It must never gate the V1 edition, change gallery files, or run for the
+# Independently follows a SUCCESSFUL scheduled gallery build.
+# It must not modify archived gallery files or run for the
 # manual 11 Nov R2 canary/recovery. PRs only exercise no-secret safety tests.
 on:
   pull_request:
@@ -29,7 +29,7 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Offline immutable-publication and V1-isolation regression
+      - name: Offline immutable-publication and gallery-isolation regression
         run: |
           python3 -m pip install 'boto3>=1.37,<2'
           python3 -m py_compile automation/publish-sculpture-v2-daily-r2.py
@@ -59,7 +59,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify previously published V1 date and solo portrait roster
+      - name: Verify published gallery date and solo portrait roster
         id: roster
         shell: bash
         run: |
@@ -74,16 +74,14 @@ jobs:
           # An armed R2 canary deliberately holds the scheduled gallery build.
           # A successful no-op upstream run MUST NOT trigger any V2 baking
           # or produce a misleading error before the manual canary.
-          if [[ ! -e "gallery/$DAY/meta.json" &&
-                ! -e "gallery/$DAY/3d/sculptures.json.gz" ]]; then
+          if [[ ! -e "gallery/$DAY/meta.json" ]]; then
             printf 'date=%s\neligible=0\n' "$DAY" >> "$GITHUB_OUTPUT"
             echo "V2_DAILY_SKIPPED_UPSTREAM_HOLD date=$DAY"
             exit 0
           fi
           test -s "gallery/$DAY/meta.json"
-          test -s "gallery/$DAY/3d/sculptures.json.gz"
           DAY="$DAY" python3 - <<'PY'
-          import gzip,json,os
+          import json,os
           from pathlib import Path
           date=os.environ['DAY']
           base=Path('gallery')/date
@@ -91,10 +89,10 @@ jobs:
           assert meta['date']==date
           solo=[x for x in meta['entries'] if x.get('orientation')=='portrait'
                 and x.get('material')!='confluence']
-          v1=json.loads(gzip.decompress((base/'3d/sculptures.json.gz').read_bytes()))
-          assert v1['date']==date and v1['version']==1
-          assert set(v1['studies'])=={e['imageFile'] for e in solo}
-          print('V2_DAILY_V1_PUBLISHED_OK',date,'eligible',len(solo))
+          assert solo, 'No source portraits for V2'
+          assert len({e['imageFile'] for e in solo})==len(solo)
+          assert all((base/e['imageFile']).is_file() for e in solo)
+          print('V2_DAILY_GALLERY_PUBLISHED_OK',date,'eligible',len(solo))
           with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
               stream.write(f'eligible={len(solo)}\n')
           PY

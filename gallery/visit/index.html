@@ -105,7 +105,7 @@
 <link rel="stylesheet" href="../../css/nav-lettering.css?v=13-uppercase-marker">
 <script defer src="../../js/nav-lettering.js?v=3-uppercase-marker"></script>
 <!-- Verified production room occlusion; use ?roomcull=0 to disable without changing artwork. -->
-<link rel="modulepreload" href="./gallery-phi-bundle.js?v=classical-aac-20261107">
+<link rel="modulepreload" href="./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111">
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
 <!-- Same-origin source maps preload into the browser cache before the gallery material bank requests them. -->
 
@@ -145,7 +145,9 @@
     globalThis.__phiLivingMonitorTest=true;
     globalThis.__phiTranslationSignTest=true;
     window.__galleryStage='Importing bundled JavaScript';
-    await import('./gallery-phi-bundle.js?v=classical-aac-20261107');
+    // The live tower exclusively uses the prepared V2 sculpture renderer.
+    // The previously deployed V1 release remains recoverable via Pages rollback.
+    await import('./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111');
     window.__galleryStage='Bundle imported; gallery initialising';
   }catch(error){
     console.error('[Gallery startup] module import failed',error);

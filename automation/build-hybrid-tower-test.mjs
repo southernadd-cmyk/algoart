@@ -43,7 +43,7 @@ assert.ok((await readFile(target)).length>200000);
 const live=await readFile('gallery/visit/index.html','utf8');
 let html=live.replace('<head>','<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
-const old='./gallery-phi-bundle.js?v=classical-aac-20261107';
+const old='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111';
 assert.ok(html.includes(old),'Live tower import URL changed; review test build');
 html=html.replaceAll(old,'./gallery-phi-hybrid-test-bundle.js?v=hybrid-pin-test-02');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',

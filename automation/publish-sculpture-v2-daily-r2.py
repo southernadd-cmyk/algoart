@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publish a verified single day's Sculpture V2 packs AFTER V1 daily succeeded.
+"""Publish source-verified daily Sculpture V2 packs after the gallery archive is committed.
 
 Never updates gallery/ or V1. Writes only immutable R2 keys in a disjoint
 namespace. Repeated publication is allowed only for byte-identical data.
@@ -39,22 +39,17 @@ def prepare(day, root, gallery):
             "2026-11-11" <= day <= date.today().isoformat(),
             "Only post-archive daily dates are permitted")
     meta_path = gallery / day / "meta.json"
-    v1_path = gallery / day / "3d" / "sculptures.json.gz"
-    require(meta_path.is_file() and v1_path.is_file(),
-            "V1 gallery must have been published before V2")
+    require(meta_path.is_file(), "Published gallery metadata required before V2")
     meta_bytes = meta_path.read_bytes()
     meta = json.loads(meta_bytes)
-    require(meta.get("date") == day,"V1 gallery date mismatch")
+    require(meta.get("date") == day,"Gallery date mismatch")
     solo = [e for e in meta["entries"] if e.get("orientation") == "portrait"
             and e.get("material") != "confluence"]
     require(len(solo) > 0,"No eligible solo portraits for daily V2")
     require(len(set(e["imageFile"] for e in solo)) == len(solo),
             "Duplicate source painting identifiers")
-    v1_bytes = v1_path.read_bytes()
-    v1 = json.loads(gzip.decompress(v1_bytes))
-    require(v1.get("version") == 1 and v1.get("date") == day and
-            set(v1.get("studies",{})) == {e["imageFile"] for e in solo},
-            "V1 daily sculpture bake is missing or incomplete")
+    require(all((gallery / day / e["imageFile"]).is_file() for e in solo),
+            "Published solo painting missing")
     report = json.loads((root / "bake-report.json").read_text())
     require(report.get("schema") == "pp-sculpture-v2-bake-report" and
             report.get("mode") == "single-day" and
@@ -113,7 +108,6 @@ def prepare(day, root, gallery):
     daily_manifest = {
         "schema": "pp-sculpture-v2-daily-r2-manifest", "version": 1,
         "revision": REVISION, "date": day, "portraits": len(solo),
-        "v1Sha256": digest(v1_bytes),
         "metaSha256": digest(meta_bytes),
         "qualities": assets, "worker": WORKER,
         "ready": True, "confluenceExcluded": True

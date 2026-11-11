@@ -60,6 +60,12 @@ await build({
           .replace(oldImage,"https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/reception/image/a66e75e6a8d7ad8616de6a1b501ecfe64b5fb0e5c12970ddb1f3f31b55594c3a.png")
           .replace(oldGate,"!(bake.orientation==='portrait'&&bake.width===1000&&bake.height===1400)")
           .replace(oldPrebuilt,"sourcePortrait:true");
+        // V2 geometry is obtained only from source-verified R2 packs.
+        // Never request a retired daily V1 sculptures.json.gz just to build the floor.
+        const legacyPackCall='    loadSculpturePack(date,cache)';
+        assert.equal(transformed.split(legacyPackCall).length-1,1,
+          'Expected exactly one legacy V1 pack request');
+        transformed=transformed.replace(legacyPackCall,'    Promise.resolve({})');
         receptionReplacements++;
         return{contents:transformed,loader:'js',resolveDir:dirname(args.path)};
       });
@@ -88,9 +94,9 @@ assert.equal(n8aoReplacements,1,
 assert.ok((await readFile(target)).length>200000,
   'V2 test tower did not produce a complete browser bundle');
 const live=await readFile('gallery/visit/index.html','utf8');
-const originalUrl='./gallery-phi-bundle.js?v=classical-aac-20261107';
+const originalUrl='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111';
 assert.equal(live.split(originalUrl).length-1,2,
-  'Public tower bundle URL has changed; review test adapter');
+  'Public tower must use the verified V2 bundle for preload and import');
 let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
