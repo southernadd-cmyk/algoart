@@ -87,7 +87,11 @@ jobs:
           python3 automation/publish-sculpture-v2-daily-r2.py --date 2026-11-11 --out "$V2_BAKE_OUT" --dry-run
       - name: Prove no source archive modifications and no V1 output
         run: |
-          test -z "$(git status --porcelain -- gallery)"
+          # Baker-generated HTML/JS stays in the ephemeral CI checkout.
+          # Require all ORIGINAL archived source/metadata files to remain unchanged.
+          git diff --quiet -- gallery/2026-11-11
+          git diff --cached --quiet -- gallery/2026-11-11
+          test -z "$(git ls-files --others --exclude-standard -- gallery/2026-11-11)"
           test ! -e "$V2_BAKE_OUT/2026-11-11/3d/sculptures.json.gz"
           test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.desktop.json.gz"
           test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.mobile.json.gz"
