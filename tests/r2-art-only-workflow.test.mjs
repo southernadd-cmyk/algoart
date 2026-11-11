@@ -56,3 +56,20 @@ test('R2-only gallery commit requires verified painting and both sculpture quali
     workflow.indexOf('Persist gallery archive'));
   assert.match(workflow,/R2-only commit still contains artwork bytes/);
 });
+
+test('all five reusable material workflows freeze and restore R2 social images without gallery commits',()=>{
+  for(const name of ['portrait','watercolor','watercolour','oil','action']){
+    const src=readFileSync('.github/workflows/'+name+'-live.yml','utf8');
+    assert.match(src,/name: Detect R2-only gallery publication/);
+    assert.match(src,/python3 automation\/social-r2-queue\.py restore/);
+    assert.match(src,/python3 automation\/social-r2-queue\.py freeze/);
+    assert.match(src,/python3 automation\/social-r2-queue\.py lookup/);
+    assert.match(src,/steps\.storage\.outputs\.art_only != 'true' && steps\.gate\.outputs\.should_run/);
+    assert.match(src,/R2_SOCIAL_ART_ONLY:/);
+    assert.match(src,/gh release upload "\$RELEASE_TAG" "\$DIR\//);
+  }
+  const helper=readFileSync('automation/social-r2-queue.py','utf8');
+  assert.match(helper,/sha256\(data\)/);
+  assert.match(helper,/R2_SOCIAL_QUEUE_RESTORED/);
+  assert.match(helper,/R2_SOCIAL_QUEUE_FROZEN/);
+});
