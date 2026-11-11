@@ -137,43 +137,8 @@ export function disposePreparedV2({body,bumpTexture}){
   }
   bumpTexture?.dispose();
 }
-export async function downloadV2Floor(date,quality,{
-  fetcher=fetch,base=new URL('../',location.href).pathname,allowReception=false
-}={}){
-  if(!(allowReception&&date==='reception')&&
-     !/^\d{4}-\d{2}-\d{2}$/.test(date)||!['mobile','desktop'].includes(quality))
-    throw Error('Invalid V2 floor request');
-  const url=base+(date==='reception'?'':date+'/3d/v2/')+
-    'sculptures.'+quality+'.json.gz';
-  const response=await fetcher(url);
-  if(!response.ok)throw Error('V2 prepared floor '+date+'/'+quality+
-    ' not available: HTTP '+response.status);
-  if(typeof DecompressionStream==='undefined')
-    throw Error('Browser does not support compressed V2 floor packs');
-  const compressed=await response.blob();
-  const decoded=await new Response(
-    compressed.stream().pipeThrough(new DecompressionStream('gzip'))
-  ).json();
-  if(decoded.schema!=='pp-sculpture-v2-floor'||decoded.version!==2||
-    decoded.date!==date||decoded.quality!==quality||!decoded.complete)
-    throw Error('V2 prepared floor has an invalid or incomplete manifest');
-  if(Object.keys(decoded.studies||{}).length!==decoded.expectedPortraits)
-    throw Error('V2 prepared floor portrait count mismatch');
-  return decoded;
-}
-
-export function downloadV2Reception(quality,{fetcher=fetch}={}){
-  const base=new URL('../',location.href).pathname+
-    'sculpture-v2-test/reception/';
-  return downloadV2Floor('reception',quality,{
-    fetcher,base,allowReception:true
-  });
-}
-
-
-// Permanent R2 storage is the preferred source for the isolated test tower.
-// The historical Pages packs remain a *test-only* fallback while the R2
-// integration is qualified. Do not use this module in the production V1 tower.
+// Isolated V2 only: SHA-verified immutable R2 meshes, never Pages geometry.
+// A missing or corrupt R2 object fails closed; production V1 is untouched.
 export const V2_R2_CATALOG_URL=
   'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/'+
   'sculptures-v2/v4.2.1-20261110/catalog/'+
@@ -311,40 +276,15 @@ async function readR2Pack(date,quality,{fetcher=fetch}={}){
   }});
   return pack;
 }
-/** R2-first isolated prepared meshes; Pages is the legacy test-only fallback.
- * A broken/missing R2 asset is never treated as successful R2 delivery.
- */
+/** Isolated V2 requires SHA-verified R2. No local Pages mesh path exists. */
 export async function downloadV2Prepared(date,quality,{
-  fetcher=fetch,mode='r2',localBase
+  fetcher=fetch,mode='r2-only'
 }={}){
   if(!(/^\d{4}-\d{2}-\d{2}$/.test(date)||date==='reception')||
       !['mobile','desktop'].includes(quality))
     throw Error('Invalid V2 prepared request');
-  if(!['r2','pages','r2-only'].includes(mode))
-    throw Error('Invalid V2 source selection');
-  let fallbackReason=null;
-  if(mode!=='pages'){
-    try{return await readR2Pack(date,quality,{fetcher})}
-    catch(error){
-      if(mode==='r2-only')throw error;
-      fallbackReason=String(error?.message||error).slice(0,250);
-      console.warn('[V2 isolated tower] R2 unavailable, using Pages test pack',
-        date,quality,fallbackReason);
-    }
-  }
-  const started=performance.now();
-  const base=localBase||new URL('../',location.href).pathname;
-  const path=date==='reception'
-    ?base+'sculpture-v2-test/reception/sculptures.'+quality+'.json.gz'
-    :base+date+'/3d/v2/sculptures.'+quality+'.json.gz';
-  const response=await fetcher(path);
-  if(!response.ok)throw Error('Both V2 sources unavailable: Pages HTTP '+
-    response.status+' (R2: '+(fallbackReason||'not requested')+')');
-  const bytes=await response.arrayBuffer();
-  const pack=await decodeFloor(bytes,date,quality);
-  Object.defineProperty(pack,'__v2Transport',{enumerable:false,value:{
-    source:'pages',fallback:!!fallbackReason,reason:fallbackReason,
-    downloadMs:Math.round(performance.now()-started),bytes:bytes.byteLength
-  }});
-  return pack;
+  // "r2" is a backwards-compatible strict alias for existing test links.
+  if(!['r2','r2-only'].includes(mode))
+    throw Error('Pages V2 source retired; R2 is required');
+  return readR2Pack(date,quality,{fetcher});
 }
