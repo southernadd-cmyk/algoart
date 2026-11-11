@@ -76,3 +76,22 @@ jobs:
 # Non-publishing preflight invocation for 11 November 2026.
 # Verified non-publishing 11 November preflight execution.
 # Dispatch verified R2 canary for 2026-11-11 only.
+
+  diagnose-r2-access:
+    if: github.ref == 'refs/heads/ops/r2-canary-2026-11-11' && github.event.head_commit.message == 'Diagnose R2 access 2026-11-11'
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 3
+    steps:
+      - name: Compare both read-only Worker media endpoints, without writes
+        shell: bash
+        run: |
+          asset='editions/2026-11-11/2026-11-11-G01/original-7fac9fd2dd660220695af6a4946ca9bf955fa68d63c0f3e169c193064ddb489d.jpg'
+          for name in proportion-piece-media proportion-piece-sculpture-v2; do
+            url="https://${name}.mr-adam-clement.workers.dev/${asset}"
+            for method in GET HEAD; do
+              code="$(curl --silent --show-error --max-time 15 --output /dev/null --dump-header "$RUNNER_TEMP/r2-public.headers" --write-out '%{http_code}' --request "$method" --header 'Origin: https://southernadd-cmyk.github.io' "$url" || true)"
+              echo "PROBE ${name} ${method} status=${code}"
+              grep -iE '^(content-type|content-length|access-control-allow-origin|cache-control):' "$RUNNER_TEMP/r2-public.headers" || true
+            done
+          done
