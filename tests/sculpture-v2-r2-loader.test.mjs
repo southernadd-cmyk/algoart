@@ -87,7 +87,9 @@ test('reception uses independent local fallback and always refuses unapproved qu
 
 test('future daily V2 loads only its original SHA-checked R2 quality pack',async()=>{
   const day='2026-11-11',quality='desktop';
-  const original={...pack,date:day};
+  const original={...pack,date:day,
+    entropy:Array.from({length:160},(_,i)=>
+      createHash('sha256').update(String(i)).digest('hex')).join('')};
   const zip=gzipSync(Buffer.from(JSON.stringify(original)));
   const sha=createHash('sha256').update(zip).digest('hex');
   const base='https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev';
