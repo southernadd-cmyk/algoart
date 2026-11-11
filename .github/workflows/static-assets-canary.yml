@@ -59,7 +59,7 @@ jobs:
             sleep 2
           done
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/' -o /tmp/pp-test-lab.html
-          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/lab-v4.mjs?pp-test=123' -o /tmp/pp-test-lab.mjs
+          curl -fsS 'http://127.0.0.1:8787/algoart/gallery/sculpture-lab/lab-v2.mjs?pp-test=123' -o /tmp/pp-test-lab.mjs
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/2026-11-11/' -o /tmp/pp-test-day.html
           curl -fsS 'http://127.0.0.1:8787/algoart/confluence/' -o /tmp/pp-test-confluence.html
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/visit/' -o /tmp/pp-test-tower.html
