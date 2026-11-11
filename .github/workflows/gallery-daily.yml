@@ -468,6 +468,31 @@ jobs:
           npx playwright install --with-deps webkit
           node tests/r2-gallery-browser.mjs
 
+      - name: Prepare and verify R2-only V2 sculptures before publishing gallery
+        if: env.R2_ART_ONLY == 'true'
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          PP_R2_ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
+          PP_R2_ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}
+          V2_PUBLISH_DATE: ${{ needs.plan.outputs.date }}
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          set -euo pipefail
+          node automation/build-sculpture-v2-baker.mjs
+          mkdir -p /tmp/r2-art-only-v2-${{ github.run_id }}
+          node automation/build-sculpture-v2-packs.mjs \
+            --date "$SOCIAL_DATE" --quality both \
+            --out "/tmp/r2-art-only-v2-${{ github.run_id }}"
+          V2_BAKE_OUT="/tmp/r2-art-only-v2-${{ github.run_id }}" \
+            node --test tests/sculpture-v2-packs.test.mjs
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "$SOCIAL_DATE" --out "/tmp/r2-art-only-v2-${{ github.run_id }}" --dry-run
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "$SOCIAL_DATE" --out "/tmp/r2-art-only-v2-${{ github.run_id }}"
+          echo "R2_ONLY_GALLERY_AND_V2_VERIFIED date=$SOCIAL_DATE"
+
       - name: Save the media inventory and delivery verification
         if: ${{ always() && env.R2_CANARY == 'true' }}
         uses: actions/upload-artifact@v4
