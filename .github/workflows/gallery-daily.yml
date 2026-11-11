@@ -28,6 +28,11 @@ on:
         required: false
         default: false
         type: boolean
+      r2_art_only:
+        description: 'EXPERIMENTAL: date-armed R2-only edition with no GitHub painting binaries'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -57,7 +62,9 @@ jobs:
         env:
           REQUESTED_DATE: ${{ inputs.date }}
           CANARY_REQUESTED: ${{ inputs.r2_canary }}
+          ART_ONLY_REQUESTED: ${{ inputs.r2_art_only }}
           ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
         run: |
           TODAY="$(TZ=Europe/London date +%F)"
           DAY="${REQUESTED_DATE:-$TODAY}"
@@ -65,6 +72,16 @@ jobs:
           MODE=legacy
           if [[ -f "gallery/$DAY/media-publication.json" ]]; then
             MODE=recover
+          elif [[ "$ART_ONLY_REQUESTED" == true ]]; then
+            # Explicit and date-armed only. Scheduled runs cannot enter this branch.
+            [[ "$CANARY_REQUESTED" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch &&
+               -n "$ART_ONLY_DATE" && "$REQUESTED_DATE" == "$TODAY" &&
+               "$DAY" == "$ART_ONLY_DATE" && "$DAY" > "2026-11-11" ]]
+            if [[ -e "gallery/$DAY/meta.json" ]]; then
+              echo "::error::R2-only publishing is restricted to a new edition date."
+              exit 1
+            fi
+            MODE=r2-only
           elif [[ "$CANARY_REQUESTED" == true ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
                "$DAY" == "$ARMED_DATE" && "$DAY" > "2026-11-09" ]]
@@ -81,8 +98,8 @@ jobs:
 
   build:
     needs: plan
-    if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary'
-    environment: ${{ needs.plan.outputs.mode == 'canary' && 'archive-media-test' || 'gallery-daily' }}
+    if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only'
+    environment: ${{ (needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only') && 'archive-media-test' || 'gallery-daily' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -91,7 +108,8 @@ jobs:
       SOCIAL_DATE: ${{ needs.plan.outputs.date }}
       R2_EDITION_DATE: ${{ needs.plan.outputs.date }}
       R2_STAGE_OUTPUT: /tmp/pp-r2-edition-${{ github.run_id }}
-      R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' }}
+      R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only' }}
+      R2_ART_ONLY: ${{ needs.plan.outputs.mode == 'r2-only' }}
 
     steps:
       - name: Checkout
@@ -432,7 +450,7 @@ jobs:
       - name: Prepare the verified edition overlay and upload immutable R2 media
         if: env.R2_CANARY == 'true'
         env:
-          PP_R2_CANARY_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          PP_R2_CANARY_DATE: ${{ needs.plan.outputs.mode == 'r2-only' && vars.PP_R2_ART_ONLY_DATE || vars.PP_R2_CANARY_DATE }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
@@ -467,6 +485,22 @@ jobs:
           git restore --worktree package-lock.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ "$R2_ART_ONLY" == true ]]; then
+            # No binary ever enters this edition's Git tree. The cleanup is
+            # permitted only after all R2 objects and staged bytes verified.
+            node automation/activate-r2-daily.mjs
+            node automation/prune-r2-art-only.mjs
+            git add -A gallery sitemap.xml robots.txt
+            if git diff --cached --quiet; then
+              echo "::error::R2-only edition has no catalogue changes"
+              exit 1
+            fi
+            git commit -m "Publish R2-only ALGO ART daily gallery $SOCIAL_DATE"
+            # Push must fail closed when another publisher updated main.
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git add gallery sitemap.xml robots.txt
           if git diff --cached --quiet; then
             echo "Daily gallery already matches the deterministic batch."
