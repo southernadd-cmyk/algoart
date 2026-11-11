@@ -73,3 +73,15 @@ test('all five reusable material workflows freeze and restore R2 social images w
   assert.match(helper,/R2_SOCIAL_QUEUE_RESTORED/);
   assert.match(helper,/R2_SOCIAL_QUEUE_FROZEN/);
 });
+
+test('skip optional graffiti for R2-only and use the verified Chromium-only runner',()=>{
+  assert.match(workflow,/runs-on: ubuntu-24\.04/);
+  assert.match(workflow,/npx playwright install --only-shell chromium/);
+  assert.match(workflow,/R2_CHROMIUM_SMOKE_OK/);
+  assert.doesNotMatch(workflow,/playwright install --with-deps/);
+  assert.match(workflow,/Pre-render graffiti atlases for new indoor floor and exterior facade\n        #[^\n]*\n        if: env\.R2_ART_ONLY != 'true'/);
+  assert.match(workflow,/Verify saved graffiti atlases\n        if: env\.R2_ART_ONLY != 'true'/);
+  assert.match(workflow,/R2_BROWSERS=chromium node tests\/r2-gallery-browser\.mjs/);
+  assert.match(workflow,/R2_BROWSERS=chromium node tests\/r2-gallery-browser\.mjs --live/);
+  assert.match(workflow,/R2-only commit still contains artwork bytes/);
+});

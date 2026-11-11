@@ -102,7 +102,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only'
     environment: ${{ (needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only') && 'archive-media-test' || 'gallery-daily' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
@@ -125,7 +125,8 @@ jobs:
       - name: Install generator runtime
         run: |
           npm install
-          npx playwright install --with-deps chromium
+          npx playwright install --only-shell chromium
+          node --input-type=module -e "import {chromium} from 'playwright'; const b=await chromium.launch({headless:true}); await b.close(); console.log('R2_CHROMIUM_SMOKE_OK')"
 
       - name: Install gallery preview dependency
         run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
@@ -328,12 +329,15 @@ jobs:
       # This runs only after the final artwork slot has been archived, so the
       # baked geometry and daily archive share the same seed signatures.
       - name: Pre-render graffiti atlases for new indoor floor and exterior facade
+        # Graffiti is optional; exclude its binary atlases from new R2-only editions.
+        if: env.R2_ART_ONLY != 'true'
         shell: bash
         run: |
           DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           node automation/build-gallery-graffiti.mjs --date="$DAY"
 
       - name: Verify saved graffiti atlases
+        if: env.R2_ART_ONLY != 'true'
         shell: bash
         run: |
           DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
@@ -465,8 +469,8 @@ jobs:
       - name: Check staged 2D gallery and real tower before committing
         if: env.R2_CANARY == 'true'
         run: |
-          npx playwright install --with-deps webkit
-          node tests/r2-gallery-browser.mjs
+          # Chromium was smoke-tested above. Avoid APT-based WebKit install.
+          R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs
 
       - name: Prepare and verify R2-only V2 sculptures before publishing gallery
         if: env.R2_ART_ONLY == 'true'
@@ -572,7 +576,7 @@ jobs:
         if: env.R2_CANARY == 'true'
         run: |
           node automation/verify-r2-gallery-ready.mjs "$SOCIAL_DATE"
-          node tests/r2-gallery-browser.mjs --live
+          R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs --live
 
       - name: Summary
         if: always()
