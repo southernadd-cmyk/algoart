@@ -10,6 +10,7 @@ on:
       - 'tests/sculpture-v2-reception.test.mjs'
       - 'automation/stage-sculpture-v2-preview.mjs'
       - 'tests/sculpture-v2-packs.test.mjs'
+      - 'tests/sculpture-v2-r2-loader.test.mjs'
       - 'tests/sculpture-v2-tower*'
       - '.github/workflows/gallery-sculpture-v2-test.yml'
   workflow_dispatch:
@@ -40,7 +41,8 @@ jobs:
           node --check gallery/sculpture-v2-test/engine/v4-topology.mjs
           node --check gallery/sculpture-v2-test/engine/v4-contours.mjs
           node --check gallery/sculpture-v2-test/engine/v4-surface.mjs
-          node --test tests/sculpture-v4.test.mjs tests/sculpture-v2-tower-coverage.test.mjs
+          node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
+          node --test tests/sculpture-v4.test.mjs tests/sculpture-v2-tower-coverage.test.mjs tests/sculpture-v2-r2-loader.test.mjs
       - name: Build isolated full exhibition with frozen V4.2 geometry
         run: |
           node automation/build-sculpture-v2-test.mjs
