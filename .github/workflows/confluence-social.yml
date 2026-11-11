@@ -41,6 +41,26 @@ jobs:
         id: select
         run: node automation/select-confluence-social.mjs
 
+      - name: Identify verified R2-only Confluence edition
+        id: storage
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          day=os.environ['SOCIAL_DATE']
+          receipt=Path('gallery')/day/'media-publication.json'
+          active=False
+          if receipt.is_file():
+              m=json.loads(receipt.read_text())
+              active=(m.get('date')==day and m.get('published') is True and
+                      m.get('pagesFallback') is False and
+                      len(m.get('mediaAssets',[]))==m.get('count',0)*3+1)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('art_only='+str(active).lower()+'\n')
+          print('CONFLUENCE_ART_ONLY_MODE',day,active)
+          PY
+
       - name: Find monthly media release and completion markers
         id: markers
         shell: bash
@@ -72,8 +92,29 @@ jobs:
         shell: bash
         env:
           R2_MEDIA_URL: ${{ steps.select.outputs.media_url }}
+          ART_ONLY: ${{ steps.storage.outputs.art_only }}
+          R2_SOCIAL_ART_ONLY: ${{ steps.storage.outputs.art_only }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
           PREFIX="pp-confluence-$SOCIAL_DATE-${{ steps.select.outputs.orientation }}"
+          if [[ "$ART_ONLY" == true ]]; then
+            test -n "$R2_MEDIA_URL"
+            python3 -m pip install 'boto3>=1.37,<2'
+            for ROLE in meta bluesky; do
+              GITHUB_OUTPUT="/tmp/pp-confluence-r2-$ROLE-output" \
+                python3 automation/publish-social-r2.py --date "$SOCIAL_DATE" \
+                --role "confluence-${{ steps.select.outputs.orientation }}-$ROLE" \
+                --file "/tmp/$PREFIX-$ROLE.jpg"
+              URL=$(sed -n 's/^media_url=//p' "/tmp/pp-confluence-r2-$ROLE-output")
+              test -n "$URL"
+              echo "$ROLE=$URL" >> "$GITHUB_OUTPUT"
+            done
+            echo "original=$R2_MEDIA_URL" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           gh release upload "$RELEASE_TAG" "/tmp/$PREFIX-original.jpg" "/tmp/$PREFIX-meta.jpg" "/tmp/$PREFIX-bluesky.jpg" --clobber
           BASE="https://github.com/$GITHUB_REPOSITORY/releases/download/$RELEASE_TAG"
           echo "original=${R2_MEDIA_URL:-$BASE/$PREFIX-original.jpg}" >> "$GITHUB_OUTPUT"
