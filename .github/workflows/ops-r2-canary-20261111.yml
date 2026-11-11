@@ -276,3 +276,4 @@ jobs:
           run_id="$(jq -er '.workflow_run_id | numbers | select(. > 0)' <<< "$response")"
           echo "GUARDED_R2_RETRY_RUN_ID=$run_id"
           printf 'Started guarded [R2 canary retry](https://github.com/%s/actions/runs/%s).\n' "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
+# Live retry preflight after verified PR 306 merger.
