@@ -32,7 +32,7 @@ test('all eligible historical portrait studies have source paintings',async()=>{
     allOriginalPaintingsPreserved:true,perDate
   }));
 });
-test('V2 adapter preserves public renderer contract without publishing',async()=>{
+test('V2 adapter preserves public renderer contract for production',async()=>{
   const source=await read('gallery/sculpture-v2-test/sculpture-render-v2.mjs');
   const builder=await read('automation/build-sculpture-v2-test.mjs');
   const v1=await read('gallery/visit/sculpture-render-traced.mjs');
@@ -124,7 +124,7 @@ test('single-pixel pigment islands can produce actual closed sculpture geometry'
     disposeV4Sculpture(group);
   }finally{texture.dispose();}
 });
-test('V1 geometry packs are not overwritten by the V2 preview build',async()=>{
+test('historical V1 meshes remain archived but live tower selects V2',async()=>{
   const archive=JSON.parse(await read('gallery/archive.json'));
   const available=archive.days.filter(({date})=>
     existsSync(join('gallery',date,'3d','sculptures.json.gz')));
@@ -132,6 +132,6 @@ test('V1 geometry packs are not overwritten by the V2 preview build',async()=>{
   const builder=await read('automation/build-sculpture-v2-test.mjs');
   assert.doesNotMatch(builder,/writeFile\([^)]*sculptures\.json\.gz/);
   const live=await read('gallery/visit/index.html');
-  assert.match(live,/gallery-phi-bundle\.js\?v=/);
-  assert.doesNotMatch(live,/sculpture-v2-test-bundle/);
+  assert.match(live,/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-20261111/);
+  assert.doesNotMatch(live,/get\('sculptures'\)==='v1'/);
 });
