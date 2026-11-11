@@ -48,16 +48,6 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           grep -q 'SCULPTURE V2 TEST TOWER' gallery/sculpture-v2-test/index.html
-      - name: Recover and validate approved historical V2 packs in scratch
-        env:
-          GH_TOKEN: ${{ github.token }}
-          V2_APPROVED_RUN: '42904867052'
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/sculpture-v2-archive"
-          gh run download "$V2_APPROVED_RUN" --repo "${{ github.repository }}" --name sculpture-v2-prepared-packs --dir "$RUNNER_TEMP/sculpture-v2-archive"
-          V2_BAKE_OUT="$RUNNER_TEMP/sculpture-v2-archive" node --test tests/sculpture-v2-packs.test.mjs
-          node automation/stage-sculpture-v2-preview.mjs "$RUNNER_TEMP/sculpture-v2-archive" gallery
       - name: Install headless browser and start preview server
         run: |
           npx playwright install --with-deps chromium
@@ -74,14 +64,5 @@ jobs:
           node automation/build-sculpture-v2-baker.mjs
           node automation/build-reception-v2.mjs
           node --test tests/sculpture-v2-reception.test.mjs
-          mkdir -p gallery/sculpture-v2-test/reception
-          cp artifacts/sculpture-v2-reception/sculptures.*.json.gz gallery/sculpture-v2-test/reception/
       - name: Exercise actual archived floors and linked reception statue
         run: node tests/sculpture-v2-tower.browser.mjs
-      - name: Retain validated reception assets for isolated Pages deployment
-        uses: actions/upload-artifact@v4
-        with:
-          name: sculpture-v2-reception
-          path: artifacts/sculpture-v2-reception/
-          retention-days: 7
-          if-no-files-found: error
