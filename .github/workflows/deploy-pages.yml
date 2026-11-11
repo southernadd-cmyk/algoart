@@ -239,40 +239,23 @@ jobs:
           echo "Public artifact file count:"
           find _site -type f | wc -l
 
-      - name: Stage fully audited V2 packs only in isolated Pages route
-        env:
-          GH_TOKEN: ${{ github.token }}
-          V2_APPROVED_RUN: '42904867052'
+      - name: Verify isolated Sculpture V2 uses R2 without temporary Pages meshes
         shell: bash
         run: |
-          mkdir -p "$RUNNER_TEMP/sculpture-v2-archive"
-          gh run download "$V2_APPROVED_RUN" --repo "${{ github.repository }}" --name sculpture-v2-prepared-packs --dir "$RUNNER_TEMP/sculpture-v2-archive"
-          V2_BAKE_OUT="$RUNNER_TEMP/sculpture-v2-archive" node --test tests/sculpture-v2-packs.test.mjs
-          node automation/stage-sculpture-v2-preview.mjs "$RUNNER_TEMP/sculpture-v2-archive" _site/gallery
+          set -euo pipefail
           test -s _site/gallery/sculpture-v2-test/index.html
-          test -s _site/gallery/2026-11-10/3d/v2/sculptures.desktop.json.gz
-          test -s _site/gallery/2026-10-18/3d/v2/sculptures.mobile.json.gz
-          du -sh _site
-      - name: Stage verified reception sculpture in isolated V2 test tower
-        env:
-          GH_TOKEN: ${{ github.token }}
-          V2_RECEPTION_RUN: '42915426552'
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/v2-reception"
-          gh run download "$V2_RECEPTION_RUN" --repo "${{ github.repository }}" --name sculpture-v2-reception --dir "$RUNNER_TEMP/v2-reception"
-          V2_RECEPTION_OUT="$RUNNER_TEMP/v2-reception" node --test tests/sculpture-v2-reception.test.mjs
-          mkdir -p _site/gallery/sculpture-v2-test/reception
-          cp "$RUNNER_TEMP/v2-reception/sculptures.desktop.json.gz" _site/gallery/sculpture-v2-test/reception/
-          cp "$RUNNER_TEMP/v2-reception/sculptures.mobile.json.gz" _site/gallery/sculpture-v2-test/reception/
-          cp "$RUNNER_TEMP/v2-reception/manifest.json" _site/gallery/sculpture-v2-test/reception/
-          cp "$RUNNER_TEMP/v2-reception/source.json" _site/gallery/sculpture-v2-test/reception/
-          cp "$RUNNER_TEMP/v2-reception/recursive-divisions-portrait.png" _site/gallery/sculpture-v2-test/reception/
-          test -s _site/gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png
-          test -s _site/gallery/sculpture-v2-test/reception/source.json
-          test -s _site/gallery/sculpture-v2-test/reception/sculptures.desktop.json.gz
-          test -s _site/gallery/sculpture-v2-test/reception/sculptures.mobile.json.gz
-          echo "Isolated reception sculpture restored from approved run $V2_RECEPTION_RUN"
+          node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
+          node --test tests/sculpture-v2-r2-loader.test.mjs tests/sculpture-v2-tower-coverage.test.mjs
+          # No large historical or reception geometry may be copied into Pages.
+          if find _site/gallery -type f -path '*/3d/v2/sculptures.*.json.gz' | grep -q .; then
+            echo "Legacy V2 historical geometry leaked into Pages" >&2
+            exit 1
+          fi
+          if find _site/gallery/sculpture-v2-test -type f -name 'sculptures.*.json.gz' | grep -q .; then
+            echo "Legacy V2 reception geometry leaked into Pages" >&2
+            exit 1
+          fi
+          echo "SCULPTURE_V2_R2_ONLY_PAGES_OK"
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:

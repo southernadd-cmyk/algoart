@@ -20,8 +20,8 @@ const status={
   mode:'test-only-prepared-v2',variant:'v2.0-prepared-archive',
   geometry:'sculpture-lab-v4.2.1',connector:'pin',method:V2_TEST_METHOD,
   attempted:0,complete:0,failed:0,cancelled:0,byDate:{},
-  builds:[],modelSource:'sha-verified-r2-first',
-  transport:{r2:0,pages:0,fallbacks:0},r2CatalogVerified:true,
+  builds:[],modelSource:'sha-verified-r2-only',
+  transport:{r2:0},r2CatalogVerified:true,
   productionUnchanged:true
 };
 if(typeof window!=='undefined')window.__sculptureV2TowerStatus=status;
@@ -59,8 +59,8 @@ function sourceImage(study){
 // quality remains cached, avoiding retained geometry from all 37 floors.
 const floors=new Map();
 const querySource=typeof location!=='undefined'
-  ?new URLSearchParams(location.search).get('v2source')||'r2':'r2';
-if(!['r2','r2-only','pages'].includes(querySource))
+  ?new URLSearchParams(location.search).get('v2source')||'r2-only':'r2-only';
+if(!['r2','r2-only'].includes(querySource))
   throw Error('Unknown isolated V2 source override');
 status.requestedSource=querySource;
 function preparedFloor(date,quality){

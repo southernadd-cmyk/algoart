@@ -1,5 +1,6 @@
 // Isolated Sculpture V2 preview builder. Uses the REAL full-height public tower,
 // replaces only the V1 portrait renderer, and emits a distinct route/bundle.
+// Reception source metadata/image use immutable R2 URLs; Pages mesh staging is retired.
 // Does not touch live production bundles, V1 baked packs or daily generation.
 import {build} from 'esbuild';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
@@ -55,8 +56,8 @@ await build({
           assert.equal(transformed.split(token).length-1,1,
             'Reception source substitution needs one exact anchor: '+token);
         transformed=transformed
-          .replace(oldSource,"../sculpture-v2-test/reception/source.json")
-          .replace(oldImage,"../sculpture-v2-test/reception/recursive-divisions-portrait.png")
+          .replace(oldSource,"https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/reception/source/ecce0addb36639a44d6b415c20cce983abf347202672294169c022a615e4c47a.json")
+          .replace(oldImage,"https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/reception/image/a66e75e6a8d7ad8616de6a1b501ecfe64b5fb0e5c12970ddb1f3f31b55594c3a.png")
           .replace(oldGate,"!(bake.orientation==='portrait'&&bake.width===1000&&bake.height===1400)")
           .replace(oldPrebuilt,"sourcePortrait:true");
         receptionReplacements++;
