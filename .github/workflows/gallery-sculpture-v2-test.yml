@@ -8,7 +8,6 @@ on:
       - 'automation/build-reception-v2.mjs'
       - 'automation/generate-reception-portrait.mjs'
       - 'tests/sculpture-v2-reception.test.mjs'
-      - 'automation/stage-sculpture-v2-preview.mjs'
       - 'tests/sculpture-v2-packs.test.mjs'
       - 'tests/sculpture-v2-r2-loader.test.mjs'
       - 'tests/sculpture-v2-tower*'
