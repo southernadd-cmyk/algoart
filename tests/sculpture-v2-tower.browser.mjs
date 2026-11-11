@@ -148,13 +148,13 @@ try{
         assert.ok(panel.href.includes('mode=rects')&&
           panel.href.includes('fmt=portrait')&&
           panel.href.includes('seed=PP-RECEPTION-RECTS-P-20261110'));
-        const portrait=await page.evaluate(()=>new Promise((resolve,reject)=>{
+        const portrait=await page.evaluate(url=>new Promise((resolve,reject)=>{
           const img=new Image();
           img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});
           img.onerror=()=>reject(Error('Reception portrait PNG unavailable'));
           img.crossOrigin='anonymous';
-          img.src=R2_RECEPTION_IMAGE;
-        }));
+          img.src=url;
+        }),R2_RECEPTION_IMAGE);
         assert.deepEqual(portrait,{width:1000,height:1400},
           'Reception V2 image must be a genuinely portrait source');
       }
