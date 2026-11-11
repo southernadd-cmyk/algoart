@@ -31,7 +31,7 @@ jobs:
           git fetch --depth=1 origin refs/heads/main
           git worktree add --detach /tmp/pp-web-canary-current-main FETCH_HEAD
           mkdir -p /tmp/pp-web-canary-current-main/cloudflare/web-canary
-          cp cloudflare/web-canary/build.sh cloudflare/web-canary/wrangler.toml /tmp/pp-web-canary-current-main/cloudflare/web-canary/
+          cp cloudflare/web-canary/build.sh cloudflare/web-canary/wrangler.toml cloudflare/web-canary/rewrite-daily-links.mjs cloudflare/web-canary/rewrite-daily-links.test.mjs /tmp/pp-web-canary-current-main/cloudflare/web-canary/
           # The canary-only welcome repair is deliberately absent from main.
           # Overlay exactly that source file for the preview test, never production.
           cp js/app.js /tmp/pp-web-canary-current-main/js/app.js
@@ -56,6 +56,20 @@ jobs:
           test -s _cf_assets/algoart/index.html
           cmp _site/index.html _cf_assets/algoart/index.html
           cmp _site/gallery/archive.json _cf_assets/algoart/gallery/archive.json
+          # Dated HTML anchors intentionally differ ONLY in preview; source archive remains intact.
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            import {rewriteDailyPageLinks,PREVIEW} from "./cloudflare/web-canary/rewrite-daily-links.mjs";
+            for (const date of ["2026-11-10","2026-11-11"]) {
+              const original=fs.readFileSync("_site/gallery/"+date+"/index.html","utf8");
+              const preview=fs.readFileSync("_cf_assets/algoart/gallery/"+date+"/index.html","utf8");
+              const result=rewriteDailyPageLinks(original);
+              assert.ok(result.changed>0,"No artwork links were rewritten for "+date);
+              assert.equal(preview,result.html,"Preview not correctly rewritten for "+date);
+              assert.ok(preview.includes(PREVIEW));
+            }
+          '
           test ! -e _cf_assets/index.html
           npx --yes wrangler@4.160.0 deploy --dry-run --config cloudflare/web-canary/wrangler.toml --outdir /tmp/pp-canary-wrangler-dry-run
           echo "WRANGLER_DRY_RUN_OK; no Cloudflare deployment performed"
@@ -89,7 +103,12 @@ jobs:
           curl -fsS 'http://127.0.0.1:8787/algoart/gallery/visit/' -o /tmp/pp-test-tower.html
           cmp /tmp/pp-test-home.html _site/index.html
           cmp /tmp/pp-test-lab.html _site/gallery/sculpture-lab/index.html
-          cmp /tmp/pp-test-day.html _site/gallery/2026-11-11/index.html
+          cmp /tmp/pp-test-day.html _cf_assets/algoart/gallery/2026-11-11/index.html
+          grep -q 'href="https://proportion-piece-web-canary.mr-adam-clement.workers.dev/algoart/?v=10' /tmp/pp-test-day.html
+          if grep -Eq '<a [^>]*href="https://southernadd-cmyk.github.io/algoart/(\\?|confluence/\\?)' /tmp/pp-test-day.html; then
+            echo "::error::Daily artwork links still escape to GitHub Pages"
+            exit 1
+          fi
           grep -q 'PROPORTION PIECE' /tmp/pp-test-home.html
           grep -q 'SCULPTURE LAB' /tmp/pp-test-lab.html
           grep -q 'Confluence' /tmp/pp-test-confluence.html
