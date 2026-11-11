@@ -24,12 +24,22 @@ const V2_RECEPTION=new RegExp(
 const V2_CATALOG=new RegExp(
   "^"+V2_PREFIX+"/catalog/"+HASH+"\\.json$"
 );
+// Future dates: immutable per-day manifests, two SHA-addressed quality packs.
+// Does not open up arbitrary R2 keys or touch the existing editions Worker.
+const V2_DAILY="sculptures-v2/daily/v4\\.2\\.1";
+const V2_DAILY_PACK=new RegExp(
+  "^"+V2_DAILY+"/"+DATE+"/(?:desktop|mobile)/"+HASH+"\\.json\\.gz$"
+);
+const V2_DAILY_MANIFEST=new RegExp(
+  "^"+V2_DAILY+"/"+DATE+"/manifest\\.json$"
+);
 const MIME={jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",
   webp:"image/webp","json.gz":"application/gzip",json:"application/json"};
 function allowedKey(key){
   return key.length<=320&&(
     LEGACY_ART.test(key)||LEGACY_EDITION.test(key)||
-    V2_FLOOR.test(key)||V2_RECEPTION.test(key)||V2_CATALOG.test(key)
+    V2_FLOOR.test(key)||V2_RECEPTION.test(key)||V2_CATALOG.test(key)||
+    V2_DAILY_PACK.test(key)||V2_DAILY_MANIFEST.test(key)
   );
 }
 function typeFor(key){
