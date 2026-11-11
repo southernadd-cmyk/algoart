@@ -58,6 +58,23 @@ def publish(item,dry_run=False,client=None):
     media.verify_public([item])
     return item["url"]
 
+def connect_client():
+    import boto3
+    from botocore.config import Config
+    media.check(os.environ.get("GITHUB_REPOSITORY")=="southernadd-cmyk/algoart" and
+                os.environ.get("GITHUB_REF")=="refs/heads/main" and
+                os.environ.get("R2_SOCIAL_ART_ONLY")=="true",
+                "Unauthorized social storage upload")
+    account=os.environ["R2_ACCOUNT_ID"]
+    media.check(bool(re.fullmatch(r"[a-fA-F0-9]{32}",account)),"Invalid R2 account")
+    return boto3.client("s3",endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ["R2_MEDIA_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["R2_MEDIA_SECRET_ACCESS_KEY"],
+        region_name="auto",config=Config(signature_version="s3v4",
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+            s3={"addressing_style":"path"}))
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--date",required=True)
@@ -66,23 +83,7 @@ def main():
     p.add_argument("--dry-run",action="store_true")
     a=p.parse_args()
     item=plan(a.date,a.role,a.file)
-    if not a.dry_run:
-        import boto3
-        from botocore.config import Config
-        media.check(os.environ.get("GITHUB_REPOSITORY")=="southernadd-cmyk/algoart" and
-                    os.environ.get("GITHUB_REF")=="refs/heads/main" and
-                    os.environ.get("R2_SOCIAL_ART_ONLY")=="true",
-                    "Unauthorized social storage upload")
-        account=os.environ["R2_ACCOUNT_ID"]
-        media.check(bool(re.fullmatch(r"[a-fA-F0-9]{32}",account)),"Invalid R2 account")
-        client=boto3.client("s3",endpoint_url=f"https://{account}.r2.cloudflarestorage.com",
-            aws_access_key_id=os.environ["R2_MEDIA_ACCESS_KEY_ID"],
-            aws_secret_access_key=os.environ["R2_MEDIA_SECRET_ACCESS_KEY"],
-            region_name="auto",config=Config(signature_version="s3v4",
-                request_checksum_calculation="when_required",
-                response_checksum_validation="when_required",
-                s3={"addressing_style":"path"}))
-    else:client=None
+    client=connect_client() if not a.dry_run else None
     url=publish(item,dry_run=a.dry_run,client=client)
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"],"a") as output:
