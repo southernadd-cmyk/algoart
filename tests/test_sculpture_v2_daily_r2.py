@@ -33,11 +33,6 @@ class V2DailyR2Tests(unittest.TestCase):
                  "orientation":"portrait","material":"marker"},
                 {"imageFile":"collab.jpg","orientation":"portrait",
                  "material":"confluence"}]})
-        v1=folder/"3d"/"sculptures.json.gz"
-        v1.parent.mkdir(parents=True)
-        v1.write_bytes(gzip.compress(json.dumps({
-            "version":1,"date":day,"studies":{"portrait.jpg":{}}
-        }).encode()))
         root=path/"output"
         report={"schema":"pp-sculpture-v2-bake-report",
                 "mode":"single-day","failed":0,"sourceDateCount":1,
@@ -89,7 +84,9 @@ class V2DailyR2Tests(unittest.TestCase):
                 self.assertEqual(v2.digest(obj["data"]),obj["sha256"])
             self.assertEqual(manifest["qualities"]["mobile"]["bytes"],
                 objects[1]["bytes"])
-            self.assertTrue((gallery/day/"3d"/"sculptures.json.gz").is_file())
+            self.assertFalse((gallery/day/"3d"/"sculptures.json.gz").exists())
+            self.assertNotIn("v1Sha256",manifest)
+            self.assertRegex(manifest["metaSha256"],r"^[a-f0-9]{64}$")
 
     def test_source_mutation_fails_closed_before_upload(self):
         with tempfile.TemporaryDirectory() as t:
@@ -98,15 +95,11 @@ class V2DailyR2Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"originating painting"):
                 v2.prepare(day,root,gallery)
 
-    def test_v1_missing_and_failed_quality_never_upload(self):
+    def test_no_v1_dependency_and_failed_quality_never_upload(self):
         with tempfile.TemporaryDirectory() as t:
             day,root,gallery=self.fixture(Path(t))
-            v1=gallery/day/"3d"/"sculptures.json.gz"
-            original=v1.read_bytes()
-            v1.unlink()
-            with self.assertRaisesRegex(ValueError,"V1 gallery"):
-                v2.prepare(day,root,gallery)
-            v1.write_bytes(original)
+            manifest,_=v2.prepare(day,root,gallery)
+            self.assertTrue(manifest["ready"])
             packed=root/day/"3d"/"v2"/"sculptures.mobile.json.gz"
             packed.write_bytes(b"corrupt")
             with self.assertRaisesRegex(ValueError,"quality bytes"):
