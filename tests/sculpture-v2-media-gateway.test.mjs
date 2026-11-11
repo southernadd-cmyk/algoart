@@ -112,7 +112,7 @@ test('missing R2 binding or missing object safely returns no-store',async()=>{
 });
 
 test('Cloudflare preview can fetch all 3 V2 types and immutable archived models without changing Pages',async()=>{
-  const cases=[release+'catalog/'+h+'.json',release+'reception/image/'+h+'.png',release+'reception/desktop/'+h+'.json.gz',release+'floors/2026-11-10/mobile/'+h+'.json.gz'];
+  const cases=[release+'catalog/'+h+'.json',release+'reception/image/'+h+'.png',release+'reception/desktop/'+h+'.json.gz',release+'floors/2026-10-18/mobile/'+h+'.json.gz'];
   for(const key of cases)for(const origin of [pages,preview]){
     const {env,calls}=service();
     for(const method of ['GET','HEAD']){
