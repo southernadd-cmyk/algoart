@@ -104,7 +104,7 @@ jobs:
           echo "CHROMIUM_SCULPTURE_V4_DESKTOP_MOBILE_OK"
  cloudflare/web-canary/wrangler.toml
           if grep -q '^base_path' cloudflare/web-canary/wrangler.toml; then
-            echo "::error::Account does not support non-root assets.base_path"
+            echo "::error::Non-root assets.base_path unsupported (100343)"
             exit 1
           fi
           test -s _cf_assets/algoart/index.html
