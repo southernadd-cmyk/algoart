@@ -88,9 +88,9 @@ assert.equal(n8aoReplacements,1,
 assert.ok((await readFile(target)).length>200000,
   'V2 test tower did not produce a complete browser bundle');
 const live=await readFile('gallery/visit/index.html','utf8');
-const originalUrl='./gallery-phi-bundle.js?v=classical-aac-20261107';
+const originalUrl='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111';
 assert.equal(live.split(originalUrl).length-1,2,
-  'Public tower bundle URL has changed; review test adapter');
+  'Public tower must use the verified V2 bundle for preload and import');
 let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
