@@ -44,14 +44,14 @@ jobs:
           grep -q '^name = "proportion-piece-web-canary"$' cloudflare/web-canary/wrangler.toml
           grep -q '^base_path = "/algoart"$' cloudflare/web-canary/wrangler.toml
           grep -q '^directory = "../../_site"$' cloudflare/web-canary/wrangler.toml
-          npx --yes wrangler@4.148.0 deploy --dry-run --config cloudflare/web-canary/wrangler.toml --outdir /tmp/pp-canary-wrangler-dry-run
+          npx --yes wrangler@4.160.0 deploy --dry-run --config cloudflare/web-canary/wrangler.toml --outdir /tmp/pp-canary-wrangler-dry-run
           echo "WRANGLER_DRY_RUN_OK; no Cloudflare deployment performed"
       - name: Test actual Cloudflare local asset routing, cache-busting and media behavior
         working-directory: /tmp/pp-web-canary-current-main
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.148.0 dev --local --ip 127.0.0.1 --config cloudflare/web-canary/wrangler.toml --port 8787 >/tmp/pp-wrangler-dev.log 2>&1 &
+          npx --yes wrangler@4.160.0 dev --local --ip 127.0.0.1 --config cloudflare/web-canary/wrangler.toml --port 8787 >/tmp/pp-wrangler-dev.log 2>&1 &
           CHILD=$!
           trap 'kill $CHILD 2>/dev/null || true' EXIT
           READY=false
