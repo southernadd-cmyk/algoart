@@ -1,0 +1,30 @@
+name: Verify deployed Cloudflare social preview
+on:
+  pull_request:
+    paths:
+      - 'tests/cloudflare-live-smoke.mjs'
+      - '.github/workflows/cloudflare-live-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate deterministic JPEG fixture
+        run: |
+          python3 -m pip install --user pillow
+          python3 - <<'PY'
+          from PIL import Image,ImageDraw
+          image=Image.new('RGB',(1200,630),'#e6dfd1')
+          d=ImageDraw.Draw(image)
+          for i in range(40):
+              d.line((0,i*17,1200,630-i*11),fill=(45+i*3,70+i*2,110+i),width=6)
+          image.save('/tmp/proportion-piece-cloudflare-ci.jpg','JPEG',quality=86)
+          PY
+      - run: node tests/cloudflare-live-smoke.mjs
