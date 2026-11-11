@@ -1,6 +1,7 @@
 // Functional only: no screenshots, visual comparison or automated art judgement.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+const R2_RECEPTION_IMAGE="https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/reception/image/a66e75e6a8d7ad8616de6a1b501ecfe64b5fb0e5c12970ddb1f3f31b55594c3a.png";
 const browser=await chromium.launch({
  headless:true,args:['--disable-dev-shm-usage','--use-gl=angle',
  '--use-angle=swiftshader','--enable-unsafe-swiftshader']
@@ -11,10 +12,9 @@ try{
     {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'},
     {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'reception',quality:'mobile',width:390,height:844,method:'assembly'},
-    // Inject an R2 outage. The isolated tower must remain inspectable
-    // using its previously verified Pages packs, with visible diagnostics.
+    // Inject a total R2 outage. Fail closed rather than silently using Pages.
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,
-      method:'assembly',fallback:true}
+      method:'assembly',outage:true}
   ]){
     const page=await browser.newPage({
       viewport:{width:spec.width,height:spec.height},
@@ -30,7 +30,7 @@ try{
     // The in-browser SHA-256 check still runs on untouched response bodies.
     const workerRoute=
       'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/**';
-    if(spec.fallback)await page.route(workerRoute,route=>route.abort('failed'));
+    if(spec.outage)await page.route(workerRoute,route=>route.abort('failed'));
     else await page.route(workerRoute,async route=>{
       const response=await route.fetch({timeout:60000});
       await route.fulfill({response,headers:{
@@ -73,36 +73,41 @@ try{
         window.__sculptureV2TowerStatus?.failed>0,null,{timeout:120000});
       const state=await page.evaluate(()=>window.__sculptureV2TowerStatus);
       assert.ok(state.attempted>0,'No V2 source sculpture attempted');
+      assert.ok(requests.some(url=>url.includes('/sculptures-v2/v4.2.1-20261110/catalog/')),
+        'Tower did not request SHA-pinned R2 catalog');
+      const localGeometry=url=>
+        url.includes('/3d/v2/sculptures.')||
+        url.includes('/sculpture-v2-test/reception/sculptures.');
+      assert.ok(!requests.some(localGeometry),
+        'Isolated tower must never request Pages V2 mesh packs');
+      if(spec.outage){
+        assert.equal(state.complete,0,'R2 outage must not mount unverified geometry');
+        assert.ok(state.failed>0,'R2 outage must appear as a failed V2 load');
+        assert.equal(state.transport?.r2,0);
+        assert.ok(state.builds.some(item=>item.state==='failed'),
+          'V2 error diagnostics missing');
+        assert.deepEqual(errors,[],'Outage must not cause uncaught browser exceptions');
+        console.log('V2_R2_ONLY_OUTAGE_FAIL_CLOSED '+JSON.stringify({
+          date:spec.date,attempted:state.attempted,failed:state.failed,
+          noPagesGeometry:true
+        }));
+        continue;
+      }
       assert.equal(state.failed,0,'V2 sculpture failed: '+JSON.stringify(state.builds));
       assert.ok(state.complete>0,'No V2 sculpture completed');
-      const localPack=spec.date==='reception'
-        ?'/gallery/sculpture-v2-test/reception/sculptures.'+spec.quality+'.json.gz'
-        :'/gallery/'+spec.date+'/3d/v2/sculptures.'+spec.quality+'.json.gz';
       const r2Path='/sculptures-v2/v4.2.1-20261110/'+
         (spec.date==='reception'
           ?'reception/'+spec.quality+'/'
           :'floors/'+spec.date+'/'+spec.quality+'/');
-      assert.ok(requests.some(url=>url.includes('/sculptures-v2/v4.2.1-20261110/catalog/')),
-        'Tower did not request verified R2 catalog');
-      if(spec.fallback){
-        assert.ok(requests.some(url=>url.includes(localPack)),
-          'Tower did not fall back to its local audited pack');
-        assert.ok(state.builds.some(item=>item.state==='complete'&&
-          item.transport==='pages'&&item.r2Fallback===true),
-          'Outage was not reported as Pages fallback');
-      }else{
-        assert.ok(requests.some(url=>url.includes(r2Path)),
-          'Tower did not download its R2 mesh pack: '+JSON.stringify({
-            requests:requests.filter(x=>x.includes('sculptures-v2')),
-            transport:state.transport,
-            errors:state.builds.filter(x=>x.state==='failed')
-          }));
-        assert.ok(!requests.some(url=>url.includes(localPack)),
-          'R2 succeeded but tower still downloaded legacy Pages geometry');
-        assert.ok(state.builds.some(item=>item.state==='complete'&&
-          item.transport==='r2'&&item.r2Fallback===false),
-          'No prepared sculpture confirmed R2 source');
-      }
+      assert.ok(requests.some(url=>url.includes(r2Path)),
+        'Tower did not download its R2 mesh pack: '+JSON.stringify({
+          requests:requests.filter(x=>x.includes('sculptures-v2')),
+          transport:state.transport,
+          errors:state.builds.filter(x=>x.state==='failed')
+        }));
+      assert.ok(state.builds.some(item=>item.state==='complete'&&
+        item.transport==='r2'&&item.r2Fallback===false),
+        'No prepared sculpture confirmed R2 source');
       for(const item of state.builds.filter(item=>item.state==='complete')){
         assert.equal(item.prepared,true,'Dynamic sculpting used instead of V2 pack');
         assert.ok(item.regions>0,'Missing source pigment regions');
@@ -147,7 +152,8 @@ try{
           const img=new Image();
           img.onload=()=>resolve({width:img.naturalWidth,height:img.naturalHeight});
           img.onerror=()=>reject(Error('Reception portrait PNG unavailable'));
-          img.src='/gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png';
+          img.crossOrigin='anonymous';
+          img.src=R2_RECEPTION_IMAGE;
         }));
         assert.deepEqual(portrait,{width:1000,height:1400},
           'Reception V2 image must be a genuinely portrait source');
@@ -174,7 +180,7 @@ try{
         rooms:startup.phi.roomCount,sculptures:startup.phi.sculptures,
         sourceRegions:state.builds.filter(x=>x.state==='complete')
           .map(x=>x.regions),
-        transport:state.transport,fallbackTest:!!spec.fallback,
+        transport:state.transport,outageTest:!!spec.outage,
         preparedLoadMs:state.builds.filter(x=>x.state==='complete')
           .map(x=>x.elapsedMs),
         previewNotProduction:true,visualAssessment:false
