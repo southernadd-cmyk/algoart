@@ -43,7 +43,14 @@ test('V2 adapter preserves public renderer contract without publishing',async()=
   const loader=await read('gallery/sculpture-v2-test/v2-pack-loader.mjs');
   assert.match(loader,/getV2R2Catalog/);
   assert.match(loader,/SHA-256 mismatch/);
-  assert.match(loader,/source:'pages',fallback:/);
+  assert.match(loader,/Pages V2 source retired/);
+  assert.doesNotMatch(loader,/downloadV2Floor|downloadV2Reception|source:'pages'/);
+  const deployment=await read('.github/workflows/deploy-pages.yml');
+  const previewWorkflow=await read('.github/workflows/gallery-sculpture-v2-test.yml');
+  assert.doesNotMatch(deployment,/V2_APPROVED_RUN|V2_RECEPTION_RUN|stage-sculpture-v2-preview/);
+  assert.doesNotMatch(previewWorkflow,/V2_APPROVED_RUN|stage-sculpture-v2-preview/);
+  assert.match(builder,/sculptures-v2\/v4\.2\.1-20261110\/reception\/image\//);
+  assert.match(builder,/sculptures-v2\/v4\.2\.1-20261110\/reception\/source\//);
   assert.match(source,/reconstructV2Study/);
   assert.doesNotMatch(source,/segmentPainting\(/);
   assert.match(source,/createHybridSupport\(body,'pin'/);
