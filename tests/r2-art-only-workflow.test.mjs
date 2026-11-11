@@ -12,8 +12,8 @@ test('R2-only rollout is explicit and manual, never scheduled by default',()=>{
   assert.match(workflow,/ART_ONLY_REQUESTED: \$\{\{ inputs\.r2_art_only \}\}/);
   assert.match(workflow,/ART_ONLY_DATE: \$\{\{ vars\.PP_R2_ART_ONLY_DATE \}\}/);
   assert.match(workflow,/\$GITHUB_EVENT_NAME" == workflow_dispatch/);
-  assert.match(workflow,/ART_ONLY_SOCIAL_READY: \\$\\{\\{ vars\\.PP_R2_ART_ONLY_SOCIAL_READY \\}\\}/);
-  assert.match(workflow,/\"\\$ART_ONLY_SOCIAL_READY\" == true/);
+  assert.ok(workflow.includes('ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}'));
+  assert.ok(workflow.includes('"$ART_ONLY_SOCIAL_READY" == true'));
   assert.match(workflow,/MODE=r2-only/);
   assert.match(workflow,/R2_ART_ONLY: \$\{\{ needs\.plan\.outputs\.mode == 'r2-only' \}\}/);
   assert.match(workflow,/MODE=legacy/);
