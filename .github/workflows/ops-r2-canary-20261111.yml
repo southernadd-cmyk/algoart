@@ -74,3 +74,4 @@ jobs:
             "$GITHUB_REPOSITORY" "$run_id" >> "$GITHUB_STEP_SUMMARY"
 
 # Non-publishing preflight invocation for 11 November 2026.
+# Verified non-publishing 11 November preflight execution.
