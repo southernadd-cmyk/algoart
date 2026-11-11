@@ -110,3 +110,9 @@ jobs:
           done
           node tests/sculpture-v4-lab.browser.mjs
           echo "CHROMIUM_SCULPTURE_V4_DESKTOP_MOBILE_OK"
+      - name: Validate public Cloudflare deployment, hashes, R2 CORS and Range
+        working-directory: /tmp/pp-web-canary-current-main
+        run: |
+          set -euo pipefail
+          cp "${{ github.workspace }}/cloudflare/web-canary/public-smoke.mjs" cloudflare/web-canary/public-smoke.mjs
+          node cloudflare/web-canary/public-smoke.mjs
