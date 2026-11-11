@@ -1,0 +1,154 @@
+name: Isolated R2 social-image GET HEAD canary
+on:
+  push:
+    branches: [checks/r2-social-canary-20261111]
+    paths:
+      - '.github/workflows/r2-social-canary-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r2-social-canary-one-object-20261111
+  cancel-in-progress: false
+
+jobs:
+  verify-one-object:
+    if: github.repository == 'southernadd-cmyk/algoart' && github.ref == 'refs/heads/checks/r2-social-canary-20261111'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+      R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+      R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only the S3 client and deterministic JPEG generator
+        run: python -m pip install --disable-pip-version-check 'boto3>=1.37,<2' 'Pillow>=10,<13'
+      - name: Write one immutable test image and verify live Cloudflare GET and HEAD
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import io
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import time
+          from urllib.request import Request, urlopen
+          import boto3
+          from botocore.config import Config
+          from botocore.exceptions import ClientError
+          from PIL import Image, ImageDraw
+
+          BUCKET = 'proportion-piece-media-test'
+          WORKER = 'https://proportion-piece-media.mr-adam-clement.workers.dev'
+          DATE = '2026-11-11'
+          assert os.environ.get('GITHUB_REPOSITORY') == 'southernadd-cmyk/algoart'
+          assert os.environ.get('GITHUB_REF') == 'refs/heads/checks/r2-social-canary-20261111'
+          account = os.environ.get('R2_ACCOUNT_ID', '')
+          access = os.environ.get('R2_MEDIA_ACCESS_KEY_ID', '')
+          secret = os.environ.get('R2_MEDIA_SECRET_ACCESS_KEY', '')
+          assert re.fullmatch('[0-9a-fA-F]{32}', account), 'Missing or invalid R2_ACCOUNT_ID'
+          assert access and secret, 'Scoped R2 test-bucket credentials unavailable'
+
+          # This synthetic JPEG is never added to the Git repo or gallery.
+          image = Image.new('RGB', (480, 270), (244, 242, 231))
+          draw = ImageDraw.Draw(image)
+          draw.rectangle((25, 25, 455, 245), outline=(35, 64, 71), width=4)
+          draw.rectangle((41, 45, 75, 79), fill=(35, 64, 71))
+          draw.text((93, 51), 'R2 DELIVERY CANARY', fill=(35, 64, 71))
+          draw.text((41, 122), 'SOCIAL IMAGE TEST', fill=(35, 64, 71))
+          draw.text((41, 159), 'NOT ARTWORK - 2026-11-11', fill=(35, 64, 71))
+          buf = io.BytesIO()
+          image.save(buf, format='JPEG', quality=88, subsampling=0, optimize=False)
+          payload = buf.getvalue()
+          digest = hashlib.sha256(payload).hexdigest()
+          assert payload[:2] == bytes.fromhex('ffd8') and len(payload) > 1000
+          key = f'editions/{DATE}/social/canary-{digest}.jpg'
+          url = WORKER + '/' + key
+
+          client = boto3.client(
+              's3', endpoint_url=f'https://{account}.r2.cloudflarestorage.com',
+              aws_access_key_id=access, aws_secret_access_key=secret,
+              region_name='auto', config=Config(
+                  signature_version='s3v4', connect_timeout=10,
+                  read_timeout=20, retries={'max_attempts': 2}))
+          # Idempotence: never overwrite any existing R2 object.
+          present = False
+          try:
+              existing = client.head_object(Bucket=BUCKET, Key=key)
+              present = True
+              assert existing.get('ContentLength') == len(payload), 'Existing canary size mismatch'
+              assert existing.get('Metadata', {}).get('sha256') == digest, 'Existing canary hash mismatch'
+          except ClientError as error:
+              status = str(error.response.get('ResponseMetadata', {}).get('HTTPStatusCode', ''))
+              code = str(error.response.get('Error', {}).get('Code', ''))
+              if status != '404' and code not in ('404', 'NotFound', 'NoSuchKey'):
+                  raise
+          if not present:
+              client.put_object(
+                  Bucket=BUCKET, Key=key, Body=payload,
+                  ContentType='image/jpeg',
+                  CacheControl='public, max-age=31536000, immutable',
+                  Metadata={'sha256': digest, 'purpose': 'social-read-canary'})
+              print('R2_SOCIAL_CANARY_UPLOADED', json.dumps({'key': key, 'bytes': len(payload)}))
+          else:
+              print('R2_SOCIAL_CANARY_ALREADY_PRESENT', key)
+
+          # Real internet reads through the public Worker (not mocked S3 or Playwright routes).
+          def read_public(method):
+              request = Request(url, method=method, headers={
+                  'User-Agent': 'Mozilla/5.0',
+                  'Origin': 'https://southernadd-cmyk.github.io'})
+              with urlopen(request, timeout=20) as response:
+                  assert response.status == 200, f'{method}: HTTP {response.status}'
+                  assert response.geturl() == url, f'{method}: unexpected redirect'
+                  headers = response.headers
+                  assert headers.get_content_type() == 'image/jpeg', f'{method}: wrong MIME'
+                  assert int(headers.get('Content-Length', '-1')) == len(payload), f'{method}: wrong bytes'
+                  return response.read() if method == 'GET' else b'', headers
+
+          failure = None
+          for attempt in range(1, 6):
+              try:
+                  got, get_headers = read_public('GET')
+                  assert got == payload and hashlib.sha256(got).hexdigest() == digest, 'Public GET hash mismatch'
+                  _, head_headers = read_public('HEAD')
+                  failure = None
+                  break
+              except Exception as error:
+                  failure = error
+                  print(f'R2_SOCIAL_CANARY_PUBLIC_RETRY {attempt}/5 {type(error).__name__}: {error}')
+                  if attempt < 5:
+                      time.sleep(3 * attempt)
+          if failure:
+              raise RuntimeError('Public Worker GET/HEAD verification failed; object remains isolated in test bucket') from failure
+
+          report = {
+              'status': 'PASS', 'bucket': BUCKET, 'key': key, 'url': url,
+              'bytes': len(payload), 'sha256': digest, 'get_status': 200,
+              'head_status': 200, 'content_type': 'image/jpeg',
+              'cors_get': get_headers.get('Access-Control-Allow-Origin'),
+              'cors_head': head_headers.get('Access-Control-Allow-Origin'),
+              'preexisting': present
+          }
+          Path('canary-receipt.json').write_text(json.dumps(report, indent=2) + '\n')
+          with open(os.environ.get('GITHUB_STEP_SUMMARY', '/dev/null'), 'a') as output:
+              output.write('## R2 social image canary: PASS\n')
+              output.write(f'Public GET and HEAD 200; {len(payload)} bytes; SHA-256 {digest}\n')
+              output.write(f'Immutable URL: {url}\n')
+          print('R2_SOCIAL_CANARY_PUBLIC_VERIFIED', json.dumps(report))
+          PY
+      - name: Preserve only non-secret verification receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-social-canary-read-verification
+          path: canary-receipt.json
+          if-no-files-found: warn
