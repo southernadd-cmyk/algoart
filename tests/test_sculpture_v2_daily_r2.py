@@ -27,6 +27,7 @@ class V2DailyR2Tests(unittest.TestCase):
         folder.mkdir(parents=True)
         source=b"the exact archived JPEG or WebP painting"
         (folder/"portrait.webp").write_bytes(source)
+        (folder/"portrait.jpg").write_bytes(source)
         write_json(folder/"meta.json",{
             "date":day,"entries":[
                 {"imageFile":"portrait.jpg","sourceFile":"portrait.webp",
