@@ -195,3 +195,24 @@ jobs:
           module.verify_public(manifest['mediaAssets'])
           print('R2_PATCHED_FULL_PUBLIC_VERIFY_PASS 44 objects GET+HEAD+sha256+content-length+origin')
           PY
+
+  diagnose-node-reader:
+    if: github.ref == 'refs/heads/ops/r2-canary-2026-11-11' && github.event.head_commit.message == 'Diagnose Node R2 reader 2026-11-11'
+    runs-on: ubuntu-latest
+    permissions: {}
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test social Node fetch without a custom user-agent
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          const url='https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-11/2026-11-11-G01/original-7fac9fd2dd660220695af6a4946ca9bf955fa68d63c0f3e169c193064ddb489d.jpg';
+          const res=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(15000)});
+          console.log('SOCIAL_NODE_FETCH_STATUS',res.status);
+          console.log('SOCIAL_NODE_CONTENT_TYPE',res.headers.get('content-type'));
+          if(res.ok) console.log('SOCIAL_NODE_BYTES',(await res.arrayBuffer()).byteLength);
+          else console.log('SOCIAL_NODE_ERROR_BODY',(await res.text()).slice(0,140));
+          JS
