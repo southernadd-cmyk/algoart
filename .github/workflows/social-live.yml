@@ -66,6 +66,30 @@ jobs:
           date: ${{ steps.gate.outputs.date }}
           canary_date: ${{ vars.PP_R2_CANARY_DATE }}
 
+      - name: Identify verified R2-only artwork edition
+        if: steps.gate.outputs.should_post == 'true'
+        id: storage
+        shell: bash
+        env:
+          DAY: ${{ steps.gate.outputs.date }}
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          day=os.environ['DAY']
+          path=Path('gallery')/day/'media-publication.json'
+          active=False
+          if path.is_file():
+              receipt=json.loads(path.read_text())
+              active=(receipt.get('published') is True and
+                      receipt.get('pagesFallback') is False and
+                      receipt.get('date')==day and
+                      len(receipt.get('mediaAssets',[]))==receipt.get('count',0)*3+1)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('art_only='+str(active).lower()+'\n')
+          print('SOCIAL_ART_ONLY_MODE',day,active)
+          PY
+
       - name: Ensure media release and check duplicate markers
         if: steps.gate.outputs.should_post == 'true'
         id: state
@@ -155,14 +179,14 @@ jobs:
         run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
 
       - name: Build daily gallery and SEO pages
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.storage.outputs.art_only != 'true' && steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         env:
           SOCIAL_DATE: ${{ steps.gate.outputs.date }}
         run: npm run gallery:build
 
       - name: Publish gallery update to GitHub Pages source
         id: gallery_commit
-        if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
+        if: steps.storage.outputs.art_only != 'true' && steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -201,7 +225,22 @@ jobs:
         if: steps.gate.outputs.should_post == 'true' && (steps.state.outputs.instagram_done != 'true' || steps.state.outputs.threads_done != 'true' || (vars.PINTEREST_ENABLED == 'true' && steps.state.outputs.pinterest_done != 'true') || (env.BLUESKY_APP_PASSWORD != '' && steps.state.outputs.bluesky_done != 'true'))
         id: host
         shell: bash
+        env:
+          ART_ONLY: ${{ steps.storage.outputs.art_only }}
+          SOCIAL_DATE: ${{ steps.gate.outputs.date }}
+          SOCIAL_SLOT: ${{ steps.gate.outputs.slot }}
+          R2_SOCIAL_ART_ONLY: ${{ steps.storage.outputs.art_only }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          AWS_EC2_METADATA_DISABLED: 'true'
         run: |
+          if [[ "$ART_ONLY" == true ]]; then
+            python3 -m pip install 'boto3>=1.37,<2'
+            python3 automation/publish-social-r2.py --date "$SOCIAL_DATE" \
+              --role "solo-slot-$SOCIAL_SLOT" --file "${{ steps.select.outputs.image_path }}"
+            exit 0
+          fi
           ASSET="${{ steps.select.outputs.asset_name }}"
           cp "${{ steps.select.outputs.image_path }}" "/tmp/$ASSET"
           gh release upload "$RELEASE_TAG" "/tmp/$ASSET" --clobber
@@ -235,7 +274,12 @@ jobs:
         shell: bash
         env:
           R2_MEDIA_URL: ${{ steps.threads_feature.outputs.media_url }}
+          ART_ONLY: ${{ steps.storage.outputs.art_only }}
         run: |
+          if [[ "$ART_ONLY" == true && -z "$R2_MEDIA_URL" ]]; then
+            echo "::error::R2-only edition has no verified archived Threads media"
+            exit 1
+          fi
           if [[ -n "$R2_MEDIA_URL" ]]; then
             echo "media_url=$R2_MEDIA_URL" >> "$GITHUB_OUTPUT"
             exit 0
