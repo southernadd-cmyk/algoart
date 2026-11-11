@@ -20,8 +20,10 @@ permissions:
   actions: read
 
 concurrency:
-  group: sculpture-v2-postpublish-${{ github.event.workflow_run.id || github.run_id }}
-  cancel-in-progress: false
+  # PR checks for the same change should replace earlier runs. Production V2
+  # uploads remain isolated by their upstream workflow-run identity.
+  group: sculpture-v2-postpublish-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   safety:
