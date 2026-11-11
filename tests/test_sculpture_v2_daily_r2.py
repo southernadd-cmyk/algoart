@@ -56,7 +56,9 @@ class V2DailyR2Tests(unittest.TestCase):
                       "quality":quality,"geometryRevision":v2.REVISION,
                       "coverage":1,"omittedCells":0,
                       "sourceFile":"portrait.webp",
-                      "sourceSha256":v2.digest(source)}}}
+                      "sourceSha256":v2.digest(source),
+                      "entropy":"".join(hashlib.sha256(str(i).encode()).hexdigest()
+                                        for i in range(120))}}}
             zipped=gzip.compress(json.dumps(pack).encode())
             file="sculptures."+quality+".json.gz"
             (dst/file).write_bytes(zipped)
