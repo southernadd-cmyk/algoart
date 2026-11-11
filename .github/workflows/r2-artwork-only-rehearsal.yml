@@ -1,0 +1,101 @@
+name: R2-only artwork restore and sculpture bake rehearsal
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/r2-artwork-only-rehearsal.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      V2_BAKE_OUT: /tmp/pp-r2-rehydration-bake
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Restore all published 11 Nov edition artwork from verified public R2
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pp-artwork-rehearsal
+          python3 automation/r2-daily-media.py restore \
+            gallery/2026-11-11/media-publication.json \
+            --restore-to /tmp/pp-artwork-rehearsal | tee /tmp/pp-r2-restore-result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          receipt=json.loads(Path('/tmp/pp-r2-restore-result.json').read_text())
+          assert receipt['date']=='2026-11-11'
+          assert receipt['verified']==44,receipt
+          root=Path(receipt['restoredTo'])
+          assert root.is_dir()
+          original=Path('gallery/2026-11-11')
+          meta=json.loads((original/'meta.json').read_text())
+          for entry in meta['entries']:
+              image=root/'gallery/2026-11-11'/entry['imageFile']
+              assert image.is_file() and image.stat().st_size==entry['media']['originalBytes']
+          print('R2_ARTWORK_RESTORE_OK objects=44 paintings=',len(meta['entries']))
+          PY
+      - name: Remove all local 11 Nov artwork copies inside runner, then rehydrate from R2
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,shutil
+          from pathlib import Path
+          receipt=json.loads(Path('/tmp/pp-r2-restore-result.json').read_text())
+          restored=Path(receipt['restoredTo'])/'gallery/2026-11-11'
+          day=Path('gallery/2026-11-11')
+          meta=json.loads((day/'meta.json').read_text())
+          textures=json.loads((day/'3d/manifest.json').read_text())
+          files={e['imageFile'] for e in meta['entries']}
+          for variants in textures['images'].values():
+              files.update(variants.values())
+          files.add('archive-preview.jpg')
+          for name in files:
+              dest=day/name
+              assert dest.is_file(),f'Original checkout asset absent: {name}'
+              dest.unlink()
+          assert all(not (day/name).exists() for name in files)
+          for name in files:
+              src=restored/name
+              assert src.is_file(),f'R2 restore missing: {name}'
+              dest=day/name
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              shutil.copyfile(src,dest)
+          # V2 renderer/baker must function with NO V1 geometry file.
+          (day/'3d/sculptures.json.gz').unlink(missing_ok=True)
+          assert not (day/'3d/sculptures.json.gz').exists()
+          print('R2_SOURCE_REHYDRATED_OK items=',len(files),'legacy_v1_absent=true')
+          PY
+      - name: Run real V2 desktop and mobile bake using restored-only artwork
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          node automation/build-sculpture-v2-baker.mjs
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/pp-r2-artwork-server.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/sculpture-bake.html >/dev/null
+          node automation/build-sculpture-v2-packs.mjs \
+            --date 2026-11-11 --quality both --out "$V2_BAKE_OUT"
+          V2_BAKE_OUT="$V2_BAKE_OUT" node --test tests/sculpture-v2-packs.test.mjs
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date 2026-11-11 --out "$V2_BAKE_OUT" --dry-run
+          test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.desktop.json.gz"
+          test -s "$V2_BAKE_OUT/2026-11-11/3d/v2/sculptures.mobile.json.gz"
+          test ! -e "gallery/2026-11-11/3d/sculptures.json.gz"
+          echo 'R2_ONLY_REBUILD_OK no_github_artwork_needed=true v1_absent=true writes=0'
+      - name: Retain small audit, not generated painting or sculpture files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-only-source-rebuild-audit
+          path: /tmp/pp-r2-rehydration-bake/bake-report.json
+          retention-days: 7
+          if-no-files-found: warn
