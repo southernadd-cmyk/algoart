@@ -15,6 +15,9 @@ BUCKET = "proportion-piece-media-test"
 WORKER = "https://proportion-piece-media.mr-adam-clement.workers.dev"
 PAGES = "https://southernadd-cmyk.github.io"
 CACHE_CONTROL = "public, max-age=31536000, immutable"
+# Cloudflare error 1010 rejects the default Python-urllib user-agent. Keep
+# public media reads browser-compatible without relaxing CORS or SHA checks.
+PUBLIC_VERIFY_USER_AGENT = "Mozilla/5.0"
 TYPES = {
     "original": ("jpg", "image/jpeg"),
     "desktop": ("webp", "image/webp"),
@@ -122,7 +125,9 @@ def verify_public(assets, opener=None, *, restore=None):
     opener = opener or build_opener(NoRedirects())
     for item in assets:
         for method in ("GET", "HEAD"):
-            request = Request(item["url"], headers={"Origin": PAGES}, method=method)
+            request = Request(item["url"], headers={"Origin": PAGES,
+                                                    "User-Agent": PUBLIC_VERIFY_USER_AGENT},
+                              method=method)
             with opener.open(request, timeout=40) as response:
                 headers = response.headers
                 check(response.status == 200 and headers.get("Content-Type") == item["contentType"] and

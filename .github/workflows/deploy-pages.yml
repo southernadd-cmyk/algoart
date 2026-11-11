@@ -14,6 +14,13 @@ on:
       - 'automation/phi-bvh-test-plugin.mjs'
       - 'automation/phi-warmup-test-plugin.mjs'
       - 'tests/phi-entry-warmup.test.mjs'
+      # Preview-only reception artwork assets are baked and staged by Pages.
+      # These changes must trigger a new deployment rather than leave stale art.
+      - 'tests/sculpture-v2-reception.test.mjs'
+      - 'automation/generate-reception-portrait.mjs'
+      - 'automation/build-reception-v2.mjs'
+      - 'automation/build-sculpture-v2-test.mjs'
+      - 'gallery/sculpture-v2-test/**'
       - 'tests/phi-mesh-bvh.test.mjs'
       - 'tests/phi-csm.test.mjs'
       - 'tests/phi-lighting-study.test.mjs'
@@ -62,6 +69,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -94,6 +102,11 @@ jobs:
           PAGES_PUSH_BEFORE: ${{ github.event.before }}
         run: node automation/pages-build-scope.mjs
       - run: npm ci
+      - name: Build dedicated prepared V2 viewer (never replaces V1)
+        run: |
+          node automation/build-sculpture-v2-test.mjs
+          node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+          test -s gallery/sculpture-v2-test/index.html
       # Pages should not depend on archived test experiments (photoreal/CSM,
       # legacy visitor palette, gltfpack pilots). Those have separate workflows,
       # and the test tower is deliberately a clean mirror of live plus chat v2.
@@ -107,6 +120,18 @@ jobs:
           if ! node automation/build-hybrid-tower-test.mjs; then
             echo "::warning::Optional hybrid sculpture tower build failed; publishing live gallery unchanged"
             rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
+          fi
+          # Separate opt-in Sculpture V2 preview. NEVER replace live V1 art.
+          # Errors here are warnings, not blockers for gallery publishing.
+          if ! node automation/build-sculpture-v2-test.mjs; then
+            echo "::warning::Optional Sculpture V2 test tower failed to build; keeping live V1"
+            rm -f gallery/sculpture-v2-test/index.html gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+          fi
+          if [[ -f gallery/visit/gallery-phi-sculpture-v2-test-bundle.js ]]; then
+            node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js || {
+              echo "::warning::Optional Sculpture V2 preview bundle failed syntax check; dropping preview"
+              rm -f gallery/sculpture-v2-test/index.html gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+            }
           fi
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
           node --check gallery/visit/gallery-bundle.js
@@ -214,6 +239,23 @@ jobs:
           echo "Public artifact file count:"
           find _site -type f | wc -l
 
+      - name: Verify isolated Sculpture V2 uses R2 without temporary Pages meshes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s _site/gallery/sculpture-v2-test/index.html
+          node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
+          node --test tests/sculpture-v2-r2-loader.test.mjs tests/sculpture-v2-tower-coverage.test.mjs
+          # No large historical or reception geometry may be copied into Pages.
+          if find _site/gallery -type f -path '*/3d/v2/sculptures.*.json.gz' | grep -q .; then
+            echo "Legacy V2 historical geometry leaked into Pages" >&2
+            exit 1
+          fi
+          if find _site/gallery/sculpture-v2-test -type f -name 'sculptures.*.json.gz' | grep -q .; then
+            echo "Legacy V2 reception geometry leaked into Pages" >&2
+            exit 1
+          fi
+          echo "SCULPTURE_V2_R2_ONLY_PAGES_OK"
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -1,0 +1,80 @@
+name: Sculpture V2 isolated R2 media gateway
+
+on:
+  pull_request:
+    paths:
+      - 'cloudflare/media-read-only/**'
+      - 'tests/sculpture-v2-media-gateway.test.mjs'
+      - 'automation/verify-sculpture-v2-public.mjs'
+      - '.github/workflows/sculpture-v2-media-gateway.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'cloudflare/media-read-only/**'
+      - 'tests/sculpture-v2-media-gateway.test.mjs'
+      - 'automation/verify-sculpture-v2-public.mjs'
+      - '.github/workflows/sculpture-v2-media-gateway.yml'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sculpture-v2-isolated-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify read-only legacy and V2 routing
+        run: |
+          node --check cloudflare/media-read-only/src/worker.mjs
+          node --check automation/verify-sculpture-v2-public.mjs
+          node --test tests/sculpture-v2-media-gateway.test.mjs
+          test ! -f cloudflare/media-read-only/src/.env
+
+  deploy-isolated-worker:
+    # This script is a NEW Worker; it never overwrites the active media Worker.
+    # No credentials are exposed to PRs. The existing R2 bucket is read-only.
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs: safety
+    runs-on: ubuntu-latest
+    environment: archive-media-test
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm deployment prerequisites without leaking secrets
+        shell: bash
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Missing environment CLOUDFLARE_API_TOKEN"; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "::error::Missing environment Cloudflare account ID"; exit 1; }
+          grep -Fq 'name = "proportion-piece-sculpture-v2"' cloudflare/media-read-only/wrangler.toml
+          grep -Fq 'bucket_name = "proportion-piece-media-test"' cloudflare/media-read-only/wrangler.toml
+          test "$(grep -c '^\[\[r2_buckets\]\]' cloudflare/media-read-only/wrangler.toml)" -eq 1
+          echo "V2_DEPLOY_SCOPE_OK isolated-worker-only"
+      - name: Deploy ONLY isolated V2 Worker; discover real URL
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.160.0 deploy --config cloudflare/media-read-only/wrangler.toml \
+            2>&1 | tee "$RUNNER_TEMP/sculpture-v2-wrangler.log"
+          url=$(grep -Eo 'https://[a-z0-9.-]+\.workers\.dev' "$RUNNER_TEMP/sculpture-v2-wrangler.log" \
+            | grep '^https://proportion-piece-sculpture-v2\.' | tail -n 1 || true)
+          test -n "$url" || { echo "::error::Wrangler did not confirm isolated Worker URL"; exit 1; }
+          echo "V2_WORKER_URL=$url" >> "$GITHUB_ENV"
+          echo "V2_WORKER_DEPLOYED $url"
+      - name: Verify real public catalog, historical meshes, portrait source and CORS
+        run: node automation/verify-sculpture-v2-public.mjs

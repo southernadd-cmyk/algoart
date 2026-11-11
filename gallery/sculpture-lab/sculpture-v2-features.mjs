@@ -51,12 +51,14 @@ export function buildSourceFeatures(imageData,{
     orientation:m.angle,kind:m.kind,coverage:m.coverage,
     role:i<5?'primary':i<13?'secondary':'accent'
   }));
+  const recordedCount=strokes.filter(s=>s.sourceKind!=='pigment-contour').length;
   const original=strokes.filter(s=>Array.isArray(s.points)&&s.points.length>1&&
     Number.isFinite(s.points[0].x)&&Number.isFinite(s.points[0].y))
     .map((s,i)=>{
       const points=resample(s.points,19);
       const length=strokeLength(points);
-      return {id:'recorded-'+i,source:'actual-recording',points,
+      return {id:'recorded-'+i,
+        source:s.sourceKind==='pigment-contour'?'visible-pigment-contour':'actual-recording',points,
         color:s.color||pixelColour(imageData,points[0].x,points[0].y),
         width:clamp(s.width||.015,.008,.095),
         length,weight:(s.score||length)*Math.max(.2,s.coverage??1),
@@ -65,7 +67,8 @@ export function buildSourceFeatures(imageData,{
     .sort((a,b)=>b.weight-a.weight||a.sourceIndex-b.sourceIndex);
   // Spread the gestures across the source rather than overemphasising the
   // strongest ink cluster. Recorded gestures take priority when available.
-  const source=original.length>=3?original:localGestures(marks);
+  const source=original.length>=3?original:
+    [...original,...localGestures(marks)];
   const zones=new Set(),chosen=[];
   for(const g of source){
     const p=g.points[Math.floor(g.points.length/2)];
@@ -82,7 +85,9 @@ export function buildSourceFeatures(imageData,{
   return {
     version:2,material,paper,sourceWidth:imageData.width,
     sourceHeight:imageData.height,
-    sourceKind:original.length>=3?'recorded-gestures-and-pigment':'pigment-regions',
+    sourceKind:original.length>=1?
+      (recordedCount>=1?'recorded-gestures-and-pigment':'visible-pigment-contours'):
+      'pigment-regions',
     centre:{x:centre.x/(centre.w||1),y:centre.y/(centre.w||1)},
     regions,gestures:chosen.slice(0,maxGestures),
     anchors:regions.slice(0,8).map(r=>({id:r.id,x:r.x,y:r.y,weight:r.weight})),

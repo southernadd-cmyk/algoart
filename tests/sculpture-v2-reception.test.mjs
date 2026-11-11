@@ -1,0 +1,54 @@
+// Deterministic permanent reception sculpture checks; historical V2 stays untouched.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {resolve,join} from 'node:path';
+import {createHash} from 'node:crypto';
+import {gunzipSync} from 'node:zlib';
+const output=resolve(process.env.V2_RECEPTION_OUT||'artifacts/sculpture-v2-reception');
+const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
+test('independent reception sculpture is prepared and links to its actual source',async()=>{
+  const meta=JSON.parse(await readFile(join(output,'manifest.json'),'utf8'));
+  // Runs both after the bake and in a clean Pages checkout. The generated
+  // portrait lives only in the pinned build artifact, never in the repository.
+  const original=await readFile(join(output,'recursive-divisions-portrait.png'));
+  const source=JSON.parse(await readFile(join(output,'source.json')));
+  assert.equal(source.sourceSha256,sha(original));
+  assert.equal(original.readUInt32BE(16),1000);
+  assert.equal(original.readUInt32BE(20),1400);
+  assert.equal(source.orientation,'portrait');
+  assert.equal(source.engine,'rects');
+  assert.equal(source.schema,'pp-v2-reception-portrait-source');
+  assert.equal(source.sourceSha256,sha(original));
+  assert.equal(meta.schema,'pp-v2-reception-source');
+  assert.equal(meta.version,2);
+  assert.equal(meta.sourceSha256,sha(original));
+  assert.equal(meta.seed,source.seed);
+  assert.equal(meta.href,source.href);
+  assert.match(meta.href,/mode=rects/);
+  assert.match(meta.href,/fmt=portrait/);
+  assert.equal(meta.sourceWidth,1000);
+  assert.equal(meta.sourceHeight,1400);
+  assert.equal(meta.orientation,'portrait');
+  assert.deepEqual(Object.keys(meta.quality).sort(),['desktop','mobile']);
+  for(const quality of ['desktop','mobile']){
+    const spec=meta.quality[quality];
+    const bytes=await readFile(join(output,spec.file));
+    assert.equal(sha(bytes),spec.sha256);
+    assert.equal(bytes.length,spec.byteLength);
+    const pack=JSON.parse(gunzipSync(bytes));
+    assert.equal(pack.date,'reception');
+    assert.equal(pack.quality,quality);
+    assert.equal(pack.expectedPortraits,1);
+    assert.equal(pack.complete,true);
+    const item=pack.studies['recursive-divisions-portrait.png'];
+    assert.equal(item.seed,source.seed);
+    assert.equal(item.coverage,1);
+    assert.equal(item.omittedCells,0);
+    assert.equal(item.sourceSha256,sha(original));
+    assert.equal(item.geometryRevision,'v4.2.1-v2-pigment-island-fix');
+    assert.equal(item.regionCount,spec.regions);
+    assert.equal(item.triangleCount,spec.triangles);
+    assert.ok(item.meshes.length>=item.regionCount);
+  }
+});

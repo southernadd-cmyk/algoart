@@ -1,0 +1,134 @@
+name: Sculpture V2 post-publication daily archive
+
+# Independently follows an already SUCCESSFUL scheduled V1 gallery build.
+# It must never gate the V1 edition, change gallery files, or run for the
+# manual 11 Nov R2 canary/recovery. PRs only exercise no-secret safety tests.
+on:
+  pull_request:
+    paths:
+      - 'automation/publish-sculpture-v2-daily-r2.py'
+      - 'tests/test_sculpture_v2_daily_r2.py'
+      - '.github/workflows/sculpture-v2-postpublish-daily.yml'
+  workflow_run:
+    workflows: ['Build ALGO ART daily gallery']
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sculpture-v2-postpublish-${{ github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Offline immutable-publication and V1-isolation regression
+        run: |
+          python3 -m pip install 'boto3>=1.37,<2'
+          python3 -m py_compile automation/publish-sculpture-v2-daily-r2.py
+          python3 -m unittest discover -s tests -p test_sculpture_v2_daily_r2.py -v
+
+  bake-after-gallery-success:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'schedule' &&
+      github.event.workflow_run.head_branch == 'main'
+    needs: safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: archive-media-test
+    env:
+      UPSTREAM_STARTED: ${{ github.event.workflow_run.run_started_at }}
+      UPSTREAM_RUN: ${{ github.event.workflow_run.id }}
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify previously published V1 date and solo portrait roster
+        id: roster
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$UPSTREAM_STARTED"
+          DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
+          test "$DAY" \> "2026-11-10"
+          # An armed R2 canary deliberately holds the scheduled gallery build.
+          # A successful no-op upstream run MUST NOT trigger any V2 baking
+          # or produce a misleading error before the manual canary.
+          if [[ ! -e "gallery/$DAY/meta.json" &&
+                ! -e "gallery/$DAY/3d/sculptures.json.gz" ]]; then
+            printf 'date=%s\neligible=0\n' "$DAY" >> "$GITHUB_OUTPUT"
+            echo "V2_DAILY_SKIPPED_UPSTREAM_HOLD date=$DAY"
+            exit 0
+          fi
+          test -s "gallery/$DAY/meta.json"
+          test -s "gallery/$DAY/3d/sculptures.json.gz"
+          DAY="$DAY" python3 - <<'PY'
+          import gzip,json,os
+          from pathlib import Path
+          date=os.environ['DAY']
+          base=Path('gallery')/date
+          meta=json.loads((base/'meta.json').read_text())
+          assert meta['date']==date
+          solo=[x for x in meta['entries'] if x.get('orientation')=='portrait'
+                and x.get('material')!='confluence']
+          v1=json.loads(gzip.decompress((base/'3d/sculptures.json.gz').read_bytes()))
+          assert v1['date']==date and v1['version']==1
+          assert set(v1['studies'])=={e['imageFile'] for e in solo}
+          print('V2_DAILY_V1_PUBLISHED_OK',date,'eligible',len(solo))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as stream:
+              stream.write(f'eligible={len(solo)}\n')
+          PY
+          echo "date=$DAY" >> "$GITHUB_OUTPUT"
+          echo "V2 postpublication follows successful upstream run $UPSTREAM_RUN"
+      - name: Install independent V2 baker without changing gallery
+        if: steps.roster.outputs.eligible != '0'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/v2-daily-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break
+            sleep 1
+          done
+          node automation/build-sculpture-v2-baker.mjs
+      - name: Bake V2 desktop and mobile ONLY into ephemeral scratch
+        if: steps.roster.outputs.eligible != '0'
+        shell: bash
+        run: |
+          node automation/build-sculpture-v2-packs.mjs --date "${{ steps.roster.outputs.date }}" \
+            --quality both --out "$RUNNER_TEMP/v2-daily"
+          V2_BAKE_OUT="$RUNNER_TEMP/v2-daily" \
+            node --test tests/sculpture-v2-packs.test.mjs
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "${{ steps.roster.outputs.date }}" --out "$RUNNER_TEMP/v2-daily" --dry-run
+      - name: Upload verified daily mesh packs create-only to existing R2
+        if: steps.roster.outputs.eligible != '0'
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+        run: |
+          python3 -m pip install 'boto3>=1.37,<2'
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "${{ steps.roster.outputs.date }}" --out "$RUNNER_TEMP/v2-daily"
+      - name: Retain small source-scoped daily V2 audit (never V1)
+        if: ${{ always() && steps.roster.outputs.eligible != '0' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-daily-audit-${{ steps.roster.outputs.date }}
+          path: ${{ runner.temp }}/v2-daily/bake-report.json
+          retention-days: 14
+          if-no-files-found: warn

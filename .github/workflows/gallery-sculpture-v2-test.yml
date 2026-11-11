@@ -1,0 +1,67 @@
+name: Sculpture V2 isolated tower preview checks
+
+on:
+  pull_request:
+    paths:
+      - 'gallery/sculpture-v2-test/**'
+      - 'automation/build-sculpture-v2-test.mjs'
+      - 'automation/build-reception-v2.mjs'
+      - 'automation/generate-reception-portrait.mjs'
+      - 'tests/sculpture-v2-reception.test.mjs'
+      - 'tests/sculpture-v2-packs.test.mjs'
+      - 'tests/sculpture-v2-r2-loader.test.mjs'
+      - 'tests/sculpture-v2-tower*'
+      - '.github/workflows/gallery-sculpture-v2-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sculpture-v2-preview
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install local renderer and test packages
+        run: npm ci
+      - name: Syntax and data-integrity checks
+        run: |
+          node --check automation/build-sculpture-v2-test.mjs
+          node --check gallery/sculpture-v2-test/sculpture-render-v2.mjs
+          node --check gallery/sculpture-v2-test/engine/v4-topology.mjs
+          node --check gallery/sculpture-v2-test/engine/v4-contours.mjs
+          node --check gallery/sculpture-v2-test/engine/v4-surface.mjs
+          node --check gallery/sculpture-v2-test/v2-pack-loader.mjs
+          node --test tests/sculpture-v4.test.mjs tests/sculpture-v2-tower-coverage.test.mjs tests/sculpture-v2-r2-loader.test.mjs
+      - name: Build isolated full exhibition with frozen V4.2 geometry
+        run: |
+          node automation/build-sculpture-v2-test.mjs
+          node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
+          grep -q 'SCULPTURE V2 TEST TOWER' gallery/sculpture-v2-test/index.html
+      - name: Install headless browser and start preview server
+        run: |
+          npx playwright install --with-deps chromium
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/sculpture-v2-tower-http.log 2>&1 &
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/gallery/sculpture-v2-test/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/sculpture-v2-tower-http.log
+          exit 1
+      - name: Bake and audit independent reception hero V2 source
+        run: |
+          node automation/generate-reception-portrait.mjs
+          node automation/build-sculpture-v2-baker.mjs
+          node automation/build-reception-v2.mjs
+          node --test tests/sculpture-v2-reception.test.mjs
+      - name: Exercise actual archived floors and linked reception statue
+        run: node tests/sculpture-v2-tower.browser.mjs
