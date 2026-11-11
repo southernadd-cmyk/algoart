@@ -1627,7 +1627,7 @@ function loadWelcomeArtworks(){
       // Do not discard every study just because its image is no longer on Pages.
       var onThisSite=imageUrl.origin===location.origin;
       var trustedR2=imageUrl.origin==='https://proportion-piece-media.mr-adam-clement.workers.dev'&&
-        /^\\/editions\\/\\d{4}-\\d{2}-\\d{2}\\/[A-Za-z0-9_-]+\\/original-[a-f0-9]{64}\\.(?:jpe?g|png)$/i.test(imageUrl.pathname);
+        /^\/editions\/\d{4}-\d{2}-\d{2}\/[A-Za-z0-9_-]+\/original-[a-f0-9]{64}\.(?:jpe?g|png)$/i.test(imageUrl.pathname);
       if(!onThisSite&&!trustedR2)return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
@@ -1639,7 +1639,7 @@ function loadWelcomeArtworks(){
         artUrl=new URL(artUrl.pathname+artUrl.search+artUrl.hash,location.origin);
       }
       var fallbackFile=img.getAttribute('data-image-file')||'';
-      var fallbackSrc=trustedR2&&/^[A-Za-z0-9][A-Za-z0-9._-]{0,180}\\.(?:jpe?g|png|webp)$/i.test(fallbackFile)?
+      var fallbackSrc=trustedR2&&/^[A-Za-z0-9][A-Za-z0-9._-]{0,180}\.(?:jpe?g|png|webp)$/i.test(fallbackFile)?
         new URL(fallbackFile,result.url).href:null;
       return {src:imageUrl.href,fallbackSrc:fallbackSrc,alt:img.alt||'A PROPORTION PIECE solo drawing',title:heading.textContent.trim(),orientation:card.getAttribute('data-orientation')||(artUrl.searchParams.get('fmt')==='portrait'?'portrait':'landscape'),width:Number(img.getAttribute('width'))||0,height:Number(img.getAttribute('height'))||0,artUrl:artUrl.href};
     }).filter(Boolean);
