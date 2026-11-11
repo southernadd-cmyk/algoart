@@ -123,12 +123,13 @@ test('sample packs are independently reconstructable and source-checked',async()
     auditedModels:total,mode:report.mode
   }));
 });
-test('candidate pack process never alters existing V1 sculpture files',async()=>{
+test('candidate V2 packs do not generate V1 files or require their existence',async()=>{
   const report=JSON.parse(await readFile(join(root,'bake-report.json')));
   for(const day of report.days){
     if(!day.eligible)continue;
-    const v1=join('gallery',day.date,'3d','sculptures.json.gz');
-    assert.ok(await exists(v1),'Historical V1 pack missing: '+day.date);
+    const legacyOutput=join(root,day.date,'3d','sculptures.json.gz');
+    assert.equal(await exists(legacyOutput),false,
+      'V2 baking unexpectedly generated a V1 pack: '+day.date);
     const manifest=join(root,day.date,'3d','v2','manifest.json');
     assert.ok(await exists(manifest),'V2 manifest missing: '+day.date);
   }
