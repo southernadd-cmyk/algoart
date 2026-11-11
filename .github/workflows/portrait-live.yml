@@ -115,7 +115,7 @@ jobs:
           if p.is_file():
               m=json.loads(p.read_text())
               ok=m.get('date')==d and m.get('published') is True and m.get('pagesFallback') is False and len(m.get('mediaAssets',[]))==m.get('count',0)*3+1
-          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('art_only='+str(ok).lower()+'\\n')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('art_only='+str(ok).lower()+'\n')
           print('R2_MATERIAL_SOCIAL_MODE',d,ok)
           PY
 
@@ -185,7 +185,7 @@ jobs:
           READY=false
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
           if [[ "${{ steps.storage.outputs.art_only }}" == true ]]; then
-            if printf '%s\\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
+            if printf '%s\n' "$ASSETS" | grep -Fxq "$MANIFEST"; then
               gh release download "$RELEASE_TAG" --pattern "$MANIFEST" -D "$DIR" --clobber
               mv "$DIR/$MANIFEST" "$DIR/queue.json"
               python3 automation/social-r2-queue.py restore --date "$DATE" --directory "$DIR"
@@ -286,7 +286,7 @@ jobs:
             python3 -m pip install 'boto3>=1.37,<2'
             python3 automation/social-r2-queue.py freeze --date "$DATE" \
               --job "portrait" --directory "$DIR"
-          cp "$DIR/queue.json" "$DIR/portrait-$DATE-queue.json"
+            cp "$DIR/queue.json" "$DIR/portrait-$DATE-queue.json"
             gh release upload "$RELEASE_TAG" "$DIR/portrait-$DATE-queue.json" --clobber
             exit 0
           fi
