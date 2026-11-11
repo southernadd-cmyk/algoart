@@ -65,6 +65,7 @@ jobs:
           ART_ONLY_REQUESTED: ${{ inputs.r2_art_only }}
           ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
           ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
+          ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}
         run: |
           TODAY="$(TZ=Europe/London date +%F)"
           DAY="${REQUESTED_DATE:-$TODAY}"
@@ -75,7 +76,8 @@ jobs:
           elif [[ "$ART_ONLY_REQUESTED" == true ]]; then
             # Explicit and date-armed only. Scheduled runs cannot enter this branch.
             [[ "$CANARY_REQUESTED" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch &&
-               -n "$ART_ONLY_DATE" && "$REQUESTED_DATE" == "$TODAY" &&
+               -n "$ART_ONLY_DATE" && "$ART_ONLY_SOCIAL_READY" == true &&
+               "$REQUESTED_DATE" == "$TODAY" &&
                "$DAY" == "$ART_ONLY_DATE" && "$DAY" > "2026-11-11" ]]
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "::error::R2-only publishing is restricted to a new edition date."
