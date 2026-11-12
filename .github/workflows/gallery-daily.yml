@@ -33,6 +33,10 @@ on:
         required: false
         default: false
         type: boolean
+      r2_restore_run:
+        description: 'MANUAL REPAIR ONLY: prior gallery Actions run ID with exact-byte backup'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -469,6 +473,23 @@ jobs:
           python3 -m pip install --break-system-packages 'boto3>=1.37,<2'
           python3 automation/r2-daily-media.py upload "$R2_STAGE_OUTPUT/media-publication.json"
 
+      - name: Prepare independent exact-byte backup before any R2-only pruning
+        if: env.R2_ART_ONLY == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/r2-edition-backup"
+          python3 automation/r2-edition-backup.py create \
+            --manifest "$R2_STAGE_OUTPUT/media-publication.json" \
+            --output "$RUNNER_TEMP/r2-edition-backup/edition-$SOCIAL_DATE.zip"
+
+      - name: Persist exact-byte painting media backup (required for R2-only)
+        if: env.R2_ART_ONLY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-edition-backup-${{ needs.plan.outputs.date }}
+          path: ${{ runner.temp }}/r2-edition-backup/edition-${{ needs.plan.outputs.date }}.zip
+          retention-days: 90
+          if-no-files-found: error
+
       - name: Check staged 2D gallery and real tower before committing
         if: env.R2_CANARY == 'true'
         run: |
@@ -499,6 +520,15 @@ jobs:
           python3 automation/publish-sculpture-v2-daily-r2.py \
             --date "$SOCIAL_DATE" --out "/tmp/r2-art-only-v2-${{ github.run_id }}"
           echo "R2_ONLY_GALLERY_AND_V2_VERIFIED date=$SOCIAL_DATE"
+
+      - name: Persist original R2-only Sculpture V2 source packs
+        if: env.R2_ART_ONLY == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: r2-v2-backup-${{ needs.plan.outputs.date }}
+          path: /tmp/r2-art-only-v2-${{ github.run_id }}/
+          retention-days: 90
+          if-no-files-found: error
 
       - name: Save the media inventory and delivery verification
         if: ${{ always() && env.R2_CANARY == 'true' }}
@@ -592,7 +622,7 @@ jobs:
 
   recover:
     needs: plan
-    if: needs.plan.outputs.mode == 'recover'
+    if: needs.plan.outputs.mode == 'recover' && inputs.r2_restore_run == ''
     runs-on: ubuntu-latest
     env:
       EDITION_DATE: ${{ needs.plan.outputs.date }}
@@ -612,9 +642,48 @@ jobs:
       - name: Verify Pages has the complete edition
         run: node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
 
+  repair:
+    needs: plan
+    # Only a manual dispatch naming an existing published R2 receipt may enter here.
+    if: ${{ github.event_name == 'workflow_dispatch' && needs.plan.outputs.mode == 'recover' && inputs.r2_restore_run != '' }}
+    runs-on: ubuntu-24.04
+    environment: archive-media-test
+    permissions:
+      contents: read
+      actions: read
+    env:
+      EDITION_DATE: ${{ needs.plan.outputs.date }}
+      R2_REPAIR_DATE: ${{ needs.plan.outputs.date }}
+      R2_REPAIR_RUN_ID: ${{ inputs.r2_restore_run }}
+      GH_TOKEN: ${{ github.token }}
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+      R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+      R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+      AWS_EC2_METADATA_DISABLED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch independent exact-byte backup from the named publication run
+        run: |
+          [[ "$R2_REPAIR_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          mkdir -p "$RUNNER_TEMP/pp-r2-repair"
+          gh run download "$R2_REPAIR_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "r2-edition-backup-$EDITION_DATE" \
+            --dir "$RUNNER_TEMP/pp-r2-repair"
+      - name: Restore missing immutable R2 objects (never overwrite existing objects)
+        run: |
+          python3 -m pip install --break-system-packages 'boto3>=1.37,<2'
+          python3 automation/r2-edition-backup.py repair \
+            --receipt "gallery/$EDITION_DATE/media-publication.json" \
+            --archive "$RUNNER_TEMP/pp-r2-repair/edition-$EDITION_DATE.zip" \
+            --run-id "$R2_REPAIR_RUN_ID"
+      - name: Verify live edition after exact-byte repair
+        run: |
+          node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
+
   archive-check:
-    needs: [build, recover]
-    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.recover.result == 'success') }}
+    needs: [build, recover, repair]
+    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.recover.result == 'success' || needs.repair.result == 'success') }}
     uses: ./.github/workflows/archive-reproduction.yml
     with:
       checkout_ref: main
