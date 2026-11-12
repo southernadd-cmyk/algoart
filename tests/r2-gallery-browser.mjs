@@ -50,12 +50,15 @@ for (const name of (process.env.R2_BROWSERS || 'chromium,webkit').split(',')) {
     const errors = [];
     const failedMedia = [];
     const textures = new Set();
+    // The fixture supplies only the edition under test; the archive index may
+    // also display newer covers, which are not part of this frozen fixture.
+    const testedMediaPrefix = MEDIA + '/editions/' + date + '/';
     page.on('pageerror', error => errors.push(error.message));
     page.on('requestfailed', request => {
-      if (request.url().startsWith(MEDIA)) failedMedia.push(request.url());
+      if (request.url().startsWith(testedMediaPrefix)) failedMedia.push(request.url());
     });
     page.on('response', response => {
-      if (!response.url().startsWith(MEDIA)) return;
+      if (!response.url().startsWith(testedMediaPrefix)) return;
       if (!response.ok()) failedMedia.push(response.url());
       if (response.ok() && response.url().endsWith('.webp')) textures.add(response.url());
     });
@@ -89,6 +92,14 @@ for (const name of (process.env.R2_BROWSERS || 'chromium,webkit').split(',')) {
       await probe.decode();
       if (probe.naturalWidth !== 840 || probe.naturalHeight !== 600) throw Error('Wrong cover dimensions');
     }, meta.mediaCover);
+    // R2-only editions publish V2 meshes after the gallery images have passed
+    // this stage. Do not demand unpublished sculptures during precommit tests.
+    if (!live && manifest?.pagesFallback === false) {
+      assert.deepEqual(failedMedia, []);
+      assert.deepEqual(errors, []);
+      console.log(name, date, meta.count, 'R2 artwork verified before V2 mesh upload');
+      continue;
+    }
     assert((await page.goto(GALLERY + 'visit/?debug=1&date=' + date, {
       waitUntil: 'domcontentloaded', timeout: 60_000
     })).ok());

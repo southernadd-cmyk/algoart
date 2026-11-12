@@ -28,6 +28,11 @@ on:
         required: false
         default: false
         type: boolean
+      r2_art_only:
+        description: 'EXPERIMENTAL: date-armed R2-only edition with no GitHub painting binaries'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -57,7 +62,10 @@ jobs:
         env:
           REQUESTED_DATE: ${{ inputs.date }}
           CANARY_REQUESTED: ${{ inputs.r2_canary }}
+          ART_ONLY_REQUESTED: ${{ inputs.r2_art_only }}
           ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
+          ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}
         run: |
           TODAY="$(TZ=Europe/London date +%F)"
           DAY="${REQUESTED_DATE:-$TODAY}"
@@ -65,14 +73,28 @@ jobs:
           MODE=legacy
           if [[ -f "gallery/$DAY/media-publication.json" ]]; then
             MODE=recover
+          elif [[ "$ART_ONLY_REQUESTED" == true ]]; then
+            # Explicit and date-armed only. Scheduled runs cannot enter this branch.
+            [[ "$CANARY_REQUESTED" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch &&
+               -n "$ART_ONLY_DATE" && "$ART_ONLY_SOCIAL_READY" == true &&
+               "$REQUESTED_DATE" == "$TODAY" &&
+               "$DAY" == "$ART_ONLY_DATE" && "$DAY" > "2026-11-11" ]]
+            if [[ -e "gallery/$DAY/meta.json" ]]; then
+              echo "::error::R2-only publishing is restricted to a new edition date."
+              exit 1
+            fi
+            MODE=r2-only
           elif [[ "$CANARY_REQUESTED" == true ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
-               "$DAY" == "$ARMED_DATE" && "$DAY" > "2026-11-09" ]]
+               "$DAY" == "$ARMED_DATE" && "$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09" ]]
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "::error::The canary requires a new edition date."
               exit 1
             fi
             MODE=canary
+          elif [[ -n "$ART_ONLY_DATE" && "$DAY" == "$ART_ONLY_DATE" ]]; then
+            echo "R2-only date reserved for manual publication; scheduled legacy build held." >> "$GITHUB_STEP_SUMMARY"
+            MODE=hold
           elif [[ "$DAY" == "$ARMED_DATE" ]]; then
             echo "This edition date is armed for a manual R2 canary." >> "$GITHUB_STEP_SUMMARY"
             MODE=hold
@@ -81,9 +103,9 @@ jobs:
 
   build:
     needs: plan
-    if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary'
-    environment: ${{ needs.plan.outputs.mode == 'canary' && 'archive-media-test' || 'gallery-daily' }}
-    runs-on: ubuntu-latest
+    if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only'
+    environment: ${{ (needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only') && 'archive-media-test' || 'gallery-daily' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
@@ -91,7 +113,8 @@ jobs:
       SOCIAL_DATE: ${{ needs.plan.outputs.date }}
       R2_EDITION_DATE: ${{ needs.plan.outputs.date }}
       R2_STAGE_OUTPUT: /tmp/pp-r2-edition-${{ github.run_id }}
-      R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' }}
+      R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only' }}
+      R2_ART_ONLY: ${{ needs.plan.outputs.mode == 'r2-only' }}
 
     steps:
       - name: Checkout
@@ -105,7 +128,8 @@ jobs:
       - name: Install generator runtime
         run: |
           npm install
-          npx playwright install --with-deps chromium
+          npx playwright install --only-shell chromium
+          node --input-type=module -e "import {chromium} from 'playwright'; const b=await chromium.launch({headless:true}); await b.close(); console.log('R2_CHROMIUM_SMOKE_OK')"
 
       - name: Install gallery preview dependency
         run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
@@ -308,12 +332,15 @@ jobs:
       # This runs only after the final artwork slot has been archived, so the
       # baked geometry and daily archive share the same seed signatures.
       - name: Pre-render graffiti atlases for new indoor floor and exterior facade
+        # Graffiti is optional; exclude its binary atlases from new R2-only editions.
+        if: env.R2_ART_ONLY != 'true'
         shell: bash
         run: |
           DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
           node automation/build-gallery-graffiti.mjs --date="$DAY"
 
       - name: Verify saved graffiti atlases
+        if: env.R2_ART_ONLY != 'true'
         shell: bash
         run: |
           DAY="${SOCIAL_DATE:-$(node -e "const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const x=Object.fromEntries(p.map(v=>[v.type,v.value]));process.stdout.write(x.year+'-'+x.month+'-'+x.day)")}"
@@ -432,7 +459,7 @@ jobs:
       - name: Prepare the verified edition overlay and upload immutable R2 media
         if: env.R2_CANARY == 'true'
         env:
-          PP_R2_CANARY_DATE: ${{ vars.PP_R2_CANARY_DATE }}
+          PP_R2_CANARY_DATE: ${{ needs.plan.outputs.mode == 'r2-only' && vars.PP_R2_ART_ONLY_DATE || vars.PP_R2_CANARY_DATE }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
@@ -445,8 +472,33 @@ jobs:
       - name: Check staged 2D gallery and real tower before committing
         if: env.R2_CANARY == 'true'
         run: |
-          npx playwright install --with-deps webkit
-          node tests/r2-gallery-browser.mjs
+          # Chromium was smoke-tested above. Avoid APT-based WebKit install.
+          R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs
+
+      - name: Prepare and verify R2-only V2 sculptures before publishing gallery
+        if: env.R2_ART_ONLY == 'true'
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          PP_R2_ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
+          PP_R2_ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}
+          V2_PUBLISH_DATE: ${{ needs.plan.outputs.date }}
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          set -euo pipefail
+          node automation/build-sculpture-v2-baker.mjs
+          mkdir -p /tmp/r2-art-only-v2-${{ github.run_id }}
+          node automation/build-sculpture-v2-packs.mjs \
+            --date "$SOCIAL_DATE" --quality both \
+            --out "/tmp/r2-art-only-v2-${{ github.run_id }}"
+          V2_BAKE_OUT="/tmp/r2-art-only-v2-${{ github.run_id }}" \
+            node --test tests/sculpture-v2-packs.test.mjs
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "$SOCIAL_DATE" --out "/tmp/r2-art-only-v2-${{ github.run_id }}" --dry-run
+          python3 automation/publish-sculpture-v2-daily-r2.py \
+            --date "$SOCIAL_DATE" --out "/tmp/r2-art-only-v2-${{ github.run_id }}"
+          echo "R2_ONLY_GALLERY_AND_V2_VERIFIED date=$SOCIAL_DATE"
 
       - name: Save the media inventory and delivery verification
         if: ${{ always() && env.R2_CANARY == 'true' }}
@@ -467,6 +519,28 @@ jobs:
           git restore --worktree package-lock.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [[ "$R2_ART_ONLY" == true ]]; then
+            # No binary ever enters this edition's Git tree. The cleanup is
+            # permitted only after all R2 objects and staged bytes verified.
+            node automation/activate-r2-daily.mjs
+            node automation/prune-r2-art-only.mjs
+            git add -A gallery sitemap.xml robots.txt
+            # R2-only editions must not stage changed/new images anywhere in the gallery.
+            if git diff --cached --name-only --diff-filter=ACM | \
+                grep -E "^gallery/.*\\.(jpg|jpeg|png|webp|gif|json\\.gz)$"; then
+              echo "::error::R2-only commit still contains artwork bytes"
+              exit 1
+            fi
+            if git diff --cached --quiet; then
+              echo "::error::R2-only edition has no catalogue changes"
+              exit 1
+            fi
+            git commit -m "Publish R2-only ALGO ART daily gallery $SOCIAL_DATE"
+            # Push must fail closed when another publisher updated main.
+            git push origin HEAD:main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git add gallery sitemap.xml robots.txt
           if git diff --cached --quiet; then
             echo "Daily gallery already matches the deterministic batch."
@@ -505,7 +579,7 @@ jobs:
         if: env.R2_CANARY == 'true'
         run: |
           node automation/verify-r2-gallery-ready.mjs "$SOCIAL_DATE"
-          node tests/r2-gallery-browser.mjs --live
+          R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs --live
 
       - name: Summary
         if: always()

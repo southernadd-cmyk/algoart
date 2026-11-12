@@ -20,8 +20,10 @@ permissions:
   actions: read
 
 concurrency:
-  group: sculpture-v2-postpublish-${{ github.event.workflow_run.id || github.run_id }}
-  cancel-in-progress: false
+  # PR checks for the same change should replace earlier runs. Production V2
+  # uploads remain isolated by their upstream workflow-run identity.
+  group: sculpture-v2-postpublish-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.event.workflow_run.id || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   safety:
@@ -43,7 +45,7 @@ jobs:
       github.event.workflow_run.event == 'schedule' &&
       github.event.workflow_run.head_branch == 'main')
     needs: safety
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: archive-media-test
     env:
@@ -59,6 +61,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Restore R2-only painting sources to ephemeral runner for V2 sculpture bake
+        shell: bash
+        run: |
+          set -euo pipefail
+          DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
+          MANIFEST="gallery/$DAY/media-publication.json"
+          if [[ ! -f "$MANIFEST" ]]; then
+            echo "V2_SOURCE_LEGACY_CHECKOUT date=$DAY"
+            exit 0
+          fi
+          if ! python3 - "$MANIFEST" <<'PY'
+          import json,sys
+          manifest=json.load(open(sys.argv[1]))
+          assert manifest['published'] is True
+          sys.exit(0 if manifest.get('pagesFallback') is False else 1)
+          PY
+          then
+            echo "V2_SOURCE_DUAL_WRITE_CHECKOUT date=$DAY"
+            exit 0
+          fi
+          python3 automation/r2-daily-media.py restore "$MANIFEST" \
+            --restore-to "$RUNNER_TEMP" > "$RUNNER_TEMP/v2-r2-restore.json"
+          SRC=$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1]))["restoredTo"])' "$RUNNER_TEMP/v2-r2-restore.json")
+          test -d "$SRC/gallery/$DAY"
+          cp -a "$SRC/gallery/$DAY/." "gallery/$DAY/"
+          echo "V2_SOURCE_R2_ONLY_RESTORED date=$DAY"
       - name: Verify published gallery date and solo portrait roster
         id: roster
         shell: bash
@@ -102,7 +130,20 @@ jobs:
         if: steps.roster.outputs.eligible != '0'
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npx playwright install --only-shell chromium
+          node --input-type=module <<'PLAYWRIGHT_SMOKE'
+          import {chromium} from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          try {
+            const page=await browser.newPage();
+            await page.setContent('<canvas width="4" height="4"></canvas>');
+            const ok=await page.evaluate(()=>document.querySelector('canvas').toDataURL('image/png').startsWith('data:image/png;base64,'));
+            if(!ok) throw Error('Chromium canvas smoke failed');
+            console.log('R2_CHROMIUM_SMOKE_OK');
+          } finally {
+            await browser.close();
+          }
+          PLAYWRIGHT_SMOKE
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/v2-daily-http.log 2>&1 &
           for i in {1..30}; do
             curl -fsS http://127.0.0.1:4173/index.html >/dev/null && break

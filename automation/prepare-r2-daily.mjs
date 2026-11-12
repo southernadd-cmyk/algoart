@@ -8,6 +8,7 @@ import {validateRandomGalleryEdition} from "./confluence-edition.mjs";
 const GALLERY_ORIGIN = "https://southernadd-cmyk.github.io/algoart/gallery";
 const WORKER_ORIGIN = "https://proportion-piece-media.mr-adam-clement.workers.dev";
 const BUCKET = "proportion-piece-media-test";
+const artOnly = process.env.R2_ART_ONLY === "true"; // Opt-in until storage migration release.
 const date = process.env.R2_EDITION_DATE;
 const root = path.resolve(process.env.R2_STAGE_SOURCE || ".");
 const out = path.resolve(process.env.R2_STAGE_OUTPUT || "/tmp/pp-r2-daily-stage");
@@ -93,6 +94,7 @@ for (const [idx,entry] of meta.entries.entries()) {
   const localImg = 'src="' + entry.imageFile + '"';
   assert(matches(page, localImg) === 1, "missing/duplicate original daily gallery <img> source " + entry.imageFile);
   page = page.replace(localImg,
+    artOnly ? 'data-image-file="' + entry.imageFile + '" src="' + original.url + '"' :
     'data-image-file="' + entry.imageFile + '" src="' + original.url +
     '" onerror="this.onerror=null;this.src=\'' + entry.imageFile + '\'"');
   const canonical = GALLERY_ORIGIN + "/" + date + "/" + entry.imageFile;
@@ -101,11 +103,17 @@ for (const [idx,entry] of meta.entries.entries()) {
 }
 assert(matches(page, "data-image-file=") === meta.entries.length, "failed to preserve original filename on gallery cards");
 const cover = await asset("archive-preview.jpg", "", "cover", null, null);
-const sculpture = await asset("3d/sculptures.json.gz", "", "sculptures", null, null);
-assets.push(cover, sculpture);
-assert(assets.length === meta.entries.length * 3 + 2, "not all daily media assets collected");
+assets.push(cover);
+if (!artOnly) {
+  const sculpture = await asset("3d/sculptures.json.gz", "", "sculptures", null, null);
+  assets.push(sculpture);
+  outputMeta.mediaSculptures = sculpture.url;
+} else {
+  delete outputMeta.mediaSculptures; // V2 geometry is published by its independent R2 pipeline.
+}
+assert(assets.length === meta.entries.length * 3 + (artOnly ? 1 : 2),
+  "not all daily media assets collected");
 outputMeta.mediaCover = cover.url;
-outputMeta.mediaSculptures = sculpture.url;
 const day = outputArchive.days.find(x => x.date === date);
 day.mediaCover = cover.url;
 day.mediaCoverBytes = cover.bytes;
@@ -121,7 +129,7 @@ assert(item.test(feedRaw), "RSS item missing for the edition");
 const feed = feedRaw.replace(item, match => match.replace('</item>',
   '<enclosure url="' + cover.url + '" length="' + cover.bytes + '" type="image/jpeg"/>\n</item>'));
 const publication = {
-  schemaVersion:2,published:false,stageOnly:true,pagesFallback:true,
+  schemaVersion:2,published:false,stageOnly:true,pagesFallback:!artOnly,
   bucket:BUCKET,workerBase:WORKER_ORIGIN,date,count:meta.count,
   mediaAssets:assets,
   preservedShareUrls:meta.entries.map(({id,shareUrl,rendererVersion,seed,imageFile}) =>

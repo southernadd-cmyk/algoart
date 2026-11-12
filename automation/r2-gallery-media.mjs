@@ -49,7 +49,8 @@ export async function waitForPublishedR2Edition(date, {attempts = 30} = {}) {
       ]);
       if (receipt.schemaVersion !== 2 || receipt.date !== date || receipt.published !== true ||
           receipt.stageOnly !== false || receipt.workerBase !== MEDIA ||
-          !Array.isArray(receipt.mediaAssets) || receipt.mediaAssets.length !== receipt.count * 3 + 2) {
+          !Array.isArray(receipt.mediaAssets) ||
+          receipt.mediaAssets.length !== receipt.count * 3 + (receipt.pagesFallback === false ? 1 : 2)) {
         throw Error('Published R2 manifest is incomplete');
       }
       const originals = receipt.mediaAssets.filter(asset => asset.role === 'original');
