@@ -33,7 +33,7 @@ Set them before 04:15 UTC on the edition date, or the scheduled legacy build wil
 
 On the edition date, dispatch **Build ALGO ART daily gallery** on `main` with `date` = the edition date, `r2_art_only` = true and `r2_canary` = false. The date must be today in London. Start before the 09:00 social slot.
 
-The run uploads and verifies the artwork in R2, checks the staged gallery and tower in Chromium, bakes and publishes the V2 sculptures, removes the local artwork files, refuses to commit if any image is staged, and then pushes.
+The run uploads and verifies the artwork in R2, **creates and uploads a checksum-verified independent ZIP backup of all 43 painting/texture/cover objects**, checks the staged gallery and tower in Chromium, bakes and publishes the V2 sculptures, **uploads a separate V2 source-pack backup**, removes local artwork files, refuses to commit if any image is staged, and then pushes. If either backup upload fails, the R2-only gallery commit cannot proceed. GitHub Actions backup artifacts are retained for **up to 90 days** (or less if repository policy overrides); download and preserve these outside R2 before their expiry. These are temporary trial safeguards, not a permanent backup service.
 
 A successful run leaves:
 
@@ -59,7 +59,11 @@ If the rerun stops with `R2 daily object collision: manifest`, the regenerated s
 
 **The push succeeded but the live check failed.** Dispatch the daily workflow with `date` = the edition date and no flags. It finds the receipt and runs recovery: every R2 object is fetched and checked against its SHA-256, Pages is redeployed, and the live edition is verified. Recovery verifies; it does not repair.
 
-**An R2 object is missing or corrupt after publication.** There is no copy in Git. Regenerating the artwork reproduces it visually, but the JPEG bytes are not guaranteed identical, so the SHA-addressed key may not match. This case has no recovery procedure. Until one exists, keep a copy outside R2 before relying on R2-only editions: `python3 automation/r2-daily-media.py restore gallery/<date>/media-publication.json --restore-to /tmp` rebuilds the dated files from verified Worker responses.
+**A painting, texture or cover R2 object is missing after publication.** Use the exact-byte backup from the original **Build ALGO ART daily gallery** Actions run. Dispatch that same workflow on `main` with the published `date`, both R2 flags **false**, and `r2_restore_run` set to the numerical Actions run ID of the original R2-only publication. The manual repair job downloads `r2-edition-backup-<date>`, validates every file against the published SHA-256 receipt and checks every existing R2 object *before any write*. It uses conditional writes **only for missing keys**, checks each restored object by SHA-256 and public Worker GET/HEAD, then verifies the live gallery. It will **not overwrite or delete** an existing but corrupt object. The ordinary recover job is skipped on this explicit repair route. No social post is triggered. Re-run the usual non-repair recovery only if needed after the repair.
+
+To inspect a downloaded ZIP without any R2 credentials: `python3 automation/r2-edition-backup.py verify --receipt gallery/<date>/media-publication.json --archive edition-<date>.zip`. To extract independently verified exact bytes into a new directory outside Git: use `restore --receipt ... --archive ... --to /tmp`. Never download or extract an untrusted archive into the repository.
+
+**An existing R2 object is corrupt.** The repair process fails closed rather than replacing a SHA-addressed immutable URL that could be cached. Preserve the backup and investigate the object/cache explicitly. Sculpture V2 source-pack backups are preserved separately, but automated sculpture restoration and social-derivative backup restoration are **not** implemented yet. Do not treat the 90-day trial safeguards as a complete long-term storage cutover.
 
 **A social post fails.** Social jobs fail without posting, and the `done-…` markers prevent duplicates on a rerun. Rerun a slot only on the same London day by dispatching **PROPORTION PIECE live social publishing** with that slot. After midnight the workflow acts on the next date; do not rerun then.
 
