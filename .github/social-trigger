@@ -1,1 +1,1 @@
-2026-10-09 · one-time re-publish of deleted portrait social posts for slot 0 using exact ALGO/ART editor artwork links. Preserve existing landscape marker states. All three portrait networks explicitly requested.
+2026-11-12 16:00 GMT — recover today's failed 15:00 social slot after the composite R2 action-context fix (commit 7c9d45be). Uses push-recovery gate (latest due: slot 1); respect existing platform completion markers and R2 readiness guards. Do not alter the gallery edition.
