@@ -10,7 +10,7 @@ This runbook covers one manually published edition. It has not been rehearsed en
 - `r2-first-edition.md` makes scheduled or external-only publishing subject to a seven-day dual-write gate. One canary edition (2026-11-11) has been published so far. Decide explicitly whether to waive the gate for this single edition.
 - The artwork Worker `proportion-piece-media` serves `editions/<date>/social/…` keys. Check that this returns 200:
   `https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-11/social/canary-d2bfff4b91fa31829a1d3e51419d6219974c502c653d486a9db66cca2de455ac.jpg`
-- The Worker's source of record is `cloudflare/media-artwork/`. Cloudflare still has a build trigger that deploys `cloudflare/media-read-only/wrangler.toml` from the branch `plan/archive-storage-foundation-20261109`. A push to that branch would redeploy the old source and remove the social rule. Do not push to it; disable or repoint the trigger.
+- The Worker's source of record is `cloudflare/media-artwork/`. The obsolete Cloudflare Git build trigger for `cloudflare/media-read-only/wrangler.toml` on branch `plan/archive-storage-foundation-20261109` has been disabled. Keep it disabled: deploying that old source could remove the social path. Changes to the artwork Worker must be deliberately reviewed and deployed from `cloudflare/media-artwork/`.
 - The GitHub environment `archive-media-test` allows `main` and has no required reviewers. It holds the only copy of the R2 credentials.
 - Pick an edition date after 2026-11-11 that has no `gallery/<date>/meta.json`. It must differ from `PP_R2_CANARY_DATE`.
 
