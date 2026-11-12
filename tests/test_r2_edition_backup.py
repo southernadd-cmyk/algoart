@@ -102,7 +102,7 @@ class BackupTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "SHA-256"):
             BACKUP.load_bundle(self.archive_path, self.published)
         self.bundle()
-        foreign = dict(self.published, date="2026-11-14")
+        foreign = dict(self.published, preservedShareUrls=[{"id": "not-this-edition"}])
         with self.assertRaisesRegex(ValueError, "published edition"):
             BACKUP.load_bundle(self.archive_path, foreign)
 

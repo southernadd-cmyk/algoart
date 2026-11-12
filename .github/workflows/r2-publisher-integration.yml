@@ -84,6 +84,13 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           test -s gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           node automation/prepare-r2-daily.mjs
+      - name: Rehearse offline exact-byte backup using actual archived artwork files
+        run: |
+          R2_ART_ONLY=true R2_STAGE_OUTPUT=/tmp/r2-backup-fixture-${{ github.run_id }} node automation/prepare-r2-daily.mjs
+          python3 automation/r2-edition-backup.py create \
+            --manifest /tmp/r2-backup-fixture-${{ github.run_id }}/media-publication.json \
+            --output /tmp/r2-backup-fixture-${{ github.run_id }}.zip
+          test -s /tmp/r2-backup-fixture-${{ github.run_id }}.zip
       - name: Verify staged gallery and tower with local R2 media fixtures in Chromium
         run: R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs --fixture
       - name: Reproduce the exact archived edition including Confluence

@@ -130,3 +130,15 @@ test('armed R2-only date blocks scheduled legacy gallery and gates all social UR
   assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
   assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));
 });
+
+test('a real exact-byte backup must finish before R2-only pruning; repair is manual-only',()=>{
+  const make=workflow.indexOf('python3 automation/r2-edition-backup.py create');
+  const upload=workflow.indexOf('name: Persist exact-byte painting media backup');
+  const v2backup=workflow.indexOf('name: Persist original R2-only Sculpture V2 source packs');
+  const prune=workflow.indexOf('node automation/prune-r2-art-only.mjs');
+  assert.ok(make>0 && upload>make && v2backup>upload && prune>v2backup);
+  assert.ok(workflow.includes('retention-days: 90'));
+  assert.ok(workflow.includes("github.event_name == 'workflow_dispatch' && needs.plan.outputs.mode == 'recover' && inputs.r2_restore_run != ''"));
+  assert.ok(workflow.includes('python3 automation/r2-edition-backup.py repair'));
+  assert.ok(workflow.includes('if: needs.plan.outputs.mode == \'recover\' && inputs.r2_restore_run == \'\''));
+});
