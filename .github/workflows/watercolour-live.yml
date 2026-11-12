@@ -129,6 +129,7 @@ jobs:
         with:
           date: ${{ steps.gate.outputs.date }}
           canary_date: ${{ vars.PP_R2_CANARY_DATE }}
+          art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}
 
       - name: Detect R2-only gallery publication
         if: steps.gate.outputs.should_run == 'true'
