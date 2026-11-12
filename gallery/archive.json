@@ -2,6 +2,22 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-12",
+      "cover": "2026-11-12-G01-marker-organic-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Growth Systems",
+        "Constructed Forms",
+        "Recursive Divisions",
+        "Golden Trajectories",
+        "Connected Fields",
+        "Orbital Studies",
+        "Radiant Systems",
+        "Confluence"
+      ]
+    },
+    {
       "date": "2026-11-11",
       "cover": "2026-11-11-G01-action-rects-portrait.jpg",
       "coverOrientation": "portrait",
