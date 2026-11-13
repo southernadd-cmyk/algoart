@@ -17,6 +17,7 @@ on:
       # Preview-only reception artwork assets are baked and staged by Pages.
       # These changes must trigger a new deployment rather than leave stale art.
       - 'tests/sculpture-v2-reception.test.mjs'
+      - 'tests/sculpture-v2-tower-coverage.test.mjs'
       - 'automation/generate-reception-portrait.mjs'
       - 'automation/build-reception-v2.mjs'
       - 'automation/build-sculpture-v2-test.mjs'
