@@ -13,6 +13,10 @@ test('all eligible historical portrait studies have source paintings',async()=>{
   for(const {date} of archive.days){
     const meta=JSON.parse(await read(join('gallery',date,'meta.json')));
     assert.equal(meta.date,date);
+    const receiptPath=join('gallery',date,'media-publication.json');
+    const receipt=existsSync(receiptPath)?JSON.parse(await read(receiptPath)):null;
+    const r2Only=receipt?.published===true && receipt?.pagesFallback===false &&
+      receipt?.date===date && receipt?.stageOnly===false;
     let count=0;
     for(const item of meta.entries){
       if(item.orientation!=='portrait')continue;
@@ -20,8 +24,14 @@ test('all eligible historical portrait studies have source paintings',async()=>{
         confluence++;continue;
       }
       assert.ok(item.seed&&item.imageFile, date+' source metadata incomplete');
-      assert.ok(existsSync(join('gallery',date,item.imageFile)),
-        date+' missing '+item.imageFile);
+      const local=existsSync(join('gallery',date,item.imageFile));
+      const remote=r2Only && receipt.mediaAssets.some(asset=>
+        asset.role==='original' && asset.originalImageFile===item.imageFile &&
+        asset.sourcePath===join('gallery',date,item.imageFile).replaceAll('\\','/') &&
+        asset.artworkId===item.id &&
+        typeof asset.sha256==='string' && /^[a-f0-9]{64}$/.test(asset.sha256) &&
+        asset.url===receipt.workerBase+'/'+asset.key);
+      assert.ok(local || remote,date+' missing verified source '+item.imageFile);
       eligible++;count++;
     }
     perDate.push({date,eligible:count});
@@ -29,7 +39,7 @@ test('all eligible historical portrait studies have source paintings',async()=>{
   assert.ok(eligible>40,'No representative portrait sculpture archive');
   console.log('V2_PREVIEW_ARCHIVE_COVERAGE '+JSON.stringify({
     floors:perDate.length,eligible,confluenceExcluded:confluence,
-    allOriginalPaintingsPreserved:true,perDate
+    allOriginalPaintingsAccountedFor:true,perDate
   }));
 });
 test('V2 adapter preserves public renderer contract for production',async()=>{
