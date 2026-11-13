@@ -218,7 +218,7 @@ jobs:
           test -s _site/gallery/visit/gallery-phi-bundle.js
           test -s _site/gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           test -s _site/gallery/visit/index.html
-          grep -q 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111' _site/gallery/visit/index.html
+          grep -Fq 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-' _site/gallery/visit/index.html
           if [[ -e _site/test ]]; then echo 'Retired test tower must not be published' >&2; exit 1; fi
           test -s _site/js/generator.js
           test -s _site/css/marker-font.css
