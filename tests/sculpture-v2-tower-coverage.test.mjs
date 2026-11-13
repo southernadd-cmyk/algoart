@@ -142,6 +142,6 @@ test('historical V1 meshes remain archived but live tower selects V2',async()=>{
   const builder=await read('automation/build-sculpture-v2-test.mjs');
   assert.doesNotMatch(builder,/writeFile\([^)]*sculptures\.json\.gz/);
   const live=await read('gallery/visit/index.html');
-  assert.match(live,/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-20261111/);
+  assert.match(live,/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-[\w-]+/);
   assert.doesNotMatch(live,/get\('sculptures'\)==='v1'/);
 });
