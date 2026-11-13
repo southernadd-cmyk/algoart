@@ -2,6 +2,24 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-13",
+      "cover": "2026-11-13-G01-watercolor-organic-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Growth Systems",
+        "Constructed Forms",
+        "Automatic Marks",
+        "Connected Fields",
+        "Radiant Systems",
+        "Golden Trajectories",
+        "Recursive Divisions",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-13/cover-ea438dcff54a2f2565e92add1f27b09636730df57850c6661daf0a53ee4cac73.jpg",
+      "mediaCoverBytes": 80782
+    },
+    {
       "date": "2026-11-12",
       "cover": "2026-11-12-G01-marker-organic-portrait.jpg",
       "coverOrientation": "portrait",
