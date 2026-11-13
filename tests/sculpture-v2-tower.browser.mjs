@@ -11,6 +11,8 @@ try{
     {date:'2026-11-10',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'2026-11-11',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'2026-11-11',quality:'mobile',width:390,height:844,method:'assembly'},
+    {date:'2026-11-13',quality:'desktop',width:1100,height:740,method:'assembly'},
+    {date:'2026-11-13',quality:'mobile',width:390,height:844,method:'assembly'},
     {date:'2026-10-22',quality:'mobile',width:390,height:844,method:'assembly'},
     {date:'reception',quality:'desktop',width:1100,height:740,method:'assembly'},
     {date:'reception',quality:'mobile',width:390,height:844,method:'assembly'},
