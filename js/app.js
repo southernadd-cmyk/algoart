@@ -1623,7 +1623,10 @@ function loadWelcomeArtworks(){
       var heading=card.querySelector('.art-info h2');
       if(!img||!heading)return null;
       var imageUrl=new URL(img.getAttribute('src'),result.url);
-      if(imageUrl.origin!==location.origin)return null;
+      // Artwork originals may be served by the gallery's R2 media Worker.
+      // Only accept the known media origin; keep editor deep links same-origin.
+      if(imageUrl.origin!==location.origin&&
+        imageUrl.origin!=='https://proportion-piece-media.mr-adam-clement.workers.dev')return null;
       var link=card.querySelector('.art-image-link[href]');
       var artUrl=link?new URL(link.getAttribute('href'),result.url):null;
       if(!artUrl||artUrl.origin!==location.origin||artUrl.pathname!==soloEditorPath)return null;
@@ -1657,7 +1660,12 @@ function chooseWelcomeArtwork(){
   image.style.height='';
   caption.textContent='';
   loadWelcomeArtworks().then(function(artworks){
-    if(serial!==welcomeSelectionSerial||!artworks.length||splash.hidden)return;
+    if(serial!==welcomeSelectionSerial||splash.hidden)return;
+    if(!artworks.length){
+      frame.classList.remove('welcome-loading');
+      caption.textContent='Preview unavailable — select BEGIN to draw.';
+      return;
+    }
     var index=Math.floor(Math.random()*artworks.length);
     if(artworks.length>1&&index===welcomeLastArtwork)index=(index+1)%artworks.length;
     welcomeLastArtwork=index;
