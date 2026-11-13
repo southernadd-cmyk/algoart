@@ -2681,9 +2681,12 @@ function readArchive(html, url, textureManifest={}) {
       imageFile:filename,
       imageOptimized:variant?new URL(variant,url).href:null,
       image: (() => {
-        // The dual-write edition keeps a same-origin fallback for R2 textures.
-        if(img.dataset.imageFile)return new URL(filename,url).href;
+        // data-image-file is a stable manifest key, not proof that a Pages JPEG exists.
+        // R2-only editions publish the original at an immutable media Worker URL.
         const original=new URL(img.getAttribute('src'),url);
+        if(img.dataset.imageFile &&
+           original.origin!=='https://proportion-piece-media.mr-adam-clement.workers.dev')
+          return new URL(filename,url).href;
         // Release download URLs are blocked for canvas/WebGL by CORS.
         // Gallery release art is mirrored into same-origin Pages assets.
         if(original.hostname==='github.com' && original.pathname.includes('/southernadd-cmyk/algoart/releases/download/')){
