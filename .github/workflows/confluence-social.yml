@@ -41,6 +41,27 @@ jobs:
           art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}
           art_only_auto_from: '2026-11-15'
 
+      - name: Refresh and require the complete daily Confluence archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          for ATTEMPT in 1 2 3 4 5 6; do
+            git fetch --quiet origin main
+            git checkout -q -B main origin/main
+            if test -s "gallery/$SOCIAL_DATE/meta.json" && node --input-type=module -e '
+              import {readFileSync} from "node:fs";
+              import {hasConfluencePairs, confluencePairCount} from "./automation/confluence-edition.mjs";
+              const date = process.env.SOCIAL_DATE;
+              const entries = JSON.parse(readFileSync(`gallery/${date}/meta.json`, "utf8")).entries;
+              if (!Array.isArray(entries) || !hasConfluencePairs(entries.filter(e => e.material === "confluence"), confluencePairCount(date))) process.exit(1);
+            '; then
+              echo "Verified complete Confluence gallery/$SOCIAL_DATE edition."
+              exit 0
+            fi
+            if (( ATTEMPT < 6 )); then sleep 15; fi
+          done
+          echo "::error::Confluence gallery/$SOCIAL_DATE is not complete on main; safe to recover at the 15:00 slot."
+          exit 1
       - name: Select exact archived Confluence study
         id: select
         run: node automation/select-confluence-social.mjs
@@ -75,24 +96,34 @@ jobs:
             gh release create "$RELEASE_TAG" --title "PROPORTION PIECE social media" --notes "Media hosting for scheduled PROPORTION PIECE publications."
           fi
           ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          NEEDS_POST=false
           for PLATFORM in instagram threads bluesky pinterest; do
             MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
             if printf '%s\n' "$ASSETS" | grep -Fxq "$MARKER"; then
               DONE=true
             else
               DONE=false
+              if [[ "$PLATFORM" != bluesky || -n "$BLUESKY_APP_PASSWORD" ]]; then
+                if [[ "$PLATFORM" != pinterest || "${{ vars.PINTEREST_ENABLED }}" == true ]]; then
+                  NEEDS_POST=true
+                fi
+              fi
             fi
             printf '%s_done=%s\n' "$PLATFORM" "$DONE" >> "$GITHUB_OUTPUT"
           done
+          echo "needs_post=$NEEDS_POST" >> "$GITHUB_OUTPUT"
 
       - name: Install image preparation runtime
+        if: steps.markers.outputs.needs_post == 'true'
         run: python3 -m pip install --break-system-packages 'Pillow>=10,<13'
 
       - name: Prepare noncropped Meta and compressed Bluesky JPEGs
+        if: steps.markers.outputs.needs_post == 'true'
         run: python3 automation/prepare-confluence-media.py "${{ steps.select.outputs.image_path }}" "$SOCIAL_DATE" "${{ steps.select.outputs.orientation }}"
 
       - name: Host verified artwork on existing monthly release
         id: host
+        if: steps.markers.outputs.needs_post == 'true'
         shell: bash
         env:
           R2_MEDIA_URL: ${{ steps.select.outputs.media_url }}
@@ -226,17 +257,33 @@ jobs:
           gh release upload "$RELEASE_TAG" "/tmp/$FILE" --clobber
 
       - name: Verify every configured destination was published or previously completed
-        if: always()
+        if: ${{ always() && steps.select.outcome == 'success' }}
         shell: bash
         run: |
-          MISSING=0
-          for PLATFORM in instagram threads bluesky pinterest; do
-            if [ "$PLATFORM" = 'bluesky' ] && [ -z "$BLUESKY_APP_PASSWORD" ]; then continue; fi
-            if [ "$PLATFORM" = 'pinterest' ] && [ "${{ vars.PINTEREST_ENABLED }}" != 'true' ]; then continue; fi
-            MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
-            if ! gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$MARKER"; then
-              echo "::error::Confluence $PLATFORM post missing for $SOCIAL_DATE"
-              MISSING=1
+          set -euo pipefail
+          # GitHub's release-assets listing can lag behind successful marker uploads.
+          # Retry reads; never retry the external publishing API from verification.
+          for ATTEMPT in 1 2 3 4 5 6; do
+            ASSETS="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+            MISSING=()
+            for PLATFORM in instagram threads bluesky pinterest; do
+              if [[ "$PLATFORM" == bluesky && -z "$BLUESKY_APP_PASSWORD" ]]; then continue; fi
+              if [[ "$PLATFORM" == pinterest && "${{ vars.PINTEREST_ENABLED }}" != true ]]; then continue; fi
+              MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
+              if ! printf '%s\n' "$ASSETS" | grep -Fxq "$MARKER"; then
+                MISSING+=("$PLATFORM")
+              fi
+            done
+            if (( ${#MISSING[@]} == 0 )); then
+              echo "All configured Confluence completion markers verified."
+              exit 0
+            fi
+            if (( ATTEMPT < 6 )); then
+              echo "Release markers not yet visible (attempt $ATTEMPT/6); retrying verification only."
+              sleep 3
             fi
           done
-          exit "$MISSING"
+          for PLATFORM in "${MISSING[@]}"; do
+            echo "::error::Confluence $PLATFORM completion marker missing for $SOCIAL_DATE after verification retries"
+          done
+          exit 1
