@@ -128,6 +128,9 @@ test('armed R2-only date blocks scheduled legacy gallery and gates all social UR
   assert.ok(workflow.includes('R2-only date reserved for manual publication; scheduled legacy build held.'));
   assert.ok(workflow.includes('"$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09"'));
   assert.ok(wait.includes('ART_ONLY_DATE: ${{ inputs.art_only_date }}'));
+  assert.ok(wait.includes('ART_ONLY_AUTO_FROM: ${{ inputs.art_only_auto_from }}'));
+  assert.ok(wait.includes('! "$EDITION_DATE" < "$ART_ONLY_AUTO_FROM"'));
+  for(const src of [soloSocial,confluenceSocial]) assert.ok(src.includes('art_only_auto_from: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}'));
   assert.ok(soloSocial.includes('art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}'));
   assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
   assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));

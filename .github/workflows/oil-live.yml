@@ -109,6 +109,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && inputs.live == true && steps.gate.outputs.should_run == 'true'
         uses: ./.github/actions/wait-for-r2-gallery
         with:
+          art_only_auto_from: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}
           date: ${{ steps.gate.outputs.date }}
           canary_date: ${{ vars.PP_R2_CANARY_DATE }}
 
