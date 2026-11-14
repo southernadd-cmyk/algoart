@@ -120,7 +120,7 @@ def prepare(day, root, gallery):
     require(len(objects) == 3,"Daily R2 output must be exactly 3 objects")
     return daily_manifest,objects
 
-def verify_existing_manifest(client, proposed):
+def verify_existing_manifest(client, proposed, gallery):
     """Accept an existing immutable publication only when its source and packs verify."""
     key = f"{PREFIX}/{proposed['date']}/manifest.json"
     response = client.get_object(Bucket=BUCKET, Key=key)
@@ -130,9 +130,18 @@ def verify_existing_manifest(client, proposed):
         response["Body"].close()
     existing = json.loads(raw)
     for field in ("schema","version","revision","date","portraits",
-                  "metaSha256","worker","ready","confluenceExcluded"):
+                  "worker","ready","confluenceExcluded"):
         require(existing.get(field) == proposed.get(field),
                 "Existing R2 manifest conflicts with published source: " + field)
+    # Archive metadata may be reserialized by later gallery publication.
+    # A changed metadata hash is not enough to invalidate immutable geometry;
+    # verify every archived painting's exact source bytes instead.
+    meta = json.loads((gallery / proposed["date"] / "meta.json").read_text())
+    solo = {e["imageFile"] for e in meta["entries"]
+            if e.get("orientation") == "portrait" and
+               e.get("material") != "confluence"}
+    require(len(solo) == proposed["portraits"],
+            "Existing R2 manifest portrait roster differs from gallery")
     require(set(existing.get("qualities",{})) == {"desktop","mobile"},
             "Existing R2 manifest lacks both qualities")
     for quality in ("desktop","mobile"):
@@ -157,8 +166,15 @@ def verify_existing_manifest(client, proposed):
                 data.get("expectedPortraits") == proposed["portraits"] and
                 data.get("bakedPortraits") == proposed["portraits"] and
                 data.get("geometryRevision") == REVISION and
-                len(data.get("studies",{})) == proposed["portraits"],
+                set(data.get("studies",{})) == solo,
                 "Existing R2 pack has incomplete source geometry: " + quality)
+        for study in data["studies"].values():
+            src = gallery / proposed["date"] / study["sourceFile"]
+            require(src.is_file() and digest(src.read_bytes()) == study["sourceSha256"] and
+                    study.get("coverage") == 1 and study.get("omittedCells") == 0 and
+                    study.get("geometryRevision") == REVISION and
+                    study.get("quality") == quality,
+                    "Existing R2 pack differs from published painting source: " + quality)
     return existing
 
 def put_verified(client,item):
@@ -237,7 +253,7 @@ def main():
                         raise
                     # Never overwrite a date-scoped pointer. Verify the existing
                     # publication against today's source and both immutable packs.
-                    manifest = verify_existing_manifest(client,manifest)
+                    manifest = verify_existing_manifest(client,manifest,args.gallery)
                     print("V2_DAILY_EXISTING_MANIFEST_VERIFIED "+args.date,flush=True)
                     continue
             else:
