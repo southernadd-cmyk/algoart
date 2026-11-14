@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-11-14-G01-action-rects-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G01-action-rects-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G01-action-rects-landscape-640.webp"
+    },
+    "2026-11-14-G02-watercolor-field-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G02-watercolor-field-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G02-watercolor-field-landscape-640.webp"
+    },
+    "2026-11-14-G03-watercolour-organic-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G03-watercolour-organic-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G03-watercolour-organic-landscape-640.webp"
+    },
+    "2026-11-14-G04-watercolour-geometric-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G04-watercolour-geometric-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G04-watercolour-geometric-portrait-640.webp"
+    },
+    "2026-11-14-G05-action-scribble-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G05-action-scribble-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G05-action-scribble-landscape-640.webp"
+    },
+    "2026-11-14-G06-marker-organic-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G06-marker-organic-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G06-marker-organic-portrait-640.webp"
+    },
+    "2026-11-14-G07-watercolour-rects-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G07-watercolour-rects-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G07-watercolour-rects-portrait-640.webp"
+    },
+    "2026-11-14-G08-watercolor-burst-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G08-watercolor-burst-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G08-watercolor-burst-portrait-640.webp"
+    },
+    "2026-11-14-G09-oil-field-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G09-oil-field-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G09-oil-field-portrait-640.webp"
+    },
+    "2026-11-14-G10-watercolour-geometric-portrait.jpg": {
+      "desktop": "3d/2026-11-14-G10-watercolour-geometric-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-G10-watercolour-geometric-portrait-640.webp"
+    },
+    "2026-11-14-G11-oil-network-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G11-oil-network-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G11-oil-network-landscape-640.webp"
+    },
+    "2026-11-14-G12-marker-geometric-landscape.jpg": {
+      "desktop": "3d/2026-11-14-G12-marker-geometric-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-G12-marker-geometric-landscape-640.webp"
+    },
+    "2026-11-14-C01-portrait.jpg": {
+      "desktop": "3d/2026-11-14-C01-portrait-1100.webp",
+      "mobile": "3d/2026-11-14-C01-portrait-640.webp"
+    },
+    "2026-11-14-C02-landscape.jpg": {
+      "desktop": "3d/2026-11-14-C02-landscape-1100.webp",
+      "mobile": "3d/2026-11-14-C02-landscape-640.webp"
+    }
+  }
+}
