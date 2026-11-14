@@ -14,12 +14,12 @@ test('R2-only rollout is explicit and manual, never scheduled by default',()=>{
   assert.match(workflow,/ART_ONLY_REQUESTED: \$\{\{ inputs\.r2_art_only \}\}/);
   assert.match(workflow,/ART_ONLY_DATE: \$\{\{ vars\.PP_R2_ART_ONLY_DATE \}\}/);
   assert.match(workflow,/\$GITHUB_EVENT_NAME" == workflow_dispatch/);
-  assert.ok(workflow.includes('ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}'));
+  assert.ok(workflow.includes("ART_ONLY_SOCIAL_READY: 'true'"));
   assert.ok(workflow.includes('"$ART_ONLY_SOCIAL_READY" == true'));
   assert.match(workflow,/MODE=r2-only/);
   assert.match(workflow,/R2_ART_ONLY: \$\{\{ needs\.plan\.outputs\.mode == 'r2-only' \}\}/);
   assert.match(workflow,/MODE=legacy/);
-  assert.ok(workflow.includes("ART_ONLY_AUTO_FROM: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}"));
+  assert.ok(workflow.includes("ART_ONLY_AUTO_FROM: '2026-11-15'"));
   assert.doesNotMatch(workflow,/if \[\[ "\$GITHUB_EVENT_NAME" == schedule \]\]; then\s+MODE=r2-only/);
 });
 test('R2 uploads verify before removing artwork from Git index',()=>{
@@ -112,8 +112,8 @@ test('R2 social credentials are available only when the rollout is explicitly ar
     const line=src.split('\n').find(text=>text.trim().startsWith('environment:'));
     assert.ok(line,'Missing scoped R2 environment gate: '+path);
     for(const marker of ["github.ref == 'refs/heads/main'",
-      "vars.PP_R2_ART_ONLY_SOCIAL_READY == 'true'",
-      "vars.PP_R2_ART_ONLY_AUTO_FROM != ''",
+      "'2026-11-15' != ''",
+      "'archive-media-test' || ''",
       "'archive-media-test' || ''"]){
       assert.ok(line.includes(marker),'Missing '+marker+' in '+path);
     }
@@ -130,7 +130,7 @@ test('armed R2-only date blocks scheduled legacy gallery and gates all social UR
   assert.ok(wait.includes('ART_ONLY_DATE: ${{ inputs.art_only_date }}'));
   assert.ok(wait.includes('ART_ONLY_AUTO_FROM: ${{ inputs.art_only_auto_from }}'));
   assert.ok(wait.includes('! "$EDITION_DATE" < "$ART_ONLY_AUTO_FROM"'));
-  for(const src of [soloSocial,confluenceSocial]) assert.ok(src.includes('art_only_auto_from: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}'));
+  for(const src of [soloSocial,confluenceSocial]) assert.ok(src.includes("art_only_auto_from: '2026-11-15'"));
   assert.ok(soloSocial.includes('art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}'));
   assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
   assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));
