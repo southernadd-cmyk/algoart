@@ -71,6 +71,7 @@ jobs:
           ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
           ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
           ART_ONLY_SOCIAL_READY: ${{ vars.PP_R2_ART_ONLY_SOCIAL_READY }}
+          ART_ONLY_AUTO_FROM: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}
         run: |
           TODAY="$(TZ=Europe/London date +%F)"
           DAY="${REQUESTED_DATE:-$TODAY}"
@@ -86,6 +87,16 @@ jobs:
                "$DAY" == "$ART_ONLY_DATE" && "$DAY" > "2026-11-11" ]]
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "::error::R2-only publishing is restricted to a new edition date."
+              exit 1
+            fi
+            MODE=r2-only
+          elif [[ "$GITHUB_EVENT_NAME" == schedule && -n "$ART_ONLY_AUTO_FROM" &&
+                  "$ART_ONLY_AUTO_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ &&
+                  "$TODAY" == "$DAY" && ! "$DAY" < "$ART_ONLY_AUTO_FROM" &&
+                  "$ART_ONLY_SOCIAL_READY" == true ]]; then
+            # Explicitly opt-in future scheduled editions only; never overwrite an existing edition.
+            if [[ -e "gallery/$DAY/meta.json" ]]; then
+              echo "::error::Scheduled R2-only edition already exists; refusing to overwrite."
               exit 1
             fi
             MODE=r2-only
