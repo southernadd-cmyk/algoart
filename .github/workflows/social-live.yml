@@ -658,3 +658,13 @@ jobs:
       date: ${{ needs.portrait-plan.outputs.date }}
       slot: ${{ needs.portrait-plan.outputs.slot }}
     secrets: inherit
+  confluence-portrait-recovery:
+    # At the existing 15:00 slot, backfill a missing 09:00 Confluence portrait.
+    # The reusable workflow checks release completion markers and skips posted platforms.
+    needs: [portrait-plan]
+    if: ${{ always() && !cancelled() && github.ref == 'refs/heads/main' && needs.portrait-plan.outputs.should_run == 'true' && needs.portrait-plan.outputs.slot == '1' }}
+    uses: ./.github/workflows/confluence-social.yml
+    with:
+      date: ${{ needs.portrait-plan.outputs.date }}
+      slot: '0'
+    secrets: inherit
