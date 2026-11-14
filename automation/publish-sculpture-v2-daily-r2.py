@@ -120,6 +120,47 @@ def prepare(day, root, gallery):
     require(len(objects) == 3,"Daily R2 output must be exactly 3 objects")
     return daily_manifest,objects
 
+def verify_existing_manifest(client, proposed):
+    """Accept an existing immutable publication only when its source and packs verify."""
+    key = f"{PREFIX}/{proposed['date']}/manifest.json"
+    response = client.get_object(Bucket=BUCKET, Key=key)
+    try:
+        raw = response["Body"].read()
+    finally:
+        response["Body"].close()
+    existing = json.loads(raw)
+    for field in ("schema","version","revision","date","portraits",
+                  "metaSha256","worker","ready","confluenceExcluded"):
+        require(existing.get(field) == proposed.get(field),
+                "Existing R2 manifest conflicts with published source: " + field)
+    require(set(existing.get("qualities",{})) == {"desktop","mobile"},
+            "Existing R2 manifest lacks both qualities")
+    for quality in ("desktop","mobile"):
+        spec = existing["qualities"][quality]
+        sha = spec.get("sha256","")
+        require(re.fullmatch(r"[a-f0-9]{64}",sha) is not None and
+                spec.get("url") == f"{WORKER}/{PREFIX}/{proposed['date']}/{quality}/{sha}.json.gz" and
+                isinstance(spec.get("bytes"),int) and 1000 < spec["bytes"] < 45*1048576,
+                "Existing R2 manifest has invalid pack: " + quality)
+        obj = client.get_object(Bucket=BUCKET,
+            Key=f"{PREFIX}/{proposed['date']}/{quality}/{sha}.json.gz")
+        try:
+            packed = obj["Body"].read()
+        finally:
+            obj["Body"].close()
+        require(len(packed) == spec["bytes"] and digest(packed) == sha,
+                "Existing R2 pack failed SHA verification: " + quality)
+        data = json.loads(gzip.decompress(packed))
+        require(data.get("schema") == "pp-sculpture-v2-floor" and
+                data.get("version") == 2 and data.get("date") == proposed["date"] and
+                data.get("quality") == quality and data.get("complete") is True and
+                data.get("expectedPortraits") == proposed["portraits"] and
+                data.get("bakedPortraits") == proposed["portraits"] and
+                data.get("geometryRevision") == REVISION and
+                len(data.get("studies",{})) == proposed["portraits"],
+                "Existing R2 pack has incomplete source geometry: " + quality)
+    return existing
+
 def put_verified(client,item):
     from botocore.exceptions import ClientError
     from io import BytesIO
@@ -188,7 +229,19 @@ def main():
         client.head_bucket(Bucket=BUCKET)
         # Manifest last. No incomplete day is ever announced as ready.
         for item in objects:
-            put_verified(client,item)
+            if item["identity"] == "manifest":
+                try:
+                    put_verified(client,item)
+                except ValueError as error:
+                    if "R2 daily object collision: manifest" not in str(error):
+                        raise
+                    # Never overwrite a date-scoped pointer. Verify the existing
+                    # publication against today's source and both immutable packs.
+                    manifest = verify_existing_manifest(client,manifest)
+                    print("V2_DAILY_EXISTING_MANIFEST_VERIFIED "+args.date,flush=True)
+                    continue
+            else:
+                put_verified(client,item)
             print("V2_DAILY_R2_OBJECT_OK "+json.dumps({
                 "date":args.date,"name":item["identity"],"bytes":item["bytes"]}),
                 flush=True)
