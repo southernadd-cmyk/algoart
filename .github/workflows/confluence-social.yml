@@ -99,7 +99,7 @@ jobs:
           NEEDS_POST=false
           for PLATFORM in instagram threads bluesky pinterest; do
             MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
-            if printf '%s\n' "$ASSETS" | grep -Fxq "$MARKER"; then
+            if grep -Fxq "$MARKER" <<< "$ASSETS"; then
               DONE=true
             else
               DONE=false
@@ -270,7 +270,7 @@ jobs:
               if [[ "$PLATFORM" == bluesky && -z "$BLUESKY_APP_PASSWORD" ]]; then continue; fi
               if [[ "$PLATFORM" == pinterest && "${{ vars.PINTEREST_ENABLED }}" != true ]]; then continue; fi
               MARKER="done-$SOCIAL_DATE-confluence-${{ steps.select.outputs.orientation }}-$PLATFORM.txt"
-              if ! printf '%s\n' "$ASSETS" | grep -Fxq "$MARKER"; then
+              if ! grep -Fxq "$MARKER" <<< "$ASSETS"; then
                 MISSING+=("$PLATFORM")
               fi
             done

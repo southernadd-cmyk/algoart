@@ -51,6 +51,8 @@ test('Final release marker verification retries API visibility, never republishe
   assert.match(verify,/for ATTEMPT in 1 2 3 4 5 6/);
   assert.match(verify,/gh release view "\$RELEASE_TAG" --json assets/);
   assert.match(verify,/sleep 3/);
+  assert.ok(confluence.includes('grep -Fxq "$MARKER" <<< "$ASSETS"'));
+  assert.ok(!confluence.includes("printf '%s\\n' \"$ASSETS\" | grep -Fxq"));
   assert.match(verify,/completion marker missing .* after verification retries/);
   assert.doesNotMatch(verify,/publish-(?:threads|instagram|bluesky|pinterest)/);
 });
