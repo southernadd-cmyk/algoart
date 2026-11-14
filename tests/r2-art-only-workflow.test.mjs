@@ -126,7 +126,8 @@ test('armed R2-only date blocks scheduled legacy gallery and gates all social UR
   assert.ok(manual>0 && reserved>manual,'Explicit manual R2-only takes priority over the scheduled hold');
   assert.ok(workflow.includes('R2-only date reserved for manual publication; scheduled legacy build held.'));
   assert.ok(workflow.includes('"$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09"'));
-  assert.ok(wait.includes('ART_ONLY_DATE:') && wait.includes('vars.PP_R2_ART_ONLY_DATE'));
+  assert.ok(wait.includes('ART_ONLY_DATE: ${{ inputs.art_only_date }}'));
+  assert.ok(soloSocial.includes('art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}'));
   assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
   assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));
 });
