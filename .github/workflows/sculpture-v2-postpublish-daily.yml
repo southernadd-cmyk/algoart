@@ -2,14 +2,19 @@ name: Sculpture V2 post-publication daily archive
 
 # Independently follows a SUCCESSFUL scheduled gallery build.
 # It must not modify archived gallery files or run for the
-# manual 11 Nov R2 canary/recovery. PRs only exercise no-secret safety tests.
+# R2 canary. Date-pinned recovery requires a published R2-only edition.
 on:
   pull_request:
     paths:
       - 'automation/publish-sculpture-v2-daily-r2.py'
       - 'tests/test_sculpture_v2_daily_r2.py'
       - '.github/workflows/sculpture-v2-postpublish-daily.yml'
-  workflow_dispatch: # Explicit, date-pinned recovery for 11 November only
+  workflow_dispatch:
+    inputs:
+      recovery_date:
+        description: 'Archived R2-only gallery date (YYYY-MM-DD)'
+        required: true
+        type: string
   workflow_run:
     workflows: ['Build ALGO ART daily gallery']
     types: [completed]
@@ -49,9 +54,9 @@ jobs:
     timeout-minutes: 90
     environment: archive-media-test
     env:
-      UPSTREAM_STARTED: ${{ github.event.workflow_run.run_started_at || '2026-11-11T08:00:00Z' }}
+      UPSTREAM_STARTED: ${{ github.event.workflow_run.run_started_at || format('{0}T12:00:00Z', inputs.recovery_date) }}
       UPSTREAM_RUN: ${{ github.event.workflow_run.id || github.run_id }}
-      V2_RECOVERY_DATE: ${{ github.event_name == 'workflow_dispatch' && '2026-11-11' || '' }}
+      V2_RECOVERY_DATE: ${{ github.event_name == 'workflow_dispatch' && inputs.recovery_date || '' }}
       AWS_EC2_METADATA_DISABLED: 'true'
     steps:
       - uses: actions/checkout@v4
@@ -96,8 +101,9 @@ jobs:
           DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
           test "$DAY" \> "2026-11-10"
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
-            test "$DAY" == "2026-11-11"
-            echo "V2_11_NOV_RECOVERY_ONLY"
+            test "$DAY" == "$V2_RECOVERY_DATE"
+            test "$DAY" \< "$(TZ=Europe/London date +%F)"
+            echo "V2_DATE_PINNED_RECOVERY date=$DAY"
           fi
           # An armed R2 canary deliberately holds the scheduled gallery build.
           # A successful no-op upstream run MUST NOT trigger any V2 baking
@@ -108,6 +114,16 @@ jobs:
             exit 0
           fi
           test -s "gallery/$DAY/meta.json"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            DAY="$DAY" python3 - <<'RECOVERY_MANIFEST'
+          import json,os
+          from pathlib import Path
+          day=os.environ['DAY']
+          m=json.loads((Path('gallery')/day/'media-publication.json').read_text())
+          assert m['date']==day and m['published'] is True and m['pagesFallback'] is False
+          print('V2_RECOVERY_R2_ONLY_CONFIRMED',day)
+          RECOVERY_MANIFEST
+          fi
           DAY="$DAY" python3 - <<'PY'
           import json,os
           from pathlib import Path
