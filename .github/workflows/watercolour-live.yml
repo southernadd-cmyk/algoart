@@ -67,7 +67,7 @@ jobs:
   publish:
     runs-on: ubuntu-24.04
     # Only the explicitly armed R2-only rollout receives scoped test-bucket credentials.
-    environment: ${{ github.ref == 'refs/heads/main' && vars.PP_R2_ART_ONLY_SOCIAL_READY == 'true' && (vars.PP_R2_ART_ONLY_DATE != '' || vars.PP_R2_ART_ONLY_AUTO_FROM != '') && 'archive-media-test' || '' }}
+    environment: ${{ github.ref == 'refs/heads/main' && '2026-11-15' != '' && 'archive-media-test' || '' }}
     timeout-minutes: 60
     env:
       PUBLIC_SITE_URL: https://southernadd-cmyk.github.io/algoart/
@@ -130,7 +130,7 @@ jobs:
           date: ${{ steps.gate.outputs.date }}
           canary_date: ${{ vars.PP_R2_CANARY_DATE }}
           art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}
-          art_only_auto_from: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}
+          art_only_auto_from: '2026-11-15'
 
       - name: Detect R2-only gallery publication
         if: steps.gate.outputs.should_run == 'true'

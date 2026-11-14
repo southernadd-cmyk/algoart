@@ -215,9 +215,14 @@ def connect():
                 os.environ.get("V2_PUBLISH_DATE") == os.environ.get("PP_R2_ART_ONLY_DATE") and
                 bool(os.environ.get("PP_R2_ART_ONLY_DATE")) and
                 os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true")
+    scheduled_art_only = (event == "schedule" and
+                os.environ.get("R2_ART_ONLY") == "true" and
+                os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true" and
+                bool(re.fullmatch(r"20\d{2}-\d{2}-\d{2}",os.environ.get("PP_R2_ART_ONLY_AUTO_FROM",""))) and
+                os.environ.get("V2_PUBLISH_DATE","") >= os.environ.get("PP_R2_ART_ONLY_AUTO_FROM",""))
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
             os.environ.get("GITHUB_REF") == "refs/heads/main" and
-            (event == "workflow_run" or recovery or art_only),
+            (event == "workflow_run" or recovery or art_only or scheduled_art_only),
             "Only successful upstream gallery runs or explicitly armed manual editions may publish V2")
     account = os.environ["R2_ACCOUNT_ID"]
     require(re.fullmatch(r"[a-fA-F0-9]{32}",account) is not None,
