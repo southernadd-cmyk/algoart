@@ -189,8 +189,11 @@ try{
         result=await compare(item,bytes);
         row.metrics={mean:result.mean,meanPercentOfChannelRange:+(result.mean/255*100).toFixed(3),changed:result.changed,structural:result.structural,pixelPass:result.pixelPass};
         // The archive was exported by Chromium. Firefox Action Painting and
-        // WebKit Confluence use browser-dependent raster operations.
-        const browserRaster = (engine==='firefox' && item.material==='action') ||
+        // Confluence, and WebKit Confluence, use browser-dependent raster
+        // operations. Require an exact same-browser repeat before accepting
+        // any cross-browser visual difference; Chromium still checks the JPEG.
+        const browserRaster = (engine==='firefox' &&
+          (item.material==='action' || confluence)) ||
           (engine==='webkit' && confluence);
         if(!result.passed || browserRaster){
           // Check exact repeat rendering and record the comparison to the
