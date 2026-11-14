@@ -150,8 +150,9 @@ def connect():
     from botocore.config import Config
     event = os.environ.get("GITHUB_EVENT_NAME")
     recovery = (event == "workflow_dispatch" and
-                os.environ.get("V2_RECOVERY_DATE") == "2026-11-11" and
-                os.environ.get("V2_PUBLISH_DATE") == "2026-11-11")
+                bool(re.fullmatch(r"20\d{2}-\d{2}-\d{2}",os.environ.get("V2_RECOVERY_DATE",""))) and
+                os.environ.get("V2_RECOVERY_DATE") >= "2026-11-11" and
+                os.environ.get("V2_PUBLISH_DATE") == os.environ.get("V2_RECOVERY_DATE"))
     art_only = (event == "workflow_dispatch" and
                 os.environ.get("R2_ART_ONLY") == "true" and
                 os.environ.get("V2_PUBLISH_DATE") == os.environ.get("PP_R2_ART_ONLY_DATE") and
