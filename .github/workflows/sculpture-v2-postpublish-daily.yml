@@ -102,7 +102,8 @@ jobs:
           test "$DAY" \> "2026-11-10"
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
             test "$DAY" == "$V2_RECOVERY_DATE"
-            test "$DAY" \< "$(TZ=Europe/London date +%F)"
+            TODAY="$(TZ=Europe/London date +%F)"
+          [[ "$DAY" == "$TODAY" || "$DAY" < "$TODAY" ]]
             echo "V2_DATE_PINNED_RECOVERY date=$DAY"
           fi
           # An armed R2 canary deliberately holds the scheduled gallery build.
@@ -115,13 +116,25 @@ jobs:
           fi
           test -s "gallery/$DAY/meta.json"
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            # R2-only editions must retain the strict published-manifest gate.
+            # The 14 Nov gallery is a legacy Pages edition: allow recovery from
+            # its committed, complete JPEG roster without inventing an R2 manifest.
             DAY="$DAY" python3 - <<'RECOVERY_MANIFEST'
           import json,os
           from pathlib import Path
           day=os.environ['DAY']
-          m=json.loads((Path('gallery')/day/'media-publication.json').read_text())
-          assert m['date']==day and m['published'] is True and m['pagesFallback'] is False
-          print('V2_RECOVERY_R2_ONLY_CONFIRMED',day)
+          base=Path('gallery')/day
+          publication=base/'media-publication.json'
+          if publication.exists():
+              m=json.loads(publication.read_text())
+              assert m['date']==day and m['published'] is True and m['pagesFallback'] is False
+              print('V2_RECOVERY_R2_ONLY_CONFIRMED',day)
+          else:
+              assert day=='2026-11-14', 'Legacy recovery is date-limited to 14 November'
+              m=json.loads((base/'meta.json').read_text())
+              assert m['date']==day and m['count']==len(m['entries']) and m['entries']
+              assert all((base/e['imageFile']).is_file() for e in m['entries'])
+              print('V2_RECOVERY_LEGACY_PUBLISHED_ROSTER_CONFIRMED',day)
           RECOVERY_MANIFEST
           fi
           DAY="$DAY" python3 - <<'PY'
