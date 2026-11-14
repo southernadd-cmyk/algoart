@@ -19,6 +19,7 @@ test('R2-only rollout is explicit and manual, never scheduled by default',()=>{
   assert.match(workflow,/MODE=r2-only/);
   assert.match(workflow,/R2_ART_ONLY: \$\{\{ needs\.plan\.outputs\.mode == 'r2-only' \}\}/);
   assert.match(workflow,/MODE=legacy/);
+  assert.ok(workflow.includes("ART_ONLY_AUTO_FROM: ${{ vars.PP_R2_ART_ONLY_AUTO_FROM }}"));
   assert.doesNotMatch(workflow,/if \[\[ "\$GITHUB_EVENT_NAME" == schedule \]\]; then\s+MODE=r2-only/);
 });
 test('R2 uploads verify before removing artwork from Git index',()=>{
@@ -112,7 +113,7 @@ test('R2 social credentials are available only when the rollout is explicitly ar
     assert.ok(line,'Missing scoped R2 environment gate: '+path);
     for(const marker of ["github.ref == 'refs/heads/main'",
       "vars.PP_R2_ART_ONLY_SOCIAL_READY == 'true'",
-      "vars.PP_R2_ART_ONLY_DATE != ''",
+      "vars.PP_R2_ART_ONLY_AUTO_FROM != ''",
       "'archive-media-test' || ''"]){
       assert.ok(line.includes(marker),'Missing '+marker+' in '+path);
     }
@@ -126,7 +127,8 @@ test('armed R2-only date blocks scheduled legacy gallery and gates all social UR
   assert.ok(manual>0 && reserved>manual,'Explicit manual R2-only takes priority over the scheduled hold');
   assert.ok(workflow.includes('R2-only date reserved for manual publication; scheduled legacy build held.'));
   assert.ok(workflow.includes('"$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09"'));
-  assert.ok(wait.includes('ART_ONLY_DATE:') && wait.includes('vars.PP_R2_ART_ONLY_DATE'));
+  assert.ok(wait.includes('ART_ONLY_DATE: ${{ inputs.art_only_date }}'));
+  assert.ok(soloSocial.includes('art_only_date: ${{ vars.PP_R2_ART_ONLY_DATE }}'));
   assert.ok(wait.includes('"$EDITION_DATE" == "$ART_ONLY_DATE"'));
   assert.ok(wait.includes('node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"'));
 });
