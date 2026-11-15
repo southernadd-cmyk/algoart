@@ -478,6 +478,7 @@ jobs:
         if: env.R2_CANARY == 'true'
         env:
           PP_R2_CANARY_DATE: ${{ needs.plan.outputs.mode == 'r2-only' && vars.PP_R2_ART_ONLY_DATE || vars.PP_R2_CANARY_DATE }}
+          PP_R2_ART_ONLY_AUTO_FROM: '2026-11-15'
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}

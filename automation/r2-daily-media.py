@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Upload a staged daily edition, or verify both copies of a published edition."""
 import argparse
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 import hashlib
 import json
 import os
@@ -187,10 +188,19 @@ def media_client(day):
     import boto3
     from botocore.config import Config
 
+    event = os.environ.get("GITHUB_EVENT_NAME")
+    auto_from = os.environ.get("PP_R2_ART_ONLY_AUTO_FROM", "")
+    manual_canary = (event == "workflow_dispatch" and
+                     os.environ.get("PP_R2_CANARY_DATE") == day)
+    daily_r2_only = (event in ("schedule", "push") and
+                     os.environ.get("R2_ART_ONLY") == "true" and
+                     re.fullmatch(r"20\d{2}-\d{2}-\d{2}", auto_from) is not None and
+                     day >= auto_from and
+                     day == datetime.now(ZoneInfo("Europe/London")).date().isoformat())
     check(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
           os.environ.get("GITHUB_REF") == "refs/heads/main" and
-          os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and
-          os.environ.get("PP_R2_CANARY_DATE") == day, "R2 write requires the armed main-branch canary")
+          (manual_canary or daily_r2_only),
+          "R2 write requires an armed main-branch canary or today's scheduled R2-only edition")
     account = os.environ["R2_ACCOUNT_ID"]
     key = os.environ["R2_MEDIA_ACCESS_KEY_ID"]
     secret = os.environ["R2_MEDIA_SECRET_ACCESS_KEY"]
