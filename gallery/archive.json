@@ -2,6 +2,24 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-15",
+      "cover": "2026-11-15-G01-watercolor-rects-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Recursive Divisions",
+        "Growth Systems",
+        "Constructed Forms",
+        "Orbital Studies",
+        "Radiant Systems",
+        "Automatic Marks",
+        "Golden Trajectories",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-15/cover-7c36d03787ecd31ea73c8fc7648aa2e74ce17f3d5a05877135026eec4b96120b.jpg",
+      "mediaCoverBytes": 107187
+    },
+    {
       "date": "2026-11-14",
       "cover": "2026-11-14-G01-action-rects-landscape.jpg",
       "coverOrientation": "landscape",
