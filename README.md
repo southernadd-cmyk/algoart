@@ -69,7 +69,7 @@ The [browser editor](https://southernadd-cmyk.github.io/algoart/) is open and fr
 
 The canvas is intentionally a practical **7:5 format**, not a golden rectangle. The proportion works *inside* the image. The editor can export PNG, SVG and pen-plotter paths, and preserve a particular drawing through its seed, settings and renderer version. The public editor and the published daily archive are separate: visitors can make and save their own drawings, but these are **not** automatically added to the daily editions or the exhibition tower.
 
-From 9 November 2026, each daily [gallery](https://southernadd-cmyk.github.io/algoart/gallery/) floor contains twelve independent solo studies **and four Confluence collaborations** (two portraits, two landscapes). Confluence's three procedural voices use golden-ratio distributed systems, materials and palettes, and each published study links back to its exact shared drawing. These are generated specifically for the daily edition; visitors' own shared studies remain private unless they choose to share them. The daily gallery continues to accumulate landscape and portrait works. The date of a drawing determines its place in the tower, but not its meaning. New floors do not resolve the question posed by the earliest ones. They keep asking it.
+Since 10 November 2026, each [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/) floor contains **twelve solo studies and two Confluence collaborations**, one portrait and one landscape. The [9 November debut](https://southernadd-cmyk.github.io/algoart/gallery/2026-11-09/) included four Confluence studies. Confluence's three procedural voices use golden-ratio distributed systems, materials and palettes, and each published study links back to its exact shared drawing. These are generated specifically for the daily edition; visitors' own shared studies remain private unless they choose to share them. The daily gallery continues to accumulate landscape and portrait works. The date of a drawing determines its place in the tower, but not its meaning. New floors do not resolve the question posed by the earliest ones. They keep asking it.
 
 ## An unfinished question
 
@@ -109,11 +109,11 @@ npm ci
 npm run test:renderer-lock
 npm run test:orientation
 npm run test:plotter
-npm run gallery:bundle:phi
+node automation/build-sculpture-v2-test.mjs
 ```
 
-The gallery source must be bundled before changes to it appear in the deployed gallery. PNG exports preserve visible paint texture; SVG and plotter SVG preserve underlying vector paths rather than the full raster material. Physical plotter pen-change behaviour has not been verified on hardware.
+The build command produces `gallery/visit/gallery-phi-sculpture-v2-test-bundle.js`, the Sculpture V2 bundle loaded by the public exhibition. Rerun the command after changing the tower source. PNG exports preserve visible paint texture; SVG and plotter SVG preserve underlying vector paths rather than the full raster material. Physical plotter pen-change behaviour has not been verified on hardware.
 
-For publishing details, see [automation documentation](automation/README.md). The archive itself is accessible from the [daily gallery](https://southernadd-cmyk.github.io/algoart/gallery/).
+For daily editions from 15 November 2026, GitHub Pages serves the gallery pages and archive metadata. Cloudflare R2 supplies the artwork images, the WebP textures used to display them in the tower, and the baked Sculpture V2 packs. The [daily gallery workflow](.github/workflows/gallery-daily.yml) verifies the media and sculpture packs before deploying the edition and checks the gallery again after deployment. See the [automation documentation](automation/README.md) for social publishing details.
 
 </details>
