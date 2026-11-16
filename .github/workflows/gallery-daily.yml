@@ -1,6 +1,6 @@
 name: Build ALGO ART daily gallery
 
-# Only scheduled or explicit gallery builds may write new gallery assets.
+# Scheduled, explicit and repair-triggered gallery builds may write new gallery assets.
 # 9 Nov recovery: rerun after isolating the Confluence social test output.
 # 8 Nov 2026: restore the 18-study archive after external GitHub Release
 # Recovery follow-up: keep 9 originally published editions byte-for-byte
@@ -93,9 +93,9 @@ jobs:
               exit 1
             fi
             MODE=r2-only
-          elif [[ ( "$GITHUB_EVENT_NAME" == schedule || "$GITHUB_EVENT_NAME" == push ) && -n "$ART_ONLY_AUTO_FROM" &&
+          elif [[ ( "$GITHUB_EVENT_NAME" == schedule || "$GITHUB_EVENT_NAME" == push || "$GITHUB_EVENT_NAME" == workflow_dispatch ) && -n "$ART_ONLY_AUTO_FROM" &&
                   "$ART_ONLY_AUTO_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ &&
-                  "$TODAY" == "$DAY" && ! "$DAY" < "$ART_ONLY_AUTO_FROM" &&
+                  "$CANARY_REQUESTED" != true && "$TODAY" == "$DAY" && ! "$DAY" < "$ART_ONLY_AUTO_FROM" &&
                   "$ART_ONLY_SOCIAL_READY" == true ]]; then
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "::error::Scheduled R2-only edition already exists; refusing to overwrite."
