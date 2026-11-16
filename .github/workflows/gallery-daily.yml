@@ -104,8 +104,9 @@ jobs:
             if [[ -e "gallery/$DAY/meta.json" ]]; then
               echo "Already published $DAY; skipping retry." >> "$GITHUB_STEP_SUMMARY"
               MODE=skip
+            else
+              MODE=r2-only
             fi
-            MODE=r2-only
           elif [[ "$CANARY_REQUESTED" == true ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
                "$DAY" == "$ARMED_DATE" && "$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09" ]]
