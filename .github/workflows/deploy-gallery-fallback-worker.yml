@@ -1,8 +1,12 @@
 name: Deploy independent gallery cron Worker
 
 on:
-  # Operator-only: do not report a green "deployment" run when only
-  # Cloudflare (not GitHub dispatch) credentials are available.
+  # Automatically perform the one-time activation from this workflow update.
+  # Subsequent gallery editions do not retrigger Worker deployment.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-gallery-fallback-worker.yml'
   workflow_dispatch:
 
 permissions:
