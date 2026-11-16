@@ -192,7 +192,7 @@ def media_client(day):
     auto_from = os.environ.get("PP_R2_ART_ONLY_AUTO_FROM", "")
     manual_canary = (event == "workflow_dispatch" and
                      os.environ.get("PP_R2_CANARY_DATE") == day)
-    daily_r2_only = (event in ("schedule", "push") and
+    daily_r2_only = (event in ("schedule", "push", "workflow_dispatch") and
                      os.environ.get("R2_ART_ONLY") == "true" and
                      re.fullmatch(r"20\d{2}-\d{2}-\d{2}", auto_from) is not None and
                      day >= auto_from and

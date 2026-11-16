@@ -11,7 +11,8 @@ import json
 import os
 from pathlib import Path
 import re
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 BUCKET = "proportion-piece-media-test"
 WORKER = "https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev"
@@ -215,11 +216,12 @@ def connect():
                 os.environ.get("V2_PUBLISH_DATE") == os.environ.get("PP_R2_ART_ONLY_DATE") and
                 bool(os.environ.get("PP_R2_ART_ONLY_DATE")) and
                 os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true")
-    scheduled_art_only = (event in ("schedule","push") and
+    scheduled_art_only = (event in ("schedule","push","workflow_dispatch") and
                 os.environ.get("R2_ART_ONLY") == "true" and
                 os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true" and
                 bool(re.fullmatch(r"20\d{2}-\d{2}-\d{2}",os.environ.get("PP_R2_ART_ONLY_AUTO_FROM",""))) and
-                os.environ.get("V2_PUBLISH_DATE","") >= os.environ.get("PP_R2_ART_ONLY_AUTO_FROM",""))
+                os.environ.get("V2_PUBLISH_DATE","") >= os.environ.get("PP_R2_ART_ONLY_AUTO_FROM","") and
+                os.environ.get("V2_PUBLISH_DATE") == datetime.now(ZoneInfo("Europe/London")).date().isoformat())
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
             os.environ.get("GITHUB_REF") == "refs/heads/main" and
             (event == "workflow_run" or recovery or art_only or scheduled_art_only),

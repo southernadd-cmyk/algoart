@@ -6,6 +6,29 @@ This folder documents the publishing automation for **PROPORTION PIECE**. The ex
 
 ## Live cadence
 
+### Daily gallery recovery (16 November 2026)
+
+The gallery workflow requests builds at 04:15 UTC, with retries at 06:15 and
+08:15 UTC. Recent GitHub scheduled events have arrived hours late; these
+cron entries alone do not guarantee a morning edition.
+
+An independent ChatGPT task, **Proportion Piece Gallery Recovery**, checks at
+05:05, 06:05, 07:05 and 08:05 Europe/London, starting 17 November 2026.
+It checks for an existing edition and an active gallery run before recovery.
+If neither exists, it dispatches the current workflow, or updates only a dated
+recovery comment in `.github/workflows/gallery-daily.yml` using its current
+blob SHA. That path is an explicit push trigger. It must never change main
+while a gallery build is running, nor retrigger an old dated build.
+
+Ordinary manual builds of today's new edition use the same R2-only path as
+scheduled builds. Explicit historical/canary recovery retains its existing
+guards. Publication requires verified artwork, tower textures and both
+Sculpture V2 qualities; a started workflow is not proof that the gallery is live.
+
+The independent check depends on the ChatGPT task remaining enabled and its
+GitHub connection retaining write access. It is a fallback, not a guarantee
+of scheduler delivery. The workflow remains the source of publication status.
+
 The original Marker schedule generates five works per orientation, with studies 1, 3 and 5 selected for the three daily publishing slots and studies 2 and 4 reserved. The current live workflow also orchestrates portrait, Tissue & Graphite, Watercolour, Oil Paint and Action Painting editions. Material-specific generation and posting counts vary; the workflow and its material-specific jobs are authoritative, rather than a fixed total in this document.
 
 The existing Instagram, Threads and Bluesky accounts retain their original identifiers. Publishing uses `Europe/London` for local scheduling.
