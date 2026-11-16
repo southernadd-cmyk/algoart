@@ -13,8 +13,9 @@ GitHub Actions deploys the isolated Worker through
 The deployment uses the existing `archive-media-test` Cloudflare credentials
 and the `GALLERY_DISPATCH_TOKEN` environment secret to bind a Worker secret
 named `GITHUB_TOKEN`. Do not commit token values or put them in
-`wrangler.toml`. To redeploy, manually run the deployment workflow; no
-existing media Worker is modified.
+`wrangler.toml`. Merging a change to `src/` or `wrangler.toml` into `main`
+redeploys the Worker automatically; you can also run the deployment workflow
+manually. No existing media Worker is modified.
 
 The cron runs at 04:30, 06:30 and 08:30 **UTC**. It checks today's date in
 Europe/London and `gallery/YYYY-MM-DD/meta.json` on current main:
