@@ -34,6 +34,11 @@ on:
         description: 'MANUAL REPAIR ONLY: prior gallery Actions run ID with exact-byte backup'
         required: false
         type: string
+      legacy_fallback:
+        description: 'ROLLBACK ONLY: publish a new edition the old way, with artwork in Git'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -52,6 +57,7 @@ jobs:
     outputs:
       date: ${{ steps.plan.outputs.date }}
       mode: ${{ steps.plan.outputs.mode }}
+      recovery_date: ${{ steps.plan.outputs.recovery_date }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,26 +72,52 @@ jobs:
           REQUESTED_DATE: ${{ inputs.date }}
           CANARY_REQUESTED: ${{ inputs.r2_canary }}
           ART_ONLY_REQUESTED: ${{ inputs.r2_art_only }}
+          LEGACY_REQUESTED: ${{ inputs.legacy_fallback }}
           ARMED_DATE: ${{ vars.PP_R2_CANARY_DATE }}
           ART_ONLY_DATE: ${{ vars.PP_R2_ART_ONLY_DATE }}
           ART_ONLY_SOCIAL_READY: 'true'
           ART_ONLY_AUTO_FROM: '2026-11-15'
+          # A missed R2-only edition may be published late, but only recently.
+          MISSED_DAY_LIMIT_DAYS: '7'
+          PAGES_GALLERY: https://southernadd-cmyk.github.io/algoart/gallery/
         run: |
           TODAY="$(TZ=Europe/London date +%F)"
           DAY="${REQUESTED_DATE:-$TODAY}"
           [[ "$DAY" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$(date -d "$DAY" +%F)" == "$DAY" ]]
           MODE=legacy
+          RECOVERY_DATE=
+          # A commit on main is not a publication. Retries stand down only
+          # when Pages actually serves the edition.
+          pages_live() {
+            for attempt in 1 2 3; do
+              curl -fsS -o /dev/null "${PAGES_GALLERY}$DAY/meta.json?plan-check=$(date +%s%N)" && return 0
+              sleep 5
+            done
+            return 1
+          }
           if [[ -f "gallery/$DAY/media-publication.json" ]]; then
-            # Scheduled retries should not run a recovery for an already-published edition.
             if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
               MODE=recover
-            else
+            elif pages_live; then
               MODE=skip
+            else
+              echo "Gallery $DAY is committed but Pages is not serving it; recovering delivery." >> "$GITHUB_STEP_SUMMARY"
+              MODE=recover
             fi
           elif [[ -f "gallery/$DAY/meta.json" && "$ART_ONLY_REQUESTED" != true && "$CANARY_REQUESTED" != true ]]; then
             # Normal dispatches and retries are idempotent. Keep explicit canary
             # requests fail-closed below, rather than silently modifying history.
-            MODE=skip
+            if pages_live; then
+              MODE=skip
+            else
+              echo "Legacy gallery $DAY is committed but not live; redeploying Pages." >> "$GITHUB_STEP_SUMMARY"
+              MODE=redeploy
+            fi
+          elif [[ "$LEGACY_REQUESTED" == true ]]; then
+            # Documented rollback: an operator explicitly chooses Git-backed artwork.
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$ART_ONLY_REQUESTED" != true && "$CANARY_REQUESTED" != true ]]
+            echo "Operator requested the legacy Git-backed edition for $DAY." >> "$GITHUB_STEP_SUMMARY"
+            MODE=legacy
           elif [[ "$ART_ONLY_REQUESTED" == true ]]; then
             # Explicit and date-armed only. Scheduled runs cannot enter this branch.
             [[ "$CANARY_REQUESTED" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch &&
@@ -107,6 +139,22 @@ jobs:
             else
               MODE=r2-only
             fi
+          elif [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "$REQUESTED_DATE" &&
+                  "$CANARY_REQUESTED" != true && "$DAY" < "$TODAY" &&
+                  ! "$DAY" < "$ART_ONLY_AUTO_FROM" &&
+                  ! "$DAY" < "$(TZ=Europe/London date -d "$TODAY -$MISSED_DAY_LIMIT_DAYS days" +%F)" ]]; then
+            # A missed day is published late from R2, never silently into Git.
+            if [[ -e "gallery/$DAY/meta.json" ]]; then
+              echo "::error::Missed-day R2 publishing is restricted to an unpublished date."
+              exit 1
+            fi
+            echo "Publishing missed edition $DAY from R2 on $TODAY." >> "$GITHUB_STEP_SUMMARY"
+            MODE=r2-only
+            RECOVERY_DATE="$DAY"
+          elif [[ "$CANARY_REQUESTED" != true && ! "$DAY" < "$ART_ONLY_AUTO_FROM" && "$DAY" < "$TODAY" ]]; then
+            # Never fall through to committing artwork into Git implicitly.
+            echo "::error::$DAY is too old for missed-day R2 publishing. Dispatch with legacy_fallback=true to publish it with artwork in Git."
+            exit 1
           elif [[ "$CANARY_REQUESTED" == true ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$REQUESTED_DATE" == "$TODAY" &&
                "$DAY" == "$ARMED_DATE" && "$DAY" != "$ART_ONLY_DATE" && "$DAY" > "2026-11-09" ]]
@@ -125,7 +173,7 @@ jobs:
           if [[ "$MODE" == skip ]]; then
             echo "Gallery $DAY is already on main. Skipping without failure." >> "$GITHUB_STEP_SUMMARY"
           fi
-          printf 'date=%s\nmode=%s\n' "$DAY" "$MODE" >> "$GITHUB_OUTPUT"
+          printf 'date=%s\nmode=%s\nrecovery_date=%s\n' "$DAY" "$MODE" "$RECOVERY_DATE" >> "$GITHUB_OUTPUT"
 
   current-edition:
     needs: plan
@@ -171,6 +219,8 @@ jobs:
       R2_STAGE_OUTPUT: /tmp/pp-r2-edition-${{ github.run_id }}
       R2_CANARY: ${{ needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only' }}
       R2_ART_ONLY: ${{ needs.plan.outputs.mode == 'r2-only' }}
+      # Set only for an operator-dispatched, recent missed R2-only date.
+      R2_RECOVERY_DATE: ${{ needs.plan.outputs.recovery_date }}
 
     steps:
       - name: Checkout
@@ -668,6 +718,14 @@ jobs:
           node automation/verify-r2-gallery-ready.mjs "$SOCIAL_DATE"
           R2_BROWSERS=chromium node tests/r2-gallery-browser.mjs --live
 
+      - name: Catch up a social slot that ran before the edition was live
+        if: steps.gallery_commit.outputs.changed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EDITION_DATE: ${{ needs.plan.outputs.date }}
+        run: node automation/social-catch-up.mjs
+
       - name: Summary
         if: always()
         shell: bash
@@ -693,11 +751,46 @@ jobs:
           node-version: 22
       - name: Check the frozen R2 edition and its local rollback copies
         run: python3 automation/r2-daily-media.py recover "gallery/$EDITION_DATE/media-publication.json"
-      - name: Redispatch Pages when an operator requested recovery
-        if: github.event_name == 'workflow_dispatch'
+      # Operators request recovery explicitly; scheduled runs reach this job
+      # only when Pages is not serving a committed edition.
+      - name: Redispatch Pages
         run: gh workflow run deploy-pages.yml --ref main
       - name: Verify Pages has the complete edition
+        env:
+          R2_WAIT_ATTEMPTS: '60'
         run: node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
+      - name: Catch up a social slot that ran before the edition was live
+        continue-on-error: true
+        run: node automation/social-catch-up.mjs
+
+  redeploy:
+    needs: plan
+    # A committed legacy (Git-backed) edition that Pages is not serving.
+    if: needs.plan.outputs.mode == 'redeploy'
+    runs-on: ubuntu-latest
+    env:
+      EDITION_DATE: ${{ needs.plan.outputs.date }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Redispatch Pages
+        run: gh workflow run deploy-pages.yml --ref main
+      - name: Wait for Pages to serve the edition
+        run: |
+          for attempt in $(seq 1 60); do
+            curl -fsS -o /dev/null "https://southernadd-cmyk.github.io/algoart/gallery/$EDITION_DATE/meta.json?redeploy-check=$(date +%s%N)" && exit 0
+            sleep 10
+          done
+          echo "::error::Pages still does not serve gallery/$EDITION_DATE after redeploying"
+          exit 1
+      - name: Catch up a social slot that ran before the edition was live
+        continue-on-error: true
+        run: node automation/social-catch-up.mjs
 
   repair:
     needs: plan

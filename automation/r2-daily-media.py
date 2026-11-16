@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Upload a staged daily edition, or verify both copies of a published edition."""
 import argparse
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import hashlib
 import json
@@ -184,6 +184,18 @@ def upload_assets(client, assets, root):
               f"R2 object collision or incomplete write: {key}")
 
 
+MISSED_DAY_LIMIT_DAYS = 7
+
+def missed_day_recovery(day, event, auto_from):
+    """An operator-dispatched, recent missed R2-only date (never today, never old)."""
+    if (event != "workflow_dispatch" or os.environ.get("R2_RECOVERY_DATE", "") != day or
+            re.fullmatch(r"20\d{2}-\d{2}-\d{2}", day or "") is None or
+            re.fullmatch(r"20\d{2}-\d{2}-\d{2}", auto_from or "") is None or day < auto_from):
+        return False
+    today = datetime.now(ZoneInfo("Europe/London")).date()
+    return today - timedelta(days=MISSED_DAY_LIMIT_DAYS) <= date.fromisoformat(day) < today
+
+
 def media_client(day):
     import boto3
     from botocore.config import Config
@@ -196,11 +208,12 @@ def media_client(day):
                      os.environ.get("R2_ART_ONLY") == "true" and
                      re.fullmatch(r"20\d{2}-\d{2}-\d{2}", auto_from) is not None and
                      day >= auto_from and
-                     day == datetime.now(ZoneInfo("Europe/London")).date().isoformat())
+                     (day == datetime.now(ZoneInfo("Europe/London")).date().isoformat() or
+                      missed_day_recovery(day, event, auto_from)))
     check(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
           os.environ.get("GITHUB_REF") == "refs/heads/main" and
           (manual_canary or daily_r2_only),
-          "R2 write requires an armed main-branch canary or today's scheduled R2-only edition")
+          "R2 write requires an armed main-branch canary, today's R2-only edition or a dispatched recent missed date")
     account = os.environ["R2_ACCOUNT_ID"]
     key = os.environ["R2_MEDIA_ACCESS_KEY_ID"]
     secret = os.environ["R2_MEDIA_SECRET_ACCESS_KEY"]

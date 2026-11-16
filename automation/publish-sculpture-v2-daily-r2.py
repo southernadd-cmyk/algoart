@@ -11,7 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 BUCKET = "proportion-piece-media-test"
@@ -203,6 +203,18 @@ def put_verified(client,item):
             digest(original) == item["sha256"],
             "R2 stored daily bytes differ: " + item["identity"])
 
+MISSED_DAY_LIMIT_DAYS = 7
+
+def missed_day_recovery(day, event, auto_from):
+    """An operator-dispatched, recent missed R2-only date (never today, never old)."""
+    if (event != "workflow_dispatch" or os.environ.get("R2_RECOVERY_DATE", "") != day or
+            re.fullmatch(r"20\d{2}-\d{2}-\d{2}", day or "") is None or
+            re.fullmatch(r"20\d{2}-\d{2}-\d{2}", auto_from or "") is None or day < auto_from):
+        return False
+    today = datetime.now(ZoneInfo("Europe/London")).date()
+    return today - timedelta(days=MISSED_DAY_LIMIT_DAYS) <= date.fromisoformat(day) < today
+
+
 def connect():
     import boto3
     from botocore.config import Config
@@ -221,7 +233,9 @@ def connect():
                 os.environ.get("PP_R2_ART_ONLY_SOCIAL_READY") == "true" and
                 bool(re.fullmatch(r"20\d{2}-\d{2}-\d{2}",os.environ.get("PP_R2_ART_ONLY_AUTO_FROM",""))) and
                 os.environ.get("V2_PUBLISH_DATE","") >= os.environ.get("PP_R2_ART_ONLY_AUTO_FROM","") and
-                os.environ.get("V2_PUBLISH_DATE") == datetime.now(ZoneInfo("Europe/London")).date().isoformat())
+                (os.environ.get("V2_PUBLISH_DATE") == datetime.now(ZoneInfo("Europe/London")).date().isoformat() or
+                 missed_day_recovery(os.environ.get("V2_PUBLISH_DATE", ""), event,
+                                     os.environ.get("PP_R2_ART_ONLY_AUTO_FROM", ""))))
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart" and
             os.environ.get("GITHUB_REF") == "refs/heads/main" and
             (event == "workflow_run" or recovery or art_only or scheduled_art_only),

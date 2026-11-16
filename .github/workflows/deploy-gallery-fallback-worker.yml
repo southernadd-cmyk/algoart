@@ -1,12 +1,14 @@
 name: Deploy independent gallery cron Worker
 
 on:
-  # Automatically perform the one-time activation from this workflow update.
-  # Subsequent gallery editions do not retrigger Worker deployment.
+  # Redeploy whenever the Worker or this workflow changes on main, so a
+  # merged fix is live before the next cron. Gallery editions never match.
   push:
     branches: [main]
     paths:
       - '.github/workflows/deploy-gallery-fallback-worker.yml'
+      - 'automation/cloudflare-gallery-fallback/src/**'
+      - 'automation/cloudflare-gallery-fallback/wrangler.toml'
   workflow_dispatch:
 
 permissions:

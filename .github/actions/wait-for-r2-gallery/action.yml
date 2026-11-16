@@ -1,5 +1,5 @@
 name: Wait for the armed R2 gallery date
-description: Require the verified Pages edition before publishing social links for an R2 canary.
+description: Require the verified Pages edition before publishing social links for an R2 canary or R2-only edition; accept an explicit legacy rollback edition.
 inputs:
   date:
     description: London edition date
@@ -13,6 +13,10 @@ inputs:
   art_only_auto_from:
     description: First date for scheduled R2-only editions
     required: false
+  wait_attempts:
+    description: Checks of latest main, 10 seconds apart, before giving up (default 12 minutes)
+    required: false
+    default: '72'
 runs:
   using: composite
   steps:
@@ -22,12 +26,30 @@ runs:
         ARMED_DATE: ${{ inputs.canary_date }}
         ART_ONLY_DATE: ${{ inputs.art_only_date }}
         ART_ONLY_AUTO_FROM: ${{ inputs.art_only_auto_from }}
+        WAIT_ATTEMPTS: ${{ inputs.wait_attempts }}
       run: |
         [[ "$EDITION_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+        [[ "$WAIT_ATTEMPTS" =~ ^[0-9]+$ && "$WAIT_ATTEMPTS" -ge 1 ]]
         if [[ "$EDITION_DATE" == "$ARMED_DATE" || "$EDITION_DATE" == "$ART_ONLY_DATE" || -f "gallery/$EDITION_DATE/media-publication.json" ||
               ( "$ART_ONLY_AUTO_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && ! "$EDITION_DATE" < "$ART_ONLY_AUTO_FROM" ) ]]; then
-          node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
-          git fetch origin main
-          git checkout -B main origin/main
-          test -s "gallery/$EDITION_DATE/media-publication.json"
+          # The gallery may still be building (GitHub schedules run hours late).
+          # Wait on latest main for either an R2 receipt or, after a documented
+          # rollback, a legacy Git-backed edition.
+          for attempt in $(seq 1 "$WAIT_ATTEMPTS"); do
+            git fetch --no-tags -q origin main
+            if git cat-file -e "FETCH_HEAD:gallery/$EDITION_DATE/media-publication.json" 2>/dev/null; then
+              git checkout -q -B main FETCH_HEAD
+              node automation/verify-r2-gallery-ready.mjs "$EDITION_DATE"
+              test -s "gallery/$EDITION_DATE/media-publication.json"
+              exit 0
+            fi
+            if git cat-file -e "FETCH_HEAD:gallery/$EDITION_DATE/meta.json" 2>/dev/null; then
+              git checkout -q -B main FETCH_HEAD
+              echo "SOCIAL_LEGACY_EDITION date=$EDITION_DATE (no R2 receipt; Git-backed rollback edition)"
+              exit 0
+            fi
+            [[ "$attempt" -lt "$WAIT_ATTEMPTS" ]] && sleep 10
+          done
+          echo "::error::Gallery $EDITION_DATE is not published on main; this slot will be caught up when the gallery goes live."
+          exit 1
         fi

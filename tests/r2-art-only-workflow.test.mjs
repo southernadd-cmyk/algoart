@@ -147,3 +147,38 @@ test('a real exact-byte backup must finish before R2-only pruning; repair is man
   assert.ok(workflow.includes('python3 automation/r2-edition-backup.py repair'));
   assert.ok(workflow.includes('if: needs.plan.outputs.mode == \'recover\' && inputs.r2_restore_run == \'\''));
 });
+
+test('retries stand down only when Pages serves the edition, and repair delivery otherwise',()=>{
+  assert.ok(workflow.includes('pages_live()'));
+  assert.ok(workflow.includes('elif pages_live; then\n              MODE=skip\n            else'));
+  assert.ok(workflow.includes('MODE=redeploy'));
+  assert.match(workflow,/\n  redeploy:\n    needs: plan\n/);
+  assert.ok(!workflow.includes("name: Redispatch Pages when an operator requested recovery\n        if: github.event_name == 'workflow_dispatch'"));
+});
+
+test('legacy rollback is an explicit dispatch input and social accepts a legacy edition',()=>{
+  const wait=readFileSync('.github/actions/wait-for-r2-gallery/action.yml','utf8');
+  assert.match(workflow,/legacy_fallback:\n/);
+  assert.ok(workflow.includes('LEGACY_REQUESTED: ${{ inputs.legacy_fallback }}'));
+  const legacy=workflow.indexOf('elif [[ "$LEGACY_REQUESTED" == true ]]');
+  const auto=workflow.indexOf('"$ART_ONLY_AUTO_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+  assert.ok(legacy>0 && auto>legacy,'Legacy rollback must take priority over automatic R2-only');
+  assert.ok(wait.includes('SOCIAL_LEGACY_EDITION'));
+  assert.ok(wait.indexOf('FETCH_HEAD:gallery/$EDITION_DATE/media-publication.json')<wait.indexOf('FETCH_HEAD:gallery/$EDITION_DATE/meta.json'));
+});
+
+test('a missed day is published R2-only only by recent explicit dispatch',()=>{
+  assert.ok(workflow.includes("MISSED_DAY_LIMIT_DAYS: '7'"));
+  assert.ok(workflow.includes('RECOVERY_DATE="$DAY"'));
+  assert.ok(workflow.includes('R2_RECOVERY_DATE: ${{ needs.plan.outputs.recovery_date }}'));
+  for(const file of ['automation/r2-daily-media.py','automation/publish-sculpture-v2-daily-r2.py']){
+    const src=readFileSync(file,'utf8');
+    assert.match(src,/def missed_day_recovery\(day, event, auto_from\):/);
+    assert.match(src,/event != "workflow_dispatch"/);
+    assert.match(src,/R2_RECOVERY_DATE/);
+  }
+});
+
+test('every path that makes today live catches up a missed social slot',()=>{
+  assert.equal(workflow.split('node automation/social-catch-up.mjs').length-1,3);
+});

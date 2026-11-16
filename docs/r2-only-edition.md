@@ -1,70 +1,76 @@
-# First R2-only gallery edition
+# R2-only gallery editions
 
 An R2-only edition keeps its paintings, WebP textures, cover and social images in R2. Git receives the edition's HTML and JSON only. Unlike the canary in `r2-first-edition.md`, there is no Pages copy of the artwork to fall back to.
 
-This runbook covers one manually published edition. It has not been rehearsed end to end; treat every step marked *untested* as a risk.
+Since 15 November 2026 every new daily edition is R2-only automatically. This runbook covers how editions get published, how to recover them, and how to roll back. Steps marked *untested* have not been rehearsed.
 
-## Before the day
+## Which editions are stored where
 
-- The R2-only change is merged to `main` and its checks pass. The publisher only writes to R2 from `main`.
-- `r2-first-edition.md` makes scheduled or external-only publishing subject to a seven-day dual-write gate. One canary edition (2026-11-11) has been published so far. Decide explicitly whether to waive the gate for this single edition.
-- The artwork Worker `proportion-piece-media` serves `editions/<date>/social/…` keys. Check that this returns 200:
-  `https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-11/social/canary-d2bfff4b91fa31829a1d3e51419d6219974c502c653d486a9db66cca2de455ac.jpg`
-- The Worker's source of record is `cloudflare/media-artwork/`. The obsolete Cloudflare Git build trigger for `cloudflare/media-read-only/wrangler.toml` on branch `plan/archive-storage-foundation-20261109` has been disabled. Keep it disabled: deploying that old source could remove the social path. Changes to the artwork Worker must be deliberately reviewed and deployed from `cloudflare/media-artwork/`.
-- The GitHub environment `archive-media-test` allows `main` and has no required reviewers. It holds the only copy of the R2 credentials.
-- Pick an edition date after 2026-11-11 that has no `gallery/<date>/meta.json`. It must differ from `PP_R2_CANARY_DATE`.
+| Date | Storage |
+|---|---|
+| 2026-11-11 | R2 canary with a Pages copy (`pagesFallback: true`) |
+| 2026-11-12, 2026-11-14 | Legacy: artwork in Git |
+| 2026-11-13, 2026-11-15 onward | R2-only (`pagesFallback: false`) |
 
-## Arming
+`gallery/<date>/media-publication.json` is the receipt. If it exists, the edition's media is in R2.
 
-Set two repository variables:
+## How a day gets published
 
-- `PP_R2_ART_ONLY_DATE` = the edition date (London calendar day)
-- `PP_R2_ART_ONLY_SOCIAL_READY` = `true`
+The edition must be live before the 09:00 London social slot.
 
-While they are set:
+1. **Cloudflare fallback Worker** (`automation/cloudflare-gallery-fallback/`), 04:30, 06:30 and 08:30 UTC. This is the trigger that actually fires on time: GitHub's scheduled runs have been arriving 6–8 hours late. It does one of the following:
+   - No edition on `main`: dispatches the gallery workflow.
+   - Edition committed but Pages not serving it, R2 receipt present: dispatches the gallery workflow with `date`. That runs the recover job: it verifies every R2 object, redeploys Pages and waits for the live page.
+   - Edition committed but not live, no receipt (legacy): dispatches **Deploy Pages**.
+   - Edition live, or a gallery/Pages run already active: does nothing.
+2. **GitHub schedules** (04:15, 06:15, 08:15 UTC, usually late). They follow the same rule: they stand down only when Pages serves `gallery/<date>/meta.json`. Otherwise they recover (R2 receipt) or redeploy Pages (legacy).
+3. **Social slots** wait up to 12 minutes for the edition on latest `main`. A slot that still finds no edition fails without posting.
+4. **Social catch-up.** When the gallery build, recovery or redeploy makes today's edition live, it re-dispatches the most recent social slot that is already due and has no `done-<date>-…slotN-…` marker. Only that one slot is caught up, only on the same London day, and only when no social run is active. Earlier missed slots are not posted.
 
-- The 04:15 UTC scheduled build does not publish that date. It waits for the manual run. If no manual run succeeds, there is no edition that day.
-- Social jobs for that date wait until the R2 edition is live.
-- Every social job on `main`, for any date, runs in the `archive-media-test` environment.
+## Backups
 
-Set them before 04:15 UTC on the edition date, or the scheduled legacy build will publish the date first and the R2-only path will then refuse it.
+Each R2-only build uploads two Actions artifacts:
 
-## Publishing
+- `r2-edition-backup-<date>`: an exact-byte ZIP of every painting, texture and cover object
+- `r2-v2-backup-<date>`: the Sculpture V2 source packs
 
-On the edition date, dispatch **Build ALGO ART daily gallery** on `main` with `date` = the edition date, `r2_art_only` = true and `r2_canary` = false. The date must be today in London. Start before the 09:00 social slot.
+They expire after **90 days**. Current expiry dates:
 
-The run uploads and verifies the artwork in R2, **creates and uploads a checksum-verified independent ZIP backup of all 43 painting/texture/cover objects**, checks the staged gallery and tower in Chromium, bakes and publishes the V2 sculptures, **uploads a separate V2 source-pack backup**, removes local artwork files, refuses to commit if any image is staged, and then pushes. If either backup upload fails, the R2-only gallery commit cannot proceed. GitHub Actions backup artifacts are retained for **up to 90 days** (or less if repository policy overrides); download and preserve these outside R2 before their expiry. These are temporary trial safeguards, not a permanent backup service.
+| Edition | Run | Expires |
+|---|---|---|
+| 2026-11-13 | 43334480634 | 2027-02-11 |
+| 2026-11-15 | 43706016542 | 2027-02-13 |
+| 2026-11-16 | 43827853305 | 2027-02-14 |
 
-A successful run leaves:
+Copy them somewhere outside GitHub and R2 before they expire:
 
-- one commit named `Publish R2-only ALGO ART daily gallery <date>` containing no image files
-- `gallery/<date>/media-publication.json` with `published: true` and `pagesFallback: false`
-- a passing "Verify the deployed canary and its social source" step
+```bash
+gh run download <run-id> -R southernadd-cmyk/algoart -n r2-edition-backup-<date> -D backups/<date>
+gh run download <run-id> -R southernadd-cmyk/algoart -n r2-v2-backup-<date> -D backups/<date>
+```
 
-Check by hand, including on an iPhone (the automated checks are Chromium only): the date page, a full-size image, the archive cover, the tower floor and its sculptures, and one share link.
-
-## Keeping the variables set
-
-Leave both variables set until that day's 20:30 social slot has finished and its `done-<date>-…` markers exist on the monthly release. Each social job uploads its images to R2 the first time it runs for the date, and it only receives R2 credentials while both variables are set. Clearing them early makes the next first-time job fail. It fails without posting.
-
-Clear both variables the next morning.
+The automated repair (below) restores painting, texture and cover objects only. Sculpture and social-image restoration are not automated.
 
 ## If something fails
 
-**The run fails before the push.** Nothing is in Git. R2 holds some immutable objects for the date; they are harmless and unreferenced. Dispatch the same run again on the same London day. The edition is generated from a date seed, so a rerun is expected to produce the same files, and identical objects are accepted as already uploaded. *Untested.*
+**The build fails before the push.** Nothing is in Git. R2 may hold some immutable objects for the date; they are harmless and unreferenced. Dispatch **Build ALGO ART daily gallery** again with no inputs on the same London day. The paintings come from a date seed and are expected to be byte-identical on a rerun. The sculpture bake is **not** byte-identical, so a rerun after the sculpture manifest was written stops with `R2 daily object collision: manifest`. Stop then, and use the legacy rollback below. Don't delete R2 objects.
 
-If the rerun stops with `R2 daily object collision: manifest`, the regenerated sculpture data differs from the first attempt and the date's sculpture manifest in R2 blocks it. Stop. Do not delete R2 objects without deciding to; use the legacy fallback below instead.
+**The push succeeded but the edition is not live.** The fallback Worker and the scheduled runs now repair this automatically. To do it by hand, dispatch the gallery workflow with `date` = the edition date and no other inputs. It verifies each R2 object against its SHA-256, redeploys Pages, verifies the live edition, then catches up a missed social slot. Recovery verifies; it does not repair objects.
 
-**The R2-only run cannot be completed that day.** Clear `PP_R2_ART_ONLY_DATE`, then dispatch the daily workflow with `date` = the edition date and both flags false. This publishes the edition the legacy way, with artwork in Git. *Untested for this sequence.*
+**A day was missed entirely (no `meta.json`), and it is now a later day.** Dispatch the gallery workflow with `date` = the missed date and no flags. Within 7 days of the missed date, this publishes it R2-only. The R2 guards accept a past date only for this dispatch (`R2_RECOVERY_DATE`). Social posts for a past date are not made. *Untested.*
 
-**The push succeeded but the live check failed.** Dispatch the daily workflow with `date` = the edition date and no flags. It finds the receipt and runs recovery: every R2 object is fetched and checked against its SHA-256, Pages is redeployed, and the live edition is verified. Recovery verifies; it does not repair.
+**Roll back to the legacy Git-backed path for a day.** Dispatch the gallery workflow with `date` = the edition date and **`legacy_fallback` = true** (other flags false). The date must not already have a `meta.json`. The artwork goes into Git as before 13 November. Social slots for that date accept a legacy edition: they find `meta.json` without a receipt on `main` and publish via the old GitHub Release hosting. Clearing repository variables is **not** needed and is **not** enough on its own: without `legacy_fallback`, a new same-day edition is always R2-only. *Untested.*
 
-**A painting, texture or cover R2 object is missing after publication.** Use the exact-byte backup from the original **Build ALGO ART daily gallery** Actions run. Dispatch that same workflow on `main` with the published `date`, both R2 flags **false**, and `r2_restore_run` set to the numerical Actions run ID of the original R2-only publication. The manual repair job downloads `r2-edition-backup-<date>`, validates every file against the published SHA-256 receipt and checks every existing R2 object *before any write*. It uses conditional writes **only for missing keys**, checks each restored object by SHA-256 and public Worker GET/HEAD, then verifies the live gallery. It will **not overwrite or delete** an existing but corrupt object. The ordinary recover job is skipped on this explicit repair route. No social post is triggered. Re-run the usual non-repair recovery only if needed after the repair.
+**A painting, texture or cover R2 object is missing after publication.** Dispatch the gallery workflow with the published `date`, both R2 flags false, and `r2_restore_run` = the numeric Actions run ID of the original publication (see the backup table). The repair job downloads `r2-edition-backup-<date>` and checks it against the published receipt. It then writes **only missing keys**, using conditional writes, verifies each one and checks the live gallery. It never overwrites or deletes an existing object. This only works while the backup artifact still exists.
 
-To inspect a downloaded ZIP without any R2 credentials: `python3 automation/r2-edition-backup.py verify --receipt gallery/<date>/media-publication.json --archive edition-<date>.zip`. To extract independently verified exact bytes into a new directory outside Git: use `restore --receipt ... --archive ... --to /tmp`. Never download or extract an untrusted archive into the repository.
+To inspect a downloaded ZIP without R2 credentials: `python3 automation/r2-edition-backup.py verify --receipt gallery/<date>/media-publication.json --archive edition-<date>.zip`. To extract verified bytes outside Git: `restore --receipt ... --archive ... --to /tmp`. Never extract an untrusted archive into the repository.
 
-**An existing R2 object is corrupt.** The repair process fails closed rather than replacing a SHA-addressed immutable URL that could be cached. Preserve the backup and investigate the object/cache explicitly. Sculpture V2 source-pack backups are preserved separately, but automated sculpture restoration and social-derivative backup restoration are **not** implemented yet. Do not treat the 90-day trial safeguards as a complete long-term storage cutover.
+**An existing R2 object is corrupt.** Repair fails closed rather than replacing a SHA-addressed immutable URL that may be cached. Preserve the backup and investigate the object and cache explicitly.
 
-**A social post fails.** Social jobs fail without posting, and the `done-…` markers prevent duplicates on a rerun. Rerun a slot only on the same London day by dispatching **PROPORTION PIECE live social publishing** with that slot. After midnight the workflow acts on the next date; do not rerun then.
+**A social post fails.** Social jobs fail without posting, and the `done-…` markers prevent duplicates on a rerun. Rerun a slot only on the same London day by dispatching **PROPORTION PIECE live social publishing** with that slot. After midnight the workflow acts on the next date, so don't rerun then.
 
-**Removing the edition entirely.** Revert the publish commit and deploy Pages. The R2 objects remain, so links already posted keep working. *Untested.*
+**Removing an edition entirely.** Revert the publish commit and deploy Pages. The R2 objects remain, so links already posted keep working. *Untested.*
+
+## Repository variables
+
+`PP_R2_ART_ONLY_DATE` and `PP_R2_CANARY_DATE` only matter for the manual armed paths (`r2_art_only` / `r2_canary` inputs) and for the social wait. Daily R2-only publishing doesn't use them. Leave `PP_R2_ART_ONLY_DATE` empty unless you are arming a manual edition. While it equals a date, the scheduled build for that date is held.
