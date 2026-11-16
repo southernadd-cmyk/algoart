@@ -17,13 +17,15 @@ when its edition already exists on current main. The workflow no longer has a
 push trigger. A separate latest-main check before the build job prevents a run
 queued on an old commit from generating a second edition.
 
-An optional independent Cloudflare cron Worker is staged at
+The independent Cloudflare cron Worker is **live** as of 16 November 2026,
+deployed as `proportion-piece-gallery-fallback`. See
 [`cloudflare-gallery-fallback/`](cloudflare-gallery-fallback/README.md). It checks
-for the edition and active GitHub runs at 04:30, 06:30 and 08:30 UTC and uses
-`workflow_dispatch` only when recovery is needed. **This Worker has not been
-deployed or given a GitHub token by the repository changes alone.** It must be
-activated separately as documented. The former ChatGPT recovery task is
-disabled and no workflow-comment commits are required.
+for today's London edition and active GitHub runs at 04:30, 06:30 and 08:30
+UTC. Only when the edition is missing and no gallery build is active does it
+use the existing GitHub `workflow_dispatch` API. Deployment was verified in
+[GitHub Actions run 43835111399](https://github.com/southernadd-cmyk/algoart/actions/runs/43835111399),
+including the cron trigger and GitHub token binding. The former ChatGPT
+recovery task remains disabled; no workflow-comment commits are required.
 
 Ordinary manual builds of today's new edition use the same R2-only path as
 scheduled builds. Explicit historical/canary recovery retains its existing
