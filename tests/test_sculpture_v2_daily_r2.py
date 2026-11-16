@@ -126,6 +126,46 @@ class V2DailyR2Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError,"collision"):
                 v2.put_verified(fake,item)
 
+    def test_published_day_uploads_no_rebaked_packs(self):
+        with tempfile.TemporaryDirectory() as t:
+            day,root,gallery=self.fixture(Path(t))
+            manifest,objects=v2.prepare(day,root,gallery)
+            fake=Mock()
+            fake.head_object.return_value={"ContentLength":1,"Metadata":{}}
+            existing={"date":day,"qualities":manifest["qualities"],"portraits":1}
+            original=v2.verify_existing_manifest
+            v2.verify_existing_manifest=Mock(return_value=existing)
+            try:
+                self.assertIs(v2.publish(fake,manifest,objects,gallery,day),existing)
+            finally:
+                v2.verify_existing_manifest=original
+            fake.put_object.assert_not_called()
+            self.assertEqual(fake.head_object.call_args.kwargs["Key"],objects[-1]["key"])
+
+    def test_new_day_uploads_packs_then_manifest(self):
+        with tempfile.TemporaryDirectory() as t:
+            day,root,gallery=self.fixture(Path(t))
+            manifest,objects=v2.prepare(day,root,gallery)
+            by_key={o["key"]:o for o in objects}
+            fake=Mock()
+            stored={}
+            def head(Bucket,Key):
+                if Key not in stored:
+                    raise ClientError({"Error":{"Code":"404"},
+                                       "ResponseMetadata":{"HTTPStatusCode":404}},"HeadObject")
+                return {"ContentLength":by_key[Key]["bytes"],
+                        "Metadata":{"sha256":by_key[Key]["sha256"]}}
+            def put(Bucket,Key,**kw):
+                stored[Key]=by_key[Key]["data"]
+            def get(Bucket,Key):
+                return {"Body":Mock(read=lambda:stored[Key],close=lambda:None)}
+            fake.head_object.side_effect=head
+            fake.put_object.side_effect=put
+            fake.get_object.side_effect=get
+            v2.publish(fake,manifest,objects,gallery,day)
+            keys=[c.kwargs["Key"] for c in fake.put_object.call_args_list]
+            self.assertEqual(keys,[o["key"] for o in objects])
+
     def test_source_validation_requires_postarchive_day(self):
         with tempfile.TemporaryDirectory() as t:
             day,root,gallery=self.fixture(Path(t))

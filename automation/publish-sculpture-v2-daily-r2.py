@@ -253,6 +253,45 @@ def connect():
             response_checksum_validation="when_required",
             s3={"addressing_style":"path"}))
 
+def object_exists(client,key):
+    from botocore.exceptions import ClientError
+    try:
+        client.head_object(Bucket=BUCKET,Key=key)
+        return True
+    except ClientError as e:
+        status=e.response.get("ResponseMetadata",{}).get("HTTPStatusCode")
+        if status == 404 or e.response.get("Error",{}).get("Code") in ("404","NoSuchKey","NotFound"):
+            return False
+        raise
+
+def publish(client,manifest,objects,gallery,day):
+    # The bake is not byte-reproducible. When the date is already published,
+    # verify that publication and upload nothing: a rebake's packs would be
+    # unreferenced orphans under new SHA keys.
+    if object_exists(client,objects[-1]["key"]):
+        existing=verify_existing_manifest(client,manifest,gallery)
+        print("V2_DAILY_EXISTING_MANIFEST_VERIFIED "+day+" (no packs uploaded)",flush=True)
+        return existing
+    # Manifest last. No incomplete day is ever announced as ready.
+    for item in objects:
+        if item["identity"] == "manifest":
+            try:
+                put_verified(client,item)
+            except ValueError as error:
+                if "R2 daily object collision: manifest" not in str(error):
+                    raise
+                # A concurrent publisher won the race. Never overwrite a
+                # date-scoped pointer; verify the existing publication instead.
+                manifest = verify_existing_manifest(client,manifest,gallery)
+                print("V2_DAILY_EXISTING_MANIFEST_VERIFIED "+day,flush=True)
+                continue
+        else:
+            put_verified(client,item)
+        print("V2_DAILY_R2_OBJECT_OK "+json.dumps({
+            "date":day,"name":item["identity"],"bytes":item["bytes"]}),
+            flush=True)
+    return manifest
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--date",required=True)
@@ -264,24 +303,7 @@ def main():
     if not args.dry_run:
         client=connect()
         client.head_bucket(Bucket=BUCKET)
-        # Manifest last. No incomplete day is ever announced as ready.
-        for item in objects:
-            if item["identity"] == "manifest":
-                try:
-                    put_verified(client,item)
-                except ValueError as error:
-                    if "R2 daily object collision: manifest" not in str(error):
-                        raise
-                    # Never overwrite a date-scoped pointer. Verify the existing
-                    # publication against today's source and both immutable packs.
-                    manifest = verify_existing_manifest(client,manifest,args.gallery)
-                    print("V2_DAILY_EXISTING_MANIFEST_VERIFIED "+args.date,flush=True)
-                    continue
-            else:
-                put_verified(client,item)
-            print("V2_DAILY_R2_OBJECT_OK "+json.dumps({
-                "date":args.date,"name":item["identity"],"bytes":item["bytes"]}),
-                flush=True)
+        manifest=publish(client,manifest,objects,args.gallery,args.date)
     print("V2_DAILY_R2_COMPLETE "+json.dumps({
         "date":args.date,"dryRun":args.dry_run,
         "qualities":list(manifest["qualities"]),"portraits":manifest["portraits"],
