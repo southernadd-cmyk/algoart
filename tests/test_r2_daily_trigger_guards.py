@@ -20,14 +20,17 @@ sculptures = load('trigger_sculptures', 'publish-sculpture-v2-daily-r2.py')
 
 
 class DailyTriggerGuards(unittest.TestCase):
-    def check_trigger(self, event, *, ref='refs/heads/main', day=None, enabled='true', allowed=True):
+    def check_trigger(self, event, *, ref='refs/heads/main', day=None, enabled='true', allowed=True,
+                      recovery_date=None, auto_from='2026-11-15'):
         today = datetime.now(ZoneInfo('Europe/London')).date().isoformat()
         day = day or today
         env = dict(GITHUB_EVENT_NAME=event, GITHUB_REF=ref,
                    GITHUB_REPOSITORY='southernadd-cmyk/algoart', R2_ART_ONLY=enabled,
-                   PP_R2_ART_ONLY_AUTO_FROM='2026-11-15', PP_R2_ART_ONLY_SOCIAL_READY='true',
+                   PP_R2_ART_ONLY_AUTO_FROM=auto_from, PP_R2_ART_ONLY_SOCIAL_READY='true',
                    V2_PUBLISH_DATE=day, R2_ACCOUNT_ID='a'*32,
                    R2_MEDIA_ACCESS_KEY_ID='test', R2_MEDIA_SECRET_ACCESS_KEY='test')
+        if recovery_date is not None:
+            env['R2_RECOVERY_DATE'] = recovery_date
         with patch.dict(os.environ, env, clear=True), patch('boto3.client') as client:
             for call in (lambda: media.media_client(day), sculptures.connect):
                 with self.subTest(event=event, call=call, allowed=allowed):
@@ -51,6 +54,23 @@ class DailyTriggerGuards(unittest.TestCase):
     def test_unarmed_historical_manual_publication_is_rejected(self):
         yesterday = (datetime.now(ZoneInfo('Europe/London')).date() - timedelta(days=1)).isoformat()
         self.check_trigger('workflow_dispatch', day=yesterday, allowed=False)
+
+    def test_dispatched_recent_missed_day_is_allowed(self):
+        today = datetime.now(ZoneInfo('Europe/London')).date()
+        for back in (1, 7):
+            day = (today - timedelta(days=back)).isoformat()
+            self.check_trigger('workflow_dispatch', day=day, recovery_date=day, auto_from='2026-01-01')
+
+    def test_missed_day_recovery_is_narrow(self):
+        today = datetime.now(ZoneInfo('Europe/London')).date()
+        yesterday = (today - timedelta(days=1)).isoformat()
+        old = (today - timedelta(days=8)).isoformat()
+        # Old dates, scheduled events, a mismatched recovery date and dates
+        # before the R2-only start all stay rejected.
+        self.check_trigger('workflow_dispatch', day=old, recovery_date=old, auto_from='2026-01-01', allowed=False)
+        self.check_trigger('schedule', day=yesterday, recovery_date=yesterday, auto_from='2026-01-01', allowed=False)
+        self.check_trigger('workflow_dispatch', day=yesterday, recovery_date=old, auto_from='2026-01-01', allowed=False)
+        self.check_trigger('workflow_dispatch', day=yesterday, recovery_date=yesterday, auto_from=today.isoformat(), allowed=False)
 
     def test_unrelated_events_are_rejected(self):
         self.check_trigger('pull_request', allowed=False)
