@@ -8,17 +8,10 @@ name: Build ALGO ART daily gallery
 # hosting returned HTTP 504 during the social workflow. This independent
 # gallery generator never posts to social networks and preserves archived JPEGs.
 on:
-  # Repair/build changes can recover today's edition immediately without a manual dispatch.
-  # Gallery output commits do not match these paths, so this cannot loop.
-  push:
-    branches: [main]
-    paths:
-      - 'gallery/visit/exterior-graffiti-plan.mjs'
-      - '.github/workflows/gallery-daily.yml'
   schedule:
     # Early morning UTC; the generator resolves the calendar day in Europe/London.
     - cron: '15 4 * * *'
-    # Independent retries when GitHub drops or delays the primary scheduled event.
+    # Retries are harmless when the edition exists: plan returns mode=skip.
     - cron: '15 6 * * *'
     - cron: '15 8 * * *'
   workflow_dispatch:
@@ -62,6 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Resolve main now, not the stale commit recorded when a run was queued.
+          ref: main
           sparse-checkout: gallery
           persist-credentials: false
       - name: Select the dated publication or recovery path
@@ -81,7 +76,16 @@ jobs:
           [[ "$DAY" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ && "$(date -d "$DAY" +%F)" == "$DAY" ]]
           MODE=legacy
           if [[ -f "gallery/$DAY/media-publication.json" ]]; then
-            MODE=recover
+            # Scheduled retries should not run a recovery for an already-published edition.
+            if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+              MODE=recover
+            else
+              MODE=skip
+            fi
+          elif [[ -f "gallery/$DAY/meta.json" && "$ART_ONLY_REQUESTED" != true && "$CANARY_REQUESTED" != true ]]; then
+            # Normal dispatches and retries are idempotent. Keep explicit canary
+            # requests fail-closed below, rather than silently modifying history.
+            MODE=skip
           elif [[ "$ART_ONLY_REQUESTED" == true ]]; then
             # Explicit and date-armed only. Scheduled runs cannot enter this branch.
             [[ "$CANARY_REQUESTED" != true && "$GITHUB_EVENT_NAME" == workflow_dispatch &&
@@ -93,13 +97,13 @@ jobs:
               exit 1
             fi
             MODE=r2-only
-          elif [[ ( "$GITHUB_EVENT_NAME" == schedule || "$GITHUB_EVENT_NAME" == push || "$GITHUB_EVENT_NAME" == workflow_dispatch ) && -n "$ART_ONLY_AUTO_FROM" &&
+          elif [[ ( "$GITHUB_EVENT_NAME" == schedule || "$GITHUB_EVENT_NAME" == workflow_dispatch ) && -n "$ART_ONLY_AUTO_FROM" &&
                   "$ART_ONLY_AUTO_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ &&
                   "$CANARY_REQUESTED" != true && "$TODAY" == "$DAY" && ! "$DAY" < "$ART_ONLY_AUTO_FROM" &&
                   "$ART_ONLY_SOCIAL_READY" == true ]]; then
             if [[ -e "gallery/$DAY/meta.json" ]]; then
-              echo "::error::Scheduled R2-only edition already exists; refusing to overwrite."
-              exit 1
+              echo "Already published $DAY; skipping retry." >> "$GITHUB_STEP_SUMMARY"
+              MODE=skip
             fi
             MODE=r2-only
           elif [[ "$CANARY_REQUESTED" == true ]]; then
@@ -117,11 +121,43 @@ jobs:
             echo "This edition date is armed for a manual R2 canary." >> "$GITHUB_STEP_SUMMARY"
             MODE=hold
           fi
+          if [[ "$MODE" == skip ]]; then
+            echo "Gallery $DAY is already on main. Skipping without failure." >> "$GITHUB_STEP_SUMMARY"
+          fi
           printf 'date=%s\nmode=%s\n' "$DAY" "$MODE" >> "$GITHUB_OUTPUT"
 
-  build:
+  current-edition:
     needs: plan
     if: needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      build_needed: ${{ steps.check.outputs.build_needed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: gallery
+          persist-credentials: false
+      - name: Recheck latest main before expensive gallery generation
+        id: check
+        shell: bash
+        env:
+          DAY: ${{ needs.plan.outputs.date }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          if git cat-file -e "origin/main:gallery/$DAY/meta.json" 2>/dev/null; then
+            echo "build_needed=false" >> "$GITHUB_OUTPUT"
+            echo "Gallery $DAY was published while this run queued; skipping duplicate generation." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "build_needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: [plan, current-edition]
+    if: ${{ needs.current-edition.outputs.build_needed == 'true' && (needs.plan.outputs.mode == 'legacy' || needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only') }}
     environment: ${{ (needs.plan.outputs.mode == 'canary' || needs.plan.outputs.mode == 'r2-only') && 'archive-media-test' || 'gallery-daily' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -137,6 +173,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # The original schedule/dispatch SHA may now be stale.
+          ref: main
 
       - name: Set up Node
         uses: actions/setup-node@v4
