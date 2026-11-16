@@ -139,7 +139,8 @@ jobs:
         with:
           ref: main
           sparse-checkout: gallery
-          persist-credentials: false
+          # Keep the read token for the explicit fetch (also works for private repos).
+          persist-credentials: true
       - name: Recheck latest main before expensive gallery generation
         id: check
         shell: bash
@@ -148,7 +149,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags origin main
-          if git cat-file -e "origin/main:gallery/$DAY/meta.json" 2>/dev/null; then
+          if git cat-file -e "FETCH_HEAD:gallery/$DAY/meta.json" 2>/dev/null; then
             echo "build_needed=false" >> "$GITHUB_OUTPUT"
             echo "Gallery $DAY was published while this run queued; skipping duplicate generation." >> "$GITHUB_STEP_SUMMARY"
           else
