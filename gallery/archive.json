@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-16",
+      "cover": "2026-11-16-G01-watercolor-burst-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Radiant Systems",
+        "Constructed Forms",
+        "Connected Fields",
+        "Growth Systems",
+        "Orbital Studies",
+        "Automatic Marks",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-16/cover-519de222850537a4112f78b1a41d6314674bb394abbe0e52c08e63b8e8f1d427.jpg",
+      "mediaCoverBytes": 105078
+    },
+    {
       "date": "2026-11-15",
       "cover": "2026-11-15-G01-watercolor-rects-portrait.jpg",
       "coverOrientation": "portrait",
