@@ -1,0 +1,10 @@
+name = "proportion-piece-gallery-fallback"
+main = "src/index.mjs"
+compatibility_date = "2026-11-16"
+workers_dev = false
+
+# Independent from GitHub scheduled events. Time is UTC:
+# 04:30 primary safety net; 06:30 and 08:30 retries only when no
+# gallery exists and no gallery workflow is already active.
+[triggers]
+crons = ["30 4,6,8 * * *"]
