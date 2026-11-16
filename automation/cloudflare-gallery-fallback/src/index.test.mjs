@@ -23,7 +23,7 @@ function committedButNotLive({receipt, active = false}) {
   const fetcher = async (url, opts) => {
     calls.push([url, opts.method || "GET", opts.body]);
     if (url.includes("/contents/gallery/" + day + "/meta.json")) return {status: 200};
-    if (url.includes("github.io")) return {status: 404};
+    if (new URL(url).hostname === "southernadd-cmyk.github.io") return {status: 404};
     if (url.includes("/runs?")) return {ok: true, json: async () => ({workflow_runs: active ? [{head_branch: "main", status: "queued"}] : []})};
     if (url.includes("media-publication.json")) return {status: receipt ? 200 : 404};
     return {status: 204};
