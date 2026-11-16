@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
 import {validateRandomGalleryEdition} from "./confluence-edition.mjs";
+import {imageSize} from "./image-size.mjs";
 
 const GALLERY_ORIGIN = "https://southernadd-cmyk.github.io/algoart/gallery";
 const WORKER_ORIGIN = "https://proportion-piece-media.mr-adam-clement.workers.dev";
@@ -93,8 +94,26 @@ for (const [idx,entry] of meta.entries.entries()) {
   // The original name is retained for all tower sculpture and manifest lookups.
   const localImg = 'src="' + entry.imageFile + '"';
   assert(matches(page, localImg) === 1, "missing/duplicate original daily gallery <img> source " + entry.imageFile);
+  // Cards show a reduced painting: offer the R2 WebP variants by real pixel
+  // width so phones fetch the small one. src stays the original for every
+  // browser without srcset support and for the published-page checks.
+  const sizes = [];
+  for (const [file, item, mime] of [[variants.mobile, mobile, "image/webp"],
+      [variants.desktop, desktop, "image/webp"], [entry.imageFile, original, "image/jpeg"]]) {
+    const size = imageSize(await read(dayDir + file), mime);
+    assert(size && size.width > 0 && size.height > 0, "unreadable image size " + file);
+    sizes.push([item.url, size.width]);
+  }
+  const srcset = sizes.sort((a, b) => a[1] - b[1])
+    .filter((x, i, all) => i === 0 || x[1] !== all[i - 1][1])
+    .map(([url, width]) => url + " " + width + "w").join(", ");
+  // Portrait cards letterbox the painting at about half the card width.
+  const slot = entry.orientation === "portrait"
+    ? "(max-width: 900px) 51vw, min(26vw, 383px)"
+    : "(max-width: 900px) 100vw, min(50vw, 750px)";
+  const responsive = ' srcset="' + srcset + '" sizes="' + slot + '"';
   page = page.replace(localImg,
-    artOnly ? 'data-image-file="' + entry.imageFile + '" src="' + original.url + '"' :
+    artOnly ? 'data-image-file="' + entry.imageFile + '" src="' + original.url + '"' + responsive :
     'data-image-file="' + entry.imageFile + '" src="' + original.url +
     '" onerror="this.onerror=null;this.src=\'' + entry.imageFile + '\'"');
   const canonical = GALLERY_ORIGIN + "/" + date + "/" + entry.imageFile;

@@ -146,6 +146,8 @@ function dayPage(queue) {
   const description = `${entries.length} drawings made on ${pretty}. Different materials, different compositions, and room to make each one your own.`;
   const canonical = `${GALLERY_URL}/${date}/`;
   const cover = `${canonical}${entries[0].imageFile}`;
+  // The share image is the lead artwork; declare its real orientation.
+  const coverPortrait = entries[0].orientation === 'portrait';
 
   const structured = {
     '@context': 'https://schema.org',
@@ -203,8 +205,8 @@ function dayPage(queue) {
 <meta property="og:description" content="${escapeHtml(description)}">
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="${cover}">
-<meta property="og:image:width" content="1400">
-<meta property="og:image:height" content="1000">
+<meta property="og:image:width" content="${coverPortrait ? 1000 : 1400}">
+<meta property="og:image:height" content="${coverPortrait ? 1400 : 1000}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="${escapeHtml(title)}">
 <meta name="twitter:description" content="${escapeHtml(description)}">

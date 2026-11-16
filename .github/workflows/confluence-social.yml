@@ -19,7 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only the explicitly armed R2-only rollout receives scoped test-bucket credentials.
     environment: ${{ github.ref == 'refs/heads/main' && '2026-11-15' != '' && 'archive-media-test' || '' }}
-    timeout-minutes: 35
+    # Allows the shared gallery wait (up to 12 minutes) on a late edition.
+    timeout-minutes: 50
     env:
       GH_TOKEN: ${{ github.token }}
       BLUESKY_HANDLE: artalgorithm.bsky.social

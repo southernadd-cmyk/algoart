@@ -66,7 +66,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Skip upstream runs whose date already has published sculptures
+        id: existing
+        shell: bash
+        run: |
+          set -euo pipefail
+          DAY=$(TZ=Europe/London date -d "$UPSTREAM_STARTED" +%F)
+          # Gallery retries that skip, recover or redeploy also succeed. The
+          # bake is not byte-reproducible, so never rebake a published date
+          # on a workflow_run; operators can still dispatch a recovery.
+          URL=$(python3 - "$DAY" <<'PY'
+          import importlib.util,sys
+          spec=importlib.util.spec_from_file_location("v2","automation/publish-sculpture-v2-daily-r2.py")
+          v2=importlib.util.module_from_spec(spec); spec.loader.exec_module(v2)
+          print(f"{v2.WORKER}/{v2.PREFIX}/{sys.argv[1]}/manifest.json")
+          PY
+          )
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' "$URL?postpublish-check=$(date +%s)" || echo 000)
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run && "$STATUS" == 200 ]]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "V2_DAILY_ALREADY_PUBLISHED date=$DAY"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "V2_DAILY_MANIFEST_STATUS date=$DAY http=$STATUS"
+          fi
       - name: Restore R2-only painting sources to ephemeral runner for V2 sculpture bake
+        if: steps.existing.outputs.published != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -93,6 +118,7 @@ jobs:
           cp -a "$SRC/gallery/$DAY/." "gallery/$DAY/"
           echo "V2_SOURCE_R2_ONLY_RESTORED date=$DAY"
       - name: Verify published gallery date and solo portrait roster
+        if: steps.existing.outputs.published != 'true'
         id: roster
         shell: bash
         run: |
@@ -156,7 +182,7 @@ jobs:
           echo "date=$DAY" >> "$GITHUB_OUTPUT"
           echo "V2 postpublication follows successful upstream run $UPSTREAM_RUN"
       - name: Install independent V2 baker without changing gallery
-        if: steps.roster.outputs.eligible != '0'
+        if: steps.existing.outputs.published != 'true' && steps.roster.outputs.eligible != '0'
         run: |
           npm ci
           npx playwright install --only-shell chromium
@@ -180,7 +206,7 @@ jobs:
           done
           node automation/build-sculpture-v2-baker.mjs
       - name: Bake V2 desktop and mobile ONLY into ephemeral scratch
-        if: steps.roster.outputs.eligible != '0'
+        if: steps.existing.outputs.published != 'true' && steps.roster.outputs.eligible != '0'
         shell: bash
         run: |
           node automation/build-sculpture-v2-packs.mjs --date "${{ steps.roster.outputs.date }}" \
@@ -190,7 +216,7 @@ jobs:
           python3 automation/publish-sculpture-v2-daily-r2.py \
             --date "${{ steps.roster.outputs.date }}" --out "$RUNNER_TEMP/v2-daily" --dry-run
       - name: Upload verified daily mesh packs create-only to existing R2
-        if: steps.roster.outputs.eligible != '0'
+        if: steps.existing.outputs.published != 'true' && steps.roster.outputs.eligible != '0'
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
@@ -201,7 +227,7 @@ jobs:
           python3 automation/publish-sculpture-v2-daily-r2.py \
             --date "${{ steps.roster.outputs.date }}" --out "$RUNNER_TEMP/v2-daily"
       - name: Retain small source-scoped daily V2 audit (never V1)
-        if: ${{ always() && steps.roster.outputs.eligible != '0' }}
+        if: ${{ always() && steps.existing.outputs.published != 'true' && steps.roster.outputs.eligible != '0' }}
         uses: actions/upload-artifact@v4
         with:
           name: v2-daily-audit-${{ steps.roster.outputs.date }}
