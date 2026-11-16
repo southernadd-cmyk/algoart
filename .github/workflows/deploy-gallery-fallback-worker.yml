@@ -48,6 +48,24 @@ jobs:
           else
             echo "can_deploy=true" >> "$GITHUB_OUTPUT"
           fi
+      - name: Check existing Worker secret bindings without printing their contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          for worker in proportion-piece-social proportion-piece-media proportion-piece-sculpture-v2 proportion-piece-web-canary; do
+            echo "Inspecting GitHub authentication binding on $worker"
+            if npx --yes wrangler@4.160.0 secret list --name "$worker" \
+              > "$RUNNER_TEMP/gallery-worker-secrets.json" 2> "$RUNNER_TEMP/gallery-worker-secret-error"; then
+              WORKER_NAME="$worker" node --input-type=module -e '
+                import fs from "node:fs";
+                const data=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+"/gallery-worker-secrets.json","utf8"));
+                const yes=data.some(e=>/^(GITHUB_TOKEN|GITHUB_PAT|GH_PAT|PP_GITHUB_TOKEN|GALLERY_DISPATCH_TOKEN|GITHUB_DISPATCH_TOKEN)$/i.test(e.name));
+                console.log(process.env.WORKER_NAME+" has compatible GitHub auth secret: "+(yes?"yes":"no"));
+              '
+            else
+              echo "::notice::Worker secret inventory not accessible for $worker"
+            fi
+          done
       - name: Verify GitHub dispatch token is valid
         if: steps.credentials.outputs.can_deploy == 'true'
         shell: bash
