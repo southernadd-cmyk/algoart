@@ -43,12 +43,15 @@ class V2DailyR2Tests(unittest.TestCase):
         dst=root/day/"3d"/"v2"
         dst.mkdir(parents=True)
         qualities={}
+        # The baker stamps every pack and study with the active preset.
+        stamp={"presetId":v2.ACTIVE_PRESET["id"],
+               "parameters":v2.ACTIVE_PRESET["parameters"]}
         for quality in ("desktop","mobile"):
-            pack={"schema":"pp-sculpture-v2-floor","version":2,
+            pack={**stamp,"schema":"pp-sculpture-v2-floor","version":2,
                   "date":day,"quality":quality,"method":"assembly",
                   "geometryRevision":v2.REVISION,"complete":True,
                   "expectedPortraits":1,"bakedPortraits":1,
-                  "studies":{"portrait.jpg":{
+                  "studies":{"portrait.jpg":{**stamp,
                       "quality":quality,"geometryRevision":v2.REVISION,
                       "coverage":1,"omittedCells":0,
                       "sourceFile":"portrait.webp",
