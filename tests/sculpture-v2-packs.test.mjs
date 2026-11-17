@@ -67,6 +67,10 @@ test('sample packs are independently reconstructable and source-checked',async()
       assert.equal(pack.date,day.date);
       assert.equal(pack.quality,quality);
       assert.equal(pack.method,'assembly');
+      if(report.presetId){
+        assert.equal(pack.presetId,report.presetId);
+        assert.deepEqual(pack.parameters,report.parameters);
+      }
       assert.equal(pack.complete,entry.complete);
       assert.equal(Object.keys(pack.studies).length,entry.bakedPortraits);
       if(pack.complete)assert.equal(entry.bakedPortraits,manifest.expectedPortraits);
@@ -78,6 +82,11 @@ test('sample packs are independently reconstructable and source-checked',async()
         assert.equal(hash(original),data.sourceSha256,
           'Original painting content differs from baked source');
         assert.equal(data.quality,quality);
+        if(report.presetId){
+          assert.equal(data.presetId,report.presetId);
+          assert.deepEqual(data.parameters,report.parameters);
+          if(report.presetId==='assembly-100-100-40-95')assert.equal(data.sourceFile,data.imageFile);
+        }
         assert.equal(data.omittedCells,0,'Prepared sculpture silently omitted paint');
         assert.equal(data.coverage,1,'Prepared sculpture source incomplete');
         assert.ok(data.regionCount>0);

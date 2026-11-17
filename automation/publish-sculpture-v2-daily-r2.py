@@ -16,7 +16,10 @@ from zoneinfo import ZoneInfo
 
 BUCKET = "proportion-piece-media-test"
 WORKER = "https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev"
-PREFIX = "sculptures-v2/daily/v4.2.1"
+_PRESET_CONFIG = json.loads((Path(__file__).resolve().parents[1] /
+    "gallery/sculpture-v2-test/sculpture-presets.json").read_text())
+ACTIVE_PRESET = _PRESET_CONFIG["presets"][_PRESET_CONFIG["active"]]
+PREFIX = ACTIVE_PRESET["dailyPrefix"]
 REVISION = "v4.2.1-v2-pigment-island-fix"
 
 def require(ok, message):
@@ -96,7 +99,13 @@ def prepare(day, root, gallery):
                 pack.get("bakedPortraits") == len(solo) and
                 set(pack["studies"]) == {e["imageFile"] for e in solo},
                 "Incomplete, unapproved daily V2 pack " + quality)
+        if ACTIVE_PRESET["id"] != "legacy":
+            require(pack.get("presetId") == ACTIVE_PRESET["id"] and
+                    pack.get("parameters") == ACTIVE_PRESET["parameters"], "Daily V2 preset differs")
         for study in pack["studies"].values():
+            if ACTIVE_PRESET["id"] != "legacy":
+                require(study.get("presetId") == ACTIVE_PRESET["id"] and
+                        study.get("parameters") == ACTIVE_PRESET["parameters"], "Daily V2 study preset differs")
             src = gallery / day / study["sourceFile"]
             require(src.is_file() and
                     digest(src.read_bytes()) == study["sourceSha256"] and
@@ -113,6 +122,8 @@ def prepare(day, root, gallery):
         "qualities": assets, "worker": WORKER,
         "ready": True, "confluenceExcluded": True
     }
+    if ACTIVE_PRESET["id"] != "legacy":
+        daily_manifest.update(presetId=ACTIVE_PRESET["id"], parameters=ACTIVE_PRESET["parameters"])
     manifest_bytes = (json.dumps(daily_manifest,sort_keys=True,
                           separators=(",",":"))+"\n").encode()
     # Stable date-scoped publication pointer, immutable after first publish.

@@ -3,6 +3,8 @@ name: Sculpture V2 prepared meshes — isolated bake
 on:
   pull_request:
     paths:
+      - 'gallery/sculpture-v2-test/sculpture-presets.*'
+      - 'tests/sculpture-preset-preview.browser.mjs'
       - 'gallery/sculpture-v2-test/v2-baker.mjs'
       - 'gallery/sculpture-v2-test/v2-pack-loader.mjs'
       - 'automation/build-sculpture-v2-baker.mjs'
@@ -39,9 +41,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      V2_DATE: ${{ inputs.date || '2026-11-10' }}
-      V2_LIMIT: ${{ inputs.limit || '3' }}
-      V2_ALL: ${{ github.event_name == 'pull_request' && 'true' || inputs.all || 'false' }}
+      V2_DATE: ${{ inputs.date || '2026-11-17' }}
+      V2_BAKE_PRESET: assembly-100-100-40-95
+      V2_LIMIT: ${{ inputs.limit || '0' }}
+      V2_ALL: ${{ inputs.all || 'false' }}
       V2_BAKE_OUT: artifacts/sculpture-v2-packs
     steps:
       - uses: actions/checkout@v4
@@ -76,10 +79,20 @@ jobs:
           if [[ "$V2_ALL" == "true" ]]; then
             node automation/build-sculpture-v2-packs.mjs --all --quality both
           else
-            node automation/build-sculpture-v2-packs.mjs --date "$V2_DATE" --quality both --limit "$V2_LIMIT"
+            node automation/build-sculpture-v2-packs.mjs --date "$V2_DATE" --quality both --limit "$V2_LIMIT" --regression
           fi
       - name: Validate packed geometry, source checksums and safe V1 isolation
         run: node --test tests/sculpture-v2-packs.test.mjs
+      - name: Render the selected preset on current paintings
+        if: env.V2_ALL != 'true' && env.V2_LIMIT == '0'
+        run: node tests/sculpture-preset-preview.browser.mjs
+      - name: Upload sample screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sculpture-preset-preview
+          path: /tmp/sculpture-preset-*.png
+          if-no-files-found: ignore
       - name: Upload V2 dry-run assets and audit report (never push)
         uses: actions/upload-artifact@v4
         with:

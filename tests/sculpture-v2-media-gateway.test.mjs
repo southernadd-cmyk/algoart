@@ -9,6 +9,11 @@ const h='a'.repeat(64);
 const legacy='editions/2026-11-09/2026-11-09-G01/original-'+h+'.jpg';
 const release='sculptures-v2/v4.2.1-20261110/';
 const good=[
+  ['sculptures-v2/assembly-20261117/catalog/'+h+'.json','application/json'],
+  ['sculptures-v2/assembly-20261117/floors/2026-11-17/desktop/'+h+'.json.gz','application/gzip'],
+  ['sculptures-v2/assembly-20261117/reception/mobile/'+h+'.json.gz','application/gzip'],
+  ['sculptures-v2/daily/assembly-20261117/2026-11-18/manifest.json','application/json'],
+  ['sculptures-v2/daily/assembly-20261117/2026-11-18/mobile/'+h+'.json.gz','application/gzip'],
   [legacy,'image/jpeg'],
   [release+'catalog/'+h+'.json','application/json'],
   [release+'floors/2026-11-10/desktop/'+h+'.json.gz','application/gzip'],

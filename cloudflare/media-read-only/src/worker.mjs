@@ -15,7 +15,7 @@ const LEGACY_ART=new RegExp(
 const LEGACY_EDITION=new RegExp(
   "^editions/"+DATE+"/(?:cover-"+HASH+"\\.jpg|sculptures-"+HASH+"\\.json\\.gz)$"
 );
-const V2_PREFIX="sculptures-v2/v4\\.2\\.1-20261110";
+const V2_PREFIX="sculptures-v2/(?:v4\\.2\\.1-20261110|assembly-20261117)";
 const V2_FLOOR=new RegExp(
   "^"+V2_PREFIX+"/floors/"+DATE+"/(?:desktop|mobile)/"+HASH+"\\.json\\.gz$"
 );
@@ -29,7 +29,7 @@ const V2_CATALOG=new RegExp(
 );
 // Future dates: immutable per-day manifests, two SHA-addressed quality packs.
 // Does not open up arbitrary R2 keys or touch the existing editions Worker.
-const V2_DAILY="sculptures-v2/daily/v4\\.2\\.1";
+const V2_DAILY="sculptures-v2/daily/(?:v4\\.2\\.1|assembly-20261117)";
 const V2_DAILY_PACK=new RegExp(
   "^"+V2_DAILY+"/"+DATE+"/(?:desktop|mobile)/"+HASH+"\\.json\\.gz$"
 );

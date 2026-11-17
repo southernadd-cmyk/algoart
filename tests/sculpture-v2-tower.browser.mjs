@@ -1,6 +1,7 @@
 // Functional only: no screenshots, visual comparison or automated art judgement.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {routeLabCheckout} from './sculpture-lab-browser-checkout.mjs';
 const R2_RECEPTION_IMAGE="https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/reception/image/a66e75e6a8d7ad8616de6a1b501ecfe64b5fb0e5c12970ddb1f3f31b55594c3a.png";
 const browser=await chromium.launch({
  headless:true,args:['--disable-dev-shm-usage','--use-gl=angle',
@@ -26,22 +27,13 @@ try{
     const errors=[],requests=[];
     page.on('pageerror',error=>errors.push(error.message));
     page.on('request',request=>requests.push(request.url()));
-    // This CI preview is served on localhost. Public R2 correctly permits
-    // only https://southernadd-cmyk.github.io. Relay the REAL public bytes
-    // and substitute only the response CORS header for local functional tests.
-    // The in-browser SHA-256 check still runs on untouched response bodies.
-    const workerRoute=
-      'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/**';
+    // Serve checkout files at the real site origin so both media workers
+    // exercise their production CORS policy, including R2-only image sources.
+    await routeLabCheckout(page);
+    const workerRoute='https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/**';
     if(spec.outage)await page.route(workerRoute,route=>route.abort('failed'));
-    else await page.route(workerRoute,async route=>{
-      const response=await route.fetch({timeout:60000});
-      await route.fulfill({response,headers:{
-        ...response.headers(),
-        'access-control-allow-origin':'http://127.0.0.1:4173'
-      }});
-    });
     try{
-      await page.goto('http://127.0.0.1:4173/gallery/sculpture-v2-test/?'+
+      await page.goto('https://southernadd-cmyk.github.io/algoart/gallery/sculpture-v2-test/?'+
         (spec.date==='reception'?'':'date='+spec.date+'&')+
         'v2method='+spec.method+'&debug',
         {waitUntil:'domcontentloaded',timeout:45000});
@@ -62,7 +54,7 @@ try{
       }));
       assert.ok(!startup.error,
         'Tower startup error: '+startup.error);
-      assert.equal(startup.path,'/gallery/sculpture-v2-test/');
+      assert.equal(startup.path,'/algoart/gallery/sculpture-v2-test/');
       assert.equal(startup.status?.mode,'test-only-prepared-v2');
       assert.equal(startup.status?.variant,'v2.0-prepared-archive');
       assert.equal(startup.status?.method,spec.method);

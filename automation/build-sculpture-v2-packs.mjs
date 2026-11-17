@@ -6,6 +6,7 @@ import {join,resolve,basename,dirname} from 'node:path';
 import {createHash} from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import assert from 'node:assert/strict';
+import {sculpturePreset} from '../gallery/sculpture-v2-test/sculpture-presets.mjs';
 import {chromium} from 'playwright';
 
 const args=process.argv.slice(2);
@@ -14,6 +15,20 @@ function flag(name,defaultValue=null){
   return i<0?defaultValue:args[i+1];
 }
 const all=args.includes('--all');
+const preset=sculpturePreset(process.env.V2_BAKE_PRESET);
+async function restoreOriginal(day,item){
+  const file=join('gallery',day,item.imageFile);
+  if(await exists(file))return;
+  const media=item.media;
+  const expected='https://proportion-piece-media.mr-adam-clement.workers.dev/editions/'+day+'/'+item.id+'/original-'+media?.originalSha256+'.jpg';
+  assert.ok(media&&media.original===expected&&/^[a-f0-9]{64}$/.test(media.originalSha256), 'Missing original source identity: '+file);
+  const response=await fetch(media.original,{signal:AbortSignal.timeout(90000)});
+  assert.ok(response.ok,'R2 original HTTP '+response.status+': '+file);
+  const bytes=Buffer.from(await response.arrayBuffer());
+  assert.equal(bytes.length,media.originalBytes);
+  assert.equal(hash(bytes),media.originalSha256);
+  await writeFile(file,bytes);
+}
 const date=flag('--date');
 if(all===Boolean(date))
   throw Error('Choose exactly one: --date YYYY-MM-DD or --all');
@@ -48,7 +63,7 @@ try{
   await page.waitForFunction(()=>window.bakeV2Ready===true,null,{timeout:60000});
   // Regression gate: the first full-archive bake failed on this mobile
   // oil study. Exercise BOTH source sizes before investing in 37 floors.
-  if(all){
+  if(all||args.includes('--regression')){
     const fixtureDay='2026-10-18';
     const fixtureFile='2026-10-18-oil-portrait-01-geometric-OP-20261018-01-11851.jpg';
     const fixtureMeta=JSON.parse(await readFile(
@@ -62,8 +77,8 @@ try{
       const sourceFile=await exists(join('gallery',fixtureDay,candidate))?
         candidate:fixtureFile;
       const geometry=await page.evaluate(
-        async ({item,date,quality})=>window.bakeV2Study({item,date,quality}),
-        {item:{...fixture,sourceFile},date:fixtureDay,quality:fixtureQuality}
+        async params=>window.bakeV2Study(params),
+        {item:{...fixture,sourceFile},date:fixtureDay,quality:fixtureQuality,presetId:preset.id}
       );
       assert.equal(geometry.coverage,1,'Regression source coverage');
       assert.equal(geometry.omittedCells,0,'Regression lost pigment');
@@ -76,7 +91,7 @@ try{
       }));
     }
   }
-  if(all){
+  if(all||args.includes('--regression')){
     const day='2026-10-10',
       filename='2026-10-10-portrait-01-rects-AP-20261010-01-70606.jpg';
     const meta=JSON.parse(await readFile(
@@ -90,8 +105,8 @@ try{
       const sourceFile=await exists(join('gallery',day,candidate))?
         candidate:filename;
       const geometry=await page.evaluate(
-        async ({item,date,quality})=>window.bakeV2Study({item,date,quality}),
-        {item:{...item,sourceFile},date:day,quality}
+        async params=>window.bakeV2Study(params),
+        {item:{...item,sourceFile},date:day,quality,presetId:preset.id}
       );
       assert.equal(geometry.coverage,1);
       assert.equal(geometry.omittedCells,0);
@@ -120,21 +135,24 @@ try{
       const records=[];
       const begin=Date.now();
       for(const item of chosen){
+        await restoreOriginal(day,item);
         let sourceFile=item.imageFile;
         const stem=item.imageFile.replace(/\.[^.]+$/,'');
         const candidate=join('3d',stem+'-'+(quality==='mobile'?'640':'1100')+'.webp');
-        if(await exists(join('gallery',day,candidate)))sourceFile=candidate;
+        if(!preset.originalSources&&await exists(join('gallery',day,candidate)))sourceFile=candidate;
         try{
           const sourceBuffer=await readFile(join('gallery',day,sourceFile));
           const payload=await page.evaluate(
-            async ({item,date,quality})=>window.bakeV2Study({item,date,quality}),
-            {item:{...item,sourceFile},date:day,quality}
+            async params=>window.bakeV2Study(params),
+            {item:{...item,sourceFile},date:day,quality,presetId:preset.id}
           );
           assert.equal(payload.schema,'pp-sculpture-v2-study');
           assert.equal(payload.imageFile,item.imageFile);
           assert.equal(payload.sourceFile,sourceFile);
           assert.equal(payload.quality,quality);
           assert.equal(payload.method,'assembly');
+          assert.equal(payload.presetId,preset.id);
+          assert.deepEqual(payload.parameters,preset.parameters);
           assert.equal(payload.coverage,1);
           assert.equal(payload.omittedCells,0);
           assert.ok(payload.regionCount>=1);
@@ -162,7 +180,7 @@ try{
       const pack={
         schema:'pp-sculpture-v2-floor',
         version:2,geometryRevision:'v4.2.1-v2-pigment-island-fix',
-        builderCommit:commit,
+        builderCommit:commit,presetId:preset.id,parameters:preset.parameters,
         date:day,quality,method:'assembly',
         expectedPortraits:portraits.length,bakedPortraits:chosen.length,
         complete:chosen.length===portraits.length,
@@ -203,7 +221,7 @@ try{
     await writeFile(join(folder,'manifest.json'),JSON.stringify({
       schema:'pp-sculpture-v2-floor-manifest',
       version:2,revision:'v4.2.1-v2-pigment-island-fix',
-      builderCommit:commit,date:day,methods:['assembly'],
+      builderCommit:commit,presetId:preset.id,parameters:preset.parameters,date:day,methods:['assembly'],
       expectedPortraits:portraits.length,
       samplesOnly:chosen.length!==portraits.length,
       qualities:Object.fromEntries(Object.entries(reportDay.quality)
@@ -220,7 +238,7 @@ try{
 await mkdir(target,{recursive:true});
 const result={
   schema:'pp-sculpture-v2-bake-report',version:2,
-  builderCommit:commit,
+  builderCommit:commit,presetId:preset.id,parameters:preset.parameters,
   generatedAt:new Date().toISOString(),mode:all?'historical':'single-day',
   sourceDateCount:selected.length,qualityVariants:qualities,
   attempted:total,failed,days:report

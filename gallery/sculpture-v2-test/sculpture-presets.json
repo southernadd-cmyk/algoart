@@ -1,0 +1,19 @@
+{
+  "active": "legacy",
+  "presets": {
+    "legacy": {
+      "id": "legacy",
+      "release": "v4.2.1-20261110",
+      "dailyPrefix": "sculptures-v2/daily/v4.2.1",
+      "originalSources": false,
+      "parameters": {"phiPull": 0.8, "fidelity": 0.9, "depth": 0.85, "connection": 0.65}
+    },
+    "assembly-100-100-40-95": {
+      "id": "assembly-100-100-40-95",
+      "release": "assembly-20261117",
+      "dailyPrefix": "sculptures-v2/daily/assembly-20261117",
+      "originalSources": true,
+      "parameters": {"phiPull": 1, "fidelity": 1, "depth": 0.4, "connection": 0.95}
+    }
+  }
+}
