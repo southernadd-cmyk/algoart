@@ -186,7 +186,9 @@ function showSelection(){
 function focus(view='threequarter'){
   const selected=$('focus').value;
   const all=!isPublished()&&selected==='all',x=isPublished()||all?0:centres[Number(selected)];
-  const dist=all?12.6:3.3,y=all?1.58:1.62;
+  // Portrait screens have a much narrower horizontal field of view.
+  const dist=all?12.6:3.3*Math.max(1,innerWidth<740?.9/camera.aspect:1),
+    y=all?1.58:1.62;
   orbit.autoRotate=false;$('autoRotate').setAttribute('aria-pressed','false');
   $('autoRotate').textContent='Auto orbit';
   orbit.target.set(x,y,0);
@@ -369,6 +371,7 @@ async function choosePainting(file){
       ' ink/colour-waterwashed regions · '+
       (currentTopology.omittedCells||0)+' omitted cells · checking original marks…';
     renderSculptures();
+    if(isPublished())focus('threequarter');
     if(previous?.texture)previous.texture.dispose();
     if(previous?.bumpTexture)previous.bumpTexture.dispose();
     const link=new URL(location.href);
