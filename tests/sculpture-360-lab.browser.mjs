@@ -1,19 +1,21 @@
 // End-to-end V3: original painting coordinates preserved across four spatial methods.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {LAB_URL,routeLabCheckout} from './sculpture-lab-browser-checkout.mjs';
 const browser=await chromium.launch({headless:true,args:[
   '--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader',
   '--enable-unsafe-swiftshader'
 ]});
 try{
   const page=await browser.newPage({viewport:{width:1400,height:900}});
+  await routeLabCheckout(page);
   const errors=[],shaderErrors=[];
   page.on('pageerror',e=>errors.push(e.message));
   page.on('console',e=>{
     if(e.type()==='error'&&/WebGLProgram|shader|VALIDATE_STATUS|compile|link/i.test(e.text()))
       shaderErrors.push(e.text().slice(0,400));
   });
-  await page.goto('http://127.0.0.1:4173/gallery/sculpture-lab/?engine=v3',{
+  await page.goto(LAB_URL+'?engine=v3',{
     waitUntil:'domcontentloaded',timeout:45000
   });
   // A module-load exception should fail fast instead of appearing as a
