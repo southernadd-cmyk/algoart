@@ -6,6 +6,8 @@ import {createHash} from 'node:crypto';
 import {gzipSync,gunzipSync} from 'node:zlib';
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
+import {sculpturePreset} from '../gallery/sculpture-v2-test/sculpture-presets.mjs';
+const preset=sculpturePreset(process.env.V2_BAKE_PRESET);
 
 const output=resolve(process.env.V2_RECEPTION_OUT||'artifacts/sculpture-v2-reception');
 const source='gallery/sculpture-v2-test/reception/recursive-divisions-portrait.png';
@@ -46,7 +48,7 @@ try{
     };
     const study=await page.evaluate(
       async params=>window.bakeV2Study(params),
-      {item,date:'reception',quality}
+      {item,date:'reception',quality,presetId:preset.id}
     );
     assert.equal(study.imageFile,imageFile);
     assert.equal(study.quality,quality);
@@ -58,7 +60,7 @@ try{
     const pack={
       schema:'pp-sculpture-v2-floor',version:2,
       geometryRevision:'v4.2.1-v2-pigment-island-fix',
-      date:'reception',quality,method:'assembly',expectedPortraits:1,
+      date:'reception',quality,method:'assembly',presetId:preset.id,parameters:preset.parameters,expectedPortraits:1,
       bakedPortraits:1,complete:true,
       studies:{[imageFile]:study}
     };
@@ -80,7 +82,7 @@ try{
   }
 }finally{await browser.close();}
 const report={
-  schema:'pp-v2-reception-source',version:2,
+  schema:'pp-v2-reception-source',version:2,presetId:preset.id,parameters:preset.parameters,
   source,sourceSha256:sha(sourceBytes),seed:metadata.seed,
   sourceWidth:1000,sourceHeight:1400,orientation:'portrait',
   href:metadata.href,quality:qualityReports,archiveUnchanged:true

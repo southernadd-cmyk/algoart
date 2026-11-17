@@ -2,6 +2,7 @@
 // No WebGL is required. This constructs the identical 108×152-source geometry
 // that the V2 test tower used, then serializes only reusable meshes/metadata.
 import * as THREE from 'three';
+import {sculpturePreset} from './sculpture-presets.mjs';
 import {segmentPainting} from './engine/v4-topology.mjs';
 import {buildV4Sculpture,disposeV4Sculpture} from './engine/v4-surface.mjs';
 import {resolveStudyMaterial} from '../visit/study-material.mjs';
@@ -94,7 +95,8 @@ function encodeMesh(mesh,texture,bumpTexture){
     receiveShadow:mesh.receiveShadow
   };
 }
-export async function bakeV2Study({item,date,quality='desktop',method='assembly'}={}){
+export async function bakeV2Study({item,date,quality='desktop',method='assembly',presetId}={}){
+  const preset=sculpturePreset(presetId);
   const reception=item?.receptionOnly===true;
   if(!(reception?date==='reception':/^\d{4}-\d{2}-\d{2}$/.test(date||'')))
     throw Error('Invalid V2 study date');
@@ -140,7 +142,7 @@ export async function bakeV2Study({item,date,quality='desktop',method='assembly'
     try{
       sculpture=buildV4Sculpture(method,{
         topology,texture,bumpTexture,material,paper,
-        quality,depth:.85,phiPull:.8,fidelity:.9,connection:.65,strokes:[]
+        quality,...preset.parameters,strokes:[]
       });
     }catch(error){
       throw Error('V2 geometry '+date+'/'+item.imageFile+'/'+quality+
@@ -165,7 +167,7 @@ export async function bakeV2Study({item,date,quality='desktop',method='assembly'
       imageFile:item.imageFile,
       sourceFile,
       seed:item.seed,
-      method,
+      method,presetId:preset.id,parameters:{...preset.parameters},
       material,
       quality,
       regionCount:topology.regions.length,
