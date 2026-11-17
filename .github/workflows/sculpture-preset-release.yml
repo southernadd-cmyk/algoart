@@ -4,6 +4,8 @@ on:
     paths:
       - 'gallery/sculpture-v2-test/sculpture-presets.*'
       - 'automation/publish-sculpture-preset.py'
+      - 'automation/verify-sculpture-preset.mjs'
+      - 'tests/sculpture-preset-public.test.mjs'
       - 'tests/sculpture-presets.test.mjs'
       - 'tests/test_sculpture_preset_release.py'
       - '.github/workflows/sculpture-preset-release.yml'
@@ -26,7 +28,7 @@ jobs:
         with:
           node-version: '22'
       - run: |
-          node --test tests/sculpture-presets.test.mjs
+          node --test tests/sculpture-presets.test.mjs tests/sculpture-preset-public.test.mjs
           python3 -m unittest discover -s tests -p test_sculpture_preset_release.py -v
   rebuild-and-publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -53,21 +55,18 @@ jobs:
           node automation/build-sculpture-v2-baker.mjs
       - name: Restore the exact published reception painting
         run: |
-          python3 - <<'PY'
-          import hashlib,json
-          from pathlib import Path
-          from urllib.request import urlopen,Request
-          url='https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/catalog/a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f.json'
-          raw=urlopen(Request(url,headers={'Origin':'https://southernadd-cmyk.github.io'}),timeout=90).read()
-          assert hashlib.sha256(raw).hexdigest()=='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f'
-          catalog=json.loads(raw)
-          base=Path('gallery/sculpture-v2-test/reception');base.mkdir(parents=True,exist_ok=True)
-          for key,name in [('image','recursive-divisions-portrait.png'),('source','source.json')]:
-              spec=catalog['reception'][key]
-              data=urlopen(Request(spec['url'],headers={'Origin':'https://southernadd-cmyk.github.io'}),timeout=90).read()
-              assert len(data)==spec['bytes'] and hashlib.sha256(data).hexdigest()==spec['sha256']
-              (base/name).write_bytes(data)
-          PY
+          node --input-type=module <<'JS'
+          import {mkdir,writeFile} from 'node:fs/promises';
+          import {fetchVerifiedSculpture} from './automation/verify-sculpture-preset.mjs';
+          const hash='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f';
+          const raw=await fetchVerifiedSculpture({sha256:hash,url:
+            'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/sculptures-v2/v4.2.1-20261110/catalog/'+hash+'.json'});
+          const catalog=JSON.parse(raw);
+          const base='gallery/sculpture-v2-test/reception/';
+          await mkdir(base,{recursive:true});
+          for(const [key,name] of [['image','recursive-divisions-portrait.png'],['source','source.json']])
+            await writeFile(base+name,await fetchVerifiedSculpture(catalog.reception[key]));
+          JS
       - name: Start the private bake server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/preset-http.log 2>&1 &
@@ -94,6 +93,8 @@ jobs:
           R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
           R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
         run: python3 automation/publish-sculpture-preset.py "$V2_BAKE_OUT" "$V2_RECEPTION_OUT"
+      - name: Verify every new object through the public R2 Worker
+        run: node automation/verify-sculpture-preset.mjs "$V2_BAKE_OUT"
       - name: Retain the publication receipt and audit
         if: always()
         uses: actions/upload-artifact@v4

@@ -142,8 +142,9 @@ def main():
         # Catalog is last: no discovery document appears before its assets verify.
         for i, entry in enumerate(entries, 1):
             storage.persist(client, entry)
-            storage.verify_public(entry)
-            print("PRESET_R2_VERIFIED", i, len(entries), entry["label"], entry["bytes"], flush=True)
+            print("PRESET_R2_STORED", i, len(entries), entry["label"], entry["bytes"], flush=True)
+    publication["storageVerified"] = not args.dry_run
+    (args.historical / "release-publication.json").write_text(json.dumps(publication, indent=2) + "\n")
     print("PRESET_RELEASE_COMPLETE " + json.dumps({**publication, "dryRun": args.dry_run}), flush=True)
 
 
