@@ -10,7 +10,9 @@ const follower=readFileSync('.github/workflows/sculpture-v2-postpublish-daily.ym
 const publisher=readFileSync('automation/publish-sculpture-v2-daily-r2.py','utf8');
 const loader=readFileSync('gallery/sculpture-v2-test/v2-pack-loader.mjs','utf8');
 test('Production uses V2 exclusively, not a permanent V1 fallback',()=>{
-  assert.equal(html.split('./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111').length-1,2);
+  const urls=[...html.matchAll(/\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-[\w-]+/g)].map(match=>match[0]);
+  assert.equal(urls.length,2,'Preload and import must both select V2');
+  assert.equal(new Set(urls).size,1,'Preload and import must use the same release');
   assert.doesNotMatch(html,/get\('sculptures'\)|await import\(useV1/);
   assert.doesNotMatch(html,/gallery-phi-bundle\.js\?v=classical-aac/);
 });
