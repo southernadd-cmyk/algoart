@@ -67,10 +67,10 @@ try{
         window.__sculptureV2TowerStatus?.failed>0,null,{timeout:120000});
       const state=await page.evaluate(()=>window.__sculptureV2TowerStatus);
       assert.ok(state.attempted>0,'No V2 source sculpture attempted');
-      const daily=spec.date>='2026-11-11'&&spec.date!=='reception';
+      const daily=spec.date>='2026-11-18'&&spec.date!=='reception';
       const manifestPath=daily
-        ?'/sculptures-v2/daily/v4.2.1/'+spec.date+'/manifest.json'
-        :'/sculptures-v2/v4.2.1-20261110/catalog/';
+        ?'/sculptures-v2/daily/assembly-20261117/'+spec.date+'/manifest.json'
+        :'/sculptures-v2/assembly-20261117/catalog/';
       assert.ok(requests.some(url=>url.includes(manifestPath)),
         'Tower did not request appropriate R2 catalog/daily manifest: '+manifestPath);
       const localGeometry=url=>
@@ -94,8 +94,8 @@ try{
       assert.equal(state.failed,0,'V2 sculpture failed: '+JSON.stringify(state.builds));
       assert.ok(state.complete>0,'No V2 sculpture completed');
       const r2Path=daily
-        ?'/sculptures-v2/daily/v4.2.1/'+spec.date+'/'+spec.quality+'/'
-        :'/sculptures-v2/v4.2.1-20261110/'+
+        ?'/sculptures-v2/daily/assembly-20261117/'+spec.date+'/'+spec.quality+'/'
+        :'/sculptures-v2/assembly-20261117/'+
           (spec.date==='reception'
             ?'reception/'+spec.quality+'/'
             :'floors/'+spec.date+'/'+spec.quality+'/');

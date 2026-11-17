@@ -46,7 +46,7 @@ test('reception also requires R2 instead of local geometry',async()=>{
 });
 
 test('future daily V2 loads only its original SHA-checked R2 quality pack',async()=>{
-  const day='2026-11-11',quality='desktop';
+  const day='2026-11-18',quality='desktop';
   const original={...pack,date:day,
     entropy:Array.from({length:160},(_,i)=>
       createHash('sha256').update(String(i)).digest('hex')).join('')};
@@ -56,13 +56,14 @@ test('future daily V2 loads only its original SHA-checked R2 quality pack',async
   const manifest={
     schema:'pp-sculpture-v2-daily-r2-manifest',version:1,
     revision:'v4.2.1-v2-pigment-island-fix',date:day,portraits:1,
+    presetId:'assembly-100-100-40-95',
     worker:base,ready:true,confluenceExcluded:true,
     metaSha256:'a'.repeat(64),v1Sha256:'b'.repeat(64),
     qualities:{
       desktop:{sha256:sha,bytes:zip.length,
-        url:base+'/sculptures-v2/daily/v4.2.1/'+day+'/desktop/'+sha+'.json.gz'},
+        url:base+'/sculptures-v2/daily/assembly-20261117/'+day+'/desktop/'+sha+'.json.gz'},
       mobile:{sha256:'c'.repeat(64),bytes:zip.length,
-        url:base+'/sculptures-v2/daily/v4.2.1/'+day+'/mobile/'+
+        url:base+'/sculptures-v2/daily/assembly-20261117/'+day+'/mobile/'+
           'c'.repeat(64)+'.json.gz'}
     }
   };
@@ -82,7 +83,7 @@ test('future daily V2 loads only its original SHA-checked R2 quality pack',async
   assert.equal(out.__v2Transport.source,'r2');
   assert.equal(out.__v2Transport.bytes,zip.length);
   assert.deepEqual(urls,[
-    base+'/sculptures-v2/daily/v4.2.1/2026-11-11/manifest.json',
+    base+'/sculptures-v2/daily/assembly-20261117/2026-11-18/manifest.json',
     manifest.qualities.desktop.url
   ]);
   const tampered=async url=>String(url).endsWith('/manifest.json')
@@ -98,4 +99,18 @@ test('future daily V2 loads only its original SHA-checked R2 quality pack',async
   }),{status:200});
   await assert.rejects(getV2DailyManifest(day,{fetcher:forged}),
     /Daily V2 manifest has invalid desktop link/);
+  const legacy=async()=>new Response(JSON.stringify({...manifest,presetId:undefined}),{status:200});
+  await assert.rejects(getV2DailyManifest('2026-11-19',{fetcher:legacy}),
+    /Unapproved daily V2 manifest/);
+});
+test('days up to 17 November come from the Regional Assembly catalog, not legacy dailies',async()=>{
+  assert.match(V2_R2_CATALOG_URL,/\/sculptures-v2\/assembly-20261117\/catalog\/35708a93[a-f0-9]{56}\.json$/);
+  for(const day of ['2026-11-11','2026-11-17']){
+    const seen=[];
+    const fetcher=async url=>{seen.push(String(url));throw Error('stop');};
+    await assert.rejects(downloadV2Prepared(day,'mobile',{fetcher}),/stop/);
+    assert.deepEqual(seen,[V2_R2_CATALOG_URL]);
+  }
+  await assert.rejects(getV2DailyManifest('2026-11-17',{fetcher:async()=>{throw Error('no');}}),
+    /Invalid daily V2 date/);
 });

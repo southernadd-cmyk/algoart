@@ -139,13 +139,21 @@ export function disposePreparedV2({body,bumpTexture}){
 }
 // Isolated V2 only: SHA-verified immutable R2 meshes, never Pages geometry.
 // A missing or corrupt R2 object fails closed; production V1 is untouched.
+// Regional Assembly 100/100/40/95 release (run 44153970005): every published
+// floor from 2026-10-05 to 2026-11-17 plus reception, rebuilt from originals.
+// Rollback is a revert to the v4.2.1-20261110 catalog, which stays in R2.
+const V2_RELEASE='assembly-20261117';
+const V2_PRESET_ID='assembly-100-100-40-95';
+const CATALOG_DAYS=44;
+// Days after the catalog come from the daily publisher under the same preset.
+export const V2_DAILY_FROM='2026-11-18';
 export const V2_R2_CATALOG_URL=
   'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/'+
-  'sculptures-v2/v4.2.1-20261110/catalog/'+
-  'a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f.json';
-const CATALOG_SHA='a9a1771413a085e3d73dc19c806c6a86d9026e36e8ba6539d5676bf4dc13892f';
+  'sculptures-v2/'+V2_RELEASE+'/catalog/'+
+  '35708a93df2c399e095687e975d38903ba1c0b3b9fda4ad216d17dcedaaad900.json';
+const CATALOG_SHA='35708a93df2c399e095687e975d38903ba1c0b3b9fda4ad216d17dcedaaad900';
 const R2_ORIGIN='https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev';
-const R2_PREFIX='/sculptures-v2/v4.2.1-20261110/';
+const R2_PREFIX='/sculptures-v2/'+V2_RELEASE+'/';
 const hex=bytes=>Array.from(new Uint8Array(bytes),
   byte=>byte.toString(16).padStart(2,'0')).join('');
 async function verifiedBytes(response,expected,desc){
@@ -184,8 +192,9 @@ export async function getV2R2Catalog({fetcher=fetch}={}){
     const bytes=await verifiedBytes(response,CATALOG_SHA,'immutable catalog');
     const catalog=JSON.parse(new TextDecoder().decode(bytes));
     if(catalog.schema!=='pp-sculpture-v2-r2-catalog'||catalog.version!==1||
-      catalog.release!=='v4.2.1-20261110'||catalog.worker!==R2_ORIGIN||
-      Object.keys(catalog.days||{}).length!==37)
+      catalog.release!==V2_RELEASE||catalog.presetId!==V2_PRESET_ID||
+      catalog.worker!==R2_ORIGIN||
+      Object.keys(catalog.days||{}).length!==CATALOG_DAYS)
       throw Error('Unapproved V2 R2 catalog');
     if(shared)canonicalCatalog=catalog;
     return catalog;
@@ -194,10 +203,10 @@ export async function getV2R2Catalog({fetcher=fetch}={}){
   try{return await task}
   finally{if(shared&&canonicalCatalogRequest===task)canonicalCatalogRequest=null}
 }
-const DAILY_V2_PREFIX='/sculptures-v2/daily/v4.2.1/';
+const DAILY_V2_PREFIX='/sculptures-v2/daily/'+V2_RELEASE+'/';
 const dailyRequests=new Map();
 export async function getV2DailyManifest(date,{fetcher=fetch}={}){
-  if(!/^20\d\d-\d\d-\d\d$/.test(date)||date<'2026-11-11')
+  if(!/^20\d\d-\d\d-\d\d$/.test(date)||date<V2_DAILY_FROM)
     throw Error('Invalid daily V2 date');
   const url=R2_ORIGIN+DAILY_V2_PREFIX+date+'/manifest.json';
   const shared=fetcher===fetch;
@@ -209,6 +218,7 @@ export async function getV2DailyManifest(date,{fetcher=fetch}={}){
     if(m.schema!=='pp-sculpture-v2-daily-r2-manifest'||
        m.version!==1||m.date!==date||
        m.revision!=='v4.2.1-v2-pigment-island-fix'||
+       m.presetId!==V2_PRESET_ID||
        m.worker!==R2_ORIGIN||m.ready!==true||
        m.confluenceExcluded!==true||
        !Number.isInteger(m.portraits)||m.portraits<=0||
@@ -239,7 +249,7 @@ export async function getV2DailyManifest(date,{fetcher=fetch}={}){
 }
 async function readR2Pack(date,quality,{fetcher=fetch}={}){
   const isReception=date==='reception';
-  const isDaily=!isReception&&date>='2026-11-11';
+  const isDaily=!isReception&&date>=V2_DAILY_FROM;
   let spec,portraitCount;
   if(isDaily){
     const daily=await getV2DailyManifest(date,{fetcher});
