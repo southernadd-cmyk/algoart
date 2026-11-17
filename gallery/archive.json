@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-17",
+      "cover": "2026-11-17-G01-watercolour-scribble-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Automatic Marks",
+        "Radiant Systems",
+        "Constructed Forms",
+        "Connected Fields",
+        "Orbital Studies",
+        "Growth Systems",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-17/cover-bf81d6b18b70136d1de5481b412224ae76169b2e7651c38466440ca76aa23725.jpg",
+      "mediaCoverBytes": 85420
+    },
+    {
       "date": "2026-11-16",
       "cover": "2026-11-16-G01-watercolor-burst-portrait.jpg",
       "coverOrientation": "portrait",
