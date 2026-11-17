@@ -10,6 +10,7 @@ on:
       - 'tests/sculpture-v4-lab.browser.mjs'
       - 'tests/sculpture-v3-finishing.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
+      - 'tests/sculpture-lab-*'
       - '.github/workflows/sculpture-360-check.yml'
   pull_request:
     paths:
@@ -20,6 +21,8 @@ on:
       - 'tests/sculpture-hybrid-supports.test.mjs'
       - 'tests/sculpture-recorded-gestures.test.mjs'
       - 'tests/sculpture-360-lab.browser.mjs'
+      - 'tests/sculpture-v4-lab.browser.mjs'
+      - 'tests/sculpture-lab-*'
       - 'tests/sculpture-v2.test.mjs'
       - 'tests/sculpture-v3.test.mjs'
       - '.github/workflows/sculpture-360-check.yml'
@@ -71,6 +74,7 @@ jobs:
           node --test tests/sculpture-v3.test.mjs
           node --test tests/sculpture-v4.test.mjs
           node --test tests/sculpture-v3-finishing.test.mjs
+          node --test tests/sculpture-lab-source.test.mjs tests/sculpture-v2-r2-loader.test.mjs
           if grep -E -i -n '(meshy|fal\.ai|image.to.3d|aiFiles|resetAI|MESHY_API_KEY)' \
             gallery/sculpture-lab/index.html gallery/sculpture-lab/lab-v2.mjs; then
             echo "Public sculpture lab must remain rules-only" >&2
@@ -87,6 +91,7 @@ jobs:
           exit 1
       - name: Verify browser room and 360° camera controls on desktop/mobile
         run: |
+          node tests/sculpture-lab-r2.browser.mjs
           node tests/sculpture-360-lab.browser.mjs
           node tests/sculpture-v4-lab.browser.mjs
       - name: Upload test images
