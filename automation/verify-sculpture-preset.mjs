@@ -37,7 +37,8 @@ async function main(){
    if(!spec.url.startsWith(WORKER+'/sculptures-v2/assembly-20261117/'))
      throw Error('Preset public inventory contains a different release');
    await fetchVerifiedSculpture(spec);
-   const response=await fetch(spec.url,{method:'HEAD',headers:{Origin:ORIGIN},signal:AbortSignal.timeout(90000)});
+   // Identity: Cloudflare re-compresses JSON for clients that accept it and then omits Content-Length.
+   const response=await fetch(spec.url,{method:'HEAD',headers:{Origin:ORIGIN,'Accept-Encoding':'identity'},signal:AbortSignal.timeout(90000)});
    if(!response.ok||Number(response.headers.get('content-length'))!==spec.bytes||
       response.headers.get('access-control-allow-origin')!==ORIGIN)
      throw Error('Public sculpture HEAD differs');
