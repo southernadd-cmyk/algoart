@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-18",
+      "cover": "2026-11-18-G01-watercolour-rects-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Recursive Divisions",
+        "Golden Trajectories",
+        "Constructed Forms",
+        "Radiant Systems",
+        "Connected Fields",
+        "Growth Systems",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-18/cover-3dadd8a3a854e250d8768a00d4208294f8afecdcf3bdf985f8fd535a72a43cc2.jpg",
+      "mediaCoverBytes": 97372
+    },
+    {
       "date": "2026-11-17",
       "cover": "2026-11-17-G01-watercolour-scribble-portrait.jpg",
       "coverOrientation": "portrait",
