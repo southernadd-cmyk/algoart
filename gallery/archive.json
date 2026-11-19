@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-19",
+      "cover": "2026-11-19-G01-action-geometric-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Orbital Studies",
+        "Radiant Systems",
+        "Connected Fields",
+        "Golden Trajectories",
+        "Growth Systems",
+        "Constructed Forms",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-19/cover-f020f91439fbabc99e3097614624ea2fb7dadcb7ee22fb3bd78eddc7ad7ca17f.jpg",
+      "mediaCoverBytes": 95007
+    },
+    {
       "date": "2026-11-18",
       "cover": "2026-11-18-G01-watercolour-rects-landscape.jpg",
       "coverOrientation": "landscape",
