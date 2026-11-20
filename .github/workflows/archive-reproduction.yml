@@ -35,6 +35,11 @@ on:
         type: string
         required: false
         default: ''
+      daily_smoke:
+        description: 'Run the fast Chromium representative archive check for the daily gallery'
+        type: boolean
+        required: false
+        default: false
 permissions:
   contents: read
 # Cancel superseded PR test runs, but never interrupt the main-branch
@@ -50,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: ${{ fromJSON(inputs.daily_smoke && '["chromium"]' || '["chromium","firefox","webkit"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,13 +120,13 @@ jobs:
           for manifest in gallery/*/media-publication.json; do
             python3 automation/r2-daily-media.py recover "$manifest"
           done
-      - name: Reproduce representative archive coverage on PRs; full archive on explicit runs
+      - name: Reproduce representative archive for PRs and daily builds; full archive on manual runs
         if: ${{ !cancelled() && steps.browser.outcome == 'success' }}
         env:
           ARCHIVE_BROWSER: ${{ matrix.browser }}
           ALGOART_LOCAL_URL: http://127.0.0.1:4173/
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "pull_request" ] || [ "${{ inputs.daily_smoke }}" = "true" ]; then
             node tests/archive-reproduction.mjs --representative
           else
             npm run test:archive
