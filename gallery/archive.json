@@ -2,6 +2,22 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-20",
+      "cover": "2026-11-20-G01-action-geometric-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Connected Fields",
+        "Orbital Studies",
+        "Golden Trajectories",
+        "Growth Systems",
+        "Automatic Marks",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-20/cover-4482eb6929bab57265a54aa7d1560897a9d5b72dc0fb4ae5b30920cf560729a2.jpg",
+      "mediaCoverBytes": 95232
+    },
+    {
       "date": "2026-11-19",
       "cover": "2026-11-19-G01-action-geometric-portrait.jpg",
       "coverOrientation": "portrait",
