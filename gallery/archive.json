@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-21",
+      "cover": "2026-11-21-G01-oil-network-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Constructed Forms",
+        "Automatic Marks",
+        "Radiant Systems",
+        "Golden Trajectories",
+        "Recursive Divisions",
+        "Connected Fields",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-21/cover-6a876f9738cfc74c74f238b9bb1fddc803d597a77aa90e581ad68da3e6147604.jpg",
+      "mediaCoverBytes": 82899
+    },
+    {
       "date": "2026-11-20",
       "cover": "2026-11-20-G01-action-geometric-landscape.jpg",
       "coverOrientation": "landscape",
