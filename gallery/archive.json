@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-22",
+      "cover": "2026-11-22-G01-watercolor-spiral-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Golden Trajectories",
+        "Growth Systems",
+        "Constructed Forms",
+        "Recursive Divisions",
+        "Connected Fields",
+        "Orbital Studies",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-22/cover-c6263a1be02ad4be0e9205223fea274d8c3cc55dc721afbbcdc44828a58349b8.jpg",
+      "mediaCoverBytes": 85407
+    },
+    {
       "date": "2026-11-21",
       "cover": "2026-11-21-G01-oil-network-landscape.jpg",
       "coverOrientation": "landscape",
