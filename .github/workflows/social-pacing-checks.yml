@@ -14,6 +14,9 @@ on:
       - 'automation/captions.mjs'
       - 'automation/social-stagger.mjs'
       - 'automation/social-publish-policy.mjs'
+      - 'automation/publish-instagram.mjs'
+      - 'automation/instagram-publish-safety.mjs'
+      - 'tests/instagram-publish-safety.test.mjs'
       - 'automation/publish-threads.mjs'
       - 'automation/threads-publish-safety.mjs'
       - 'tests/threads-publish-safety.test.mjs'
@@ -27,6 +30,9 @@ on:
       - '.github/workflows/social-pacing-checks.yml'
       - '.github/workflows/social-live.yml'
       - '.github/workflows/watercolour-live.yml'
+      - 'automation/publish-instagram.mjs'
+      - 'automation/instagram-publish-safety.mjs'
+      - 'tests/instagram-publish-safety.test.mjs'
       - 'automation/publish-threads.mjs'
       - 'automation/threads-publish-safety.mjs'
       - 'tests/threads-publish-safety.test.mjs'
@@ -52,7 +58,8 @@ jobs:
             tests/social-caption-limits.test.mjs \
             tests/social-publish-policy.test.mjs \
             tests/portrait-captions.test.mjs \
-            tests/threads-publish-safety.test.mjs
+            tests/threads-publish-safety.test.mjs \
+            tests/instagram-publish-safety.test.mjs
       - name: Verify real frozen V10 publishing queues and release assets (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
