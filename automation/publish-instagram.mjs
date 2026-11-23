@@ -1,3 +1,5 @@
+import { publishInstagramContainerSafely } from './instagram-publish-safety.mjs';
+
 const LIVE = process.env.LIVE_PUBLISHING === 'true';
 const API_VERSION = process.env.META_API_VERSION || 'v26.0';
 const TOKEN = process.env.IG_ACCESS_TOKEN;
@@ -54,5 +56,5 @@ for (let attempt = 0; attempt < 30; attempt++) {
   await new Promise(resolve => setTimeout(resolve, 2000));
 }
 
-const published = await graph(`${USER_ID}/media_publish`, { creation_id: container.id });
+const published = await publishInstagramContainerSafely({ graph, userId: USER_ID, containerId: container.id });
 console.log(JSON.stringify({ platform: 'instagram', media_id: published.id }, null, 2));
