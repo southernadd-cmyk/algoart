@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-24",
+      "cover": "2026-11-24-G01-watercolour-spiral-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Golden Trajectories",
+        "Growth Systems",
+        "Automatic Marks",
+        "Recursive Divisions",
+        "Radiant Systems",
+        "Connected Fields",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/cover-3b49f45bb56512d41645b0ca5cae3c4b9fb7bd69a81c94de6a0bc9ea272af3f7.jpg",
+      "mediaCoverBytes": 86014
+    },
+    {
       "date": "2026-11-23",
       "cover": "2026-11-23-G01-action-scribble-landscape.jpg",
       "coverOrientation": "landscape",

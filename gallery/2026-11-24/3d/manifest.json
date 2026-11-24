@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "sizes": {
+    "desktop": 1100,
+    "mobile": 640
+  },
+  "images": {
+    "2026-11-24-G01-watercolour-spiral-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G01/desktop-0b27e59a4b87b9d303cbd62713b6d6245561f5c8cc4bc26c7f0bd709d4189f34.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G01/mobile-e60979855623570375f29c3acab21c7d97c8fe3553495a32c4e6978c9b3953c4.webp"
+    },
+    "2026-11-24-G02-oil-network-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G02/desktop-956f9c00c465b82b63dadbca1a52f3061d5d1e97ac6d396a316186bcdb1596c6.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G02/mobile-3fa058ef2cded714deeb18594efcf2e4d2294e1c458dcc4337e7be0d3e53adb2.webp"
+    },
+    "2026-11-24-G03-watercolour-scribble-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G03/desktop-ca69498019c464e7526709a0797a24dd81fdb17c3cd86b05def8a97f4d0cca05.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G03/mobile-73c901053e628e6cbf7b343c9a8d9b4489b9e823c3cc463410c4798355bce36a.webp"
+    },
+    "2026-11-24-G04-action-organic-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G04/desktop-4d883b4052e9fefc9f2f91bc4a666b8f3230270e527042a26110fab21caffcbe.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G04/mobile-c7cd5ac5f7f0a86cac39cd6e2643cda6f106f15f66b9937735609db5b703f279.webp"
+    },
+    "2026-11-24-G05-oil-burst-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G05/desktop-de85c99efd6ae9432d4982f9561061cf34d85305f8ff567619f30091d326ea3b.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G05/mobile-4becca11d9f7e086c7ce1e40b0d836ffc442b361e6a6c1210e128cd40081d7b3.webp"
+    },
+    "2026-11-24-G06-oil-scribble-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G06/desktop-15937e4b12539a854a636c95eaa1ec292c709e9d399ea4ff661551085d4866e3.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G06/mobile-212ed000fa3120121be3d71d7c7748597c80c687f8025c3eefa1c08a8bbe9e51.webp"
+    },
+    "2026-11-24-G07-watercolor-burst-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G07/desktop-0d913527e26abdaa57212a0e5c6f8da33b5878e716d28736e6023c52f4ed3d2f.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G07/mobile-65b5ab95bff8bf2ffface9b51acdf780675adc95526ba9c770305fa99ef5ffeb.webp"
+    },
+    "2026-11-24-G08-oil-network-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G08/desktop-f0deafc7942611aa14c208843e052a449ebd53af0be8550e74eece463ad47035.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G08/mobile-a00627cd78bbabb8c34ee7e6218458c2e17998c030b86901c6775359870e0d36.webp"
+    },
+    "2026-11-24-G09-watercolour-scribble-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G09/desktop-4623cb0c3970bc064b8ad4642f01571388128fe0007bd3a96f785c544bbc32cb.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G09/mobile-a3cda9698fa398465cc22f9b4df48a56945afd9b6c61faee239975dfd905455a.webp"
+    },
+    "2026-11-24-G10-watercolor-burst-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G10/desktop-997179d5e0ace633dbd94d31e55b338053efb13ff930ab607b8082e15f5bb214.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G10/mobile-d17d6948244bd9b7aca768639db3b9ba95c379491a6ce9aa8f961ae7226d4b51.webp"
+    },
+    "2026-11-24-G11-watercolour-network-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G11/desktop-ed8a8d4e5e07b2d4e6792b5d20cbdef5f591bc2bc50945fed6c09525c8c768a6.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G11/mobile-cde774de76f3c602420282a7d648df13d3ab845da827742eacc2cba14ef51d79.webp"
+    },
+    "2026-11-24-G12-oil-spiral-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G12/desktop-bb0983d393e3afb535d76272d6391b8d2789cad91e5f84865b877e728df25850.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-G12/mobile-8955218ac8f1f4d28a17cd6cba0a31de4ba13f06a710202941bc7472ab6c7f71.webp"
+    },
+    "2026-11-24-C01-portrait.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-C01/desktop-a515ba8bfc52ae896f3d40975dfbd2816657c48f08ffb58b8b7792cf33965060.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-C01/mobile-cdf0c233fbd0fcf5eaa76a0489ff3b31990d40a9575612663c0c177a739a376a.webp"
+    },
+    "2026-11-24-C02-landscape.jpg": {
+      "desktop": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-C02/desktop-4e43670650b3dc86a6b552091bdd37013da71e52a5af9fdadb321873d820dea3.webp",
+      "mobile": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-24/2026-11-24-C02/mobile-202d52339bc540aadc95ebd0a3a2c0fa48a2726615e72ed04c944feefac0ca13.webp"
+    }
+  }
+}
