@@ -1,0 +1,585 @@
+{
+  "schemaVersion": 2,
+  "published": true,
+  "stageOnly": false,
+  "pagesFallback": false,
+  "bucket": "proportion-piece-media-test",
+  "workerBase": "https://proportion-piece-media.mr-adam-clement.workers.dev",
+  "date": "2026-11-25",
+  "count": 14,
+  "mediaAssets": [
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G01",
+      "originalImageFile": "2026-11-25-G01-watercolor-field-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G01-watercolor-field-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G01/original-13ccf636a6772caf1d6dccb999a49916e01e7bc5945c1026ecb245407c48ed9c.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G01/original-13ccf636a6772caf1d6dccb999a49916e01e7bc5945c1026ecb245407c48ed9c.jpg",
+      "sha256": "13ccf636a6772caf1d6dccb999a49916e01e7bc5945c1026ecb245407c48ed9c",
+      "bytes": 227186,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G01",
+      "originalImageFile": "2026-11-25-G01-watercolor-field-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G01-watercolor-field-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G01/desktop-d7653aa384843071253a07b893cda406cd416bf9aeddce960b28731bdaf3b7cf.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G01/desktop-d7653aa384843071253a07b893cda406cd416bf9aeddce960b28731bdaf3b7cf.webp",
+      "sha256": "d7653aa384843071253a07b893cda406cd416bf9aeddce960b28731bdaf3b7cf",
+      "bytes": 64368,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G01",
+      "originalImageFile": "2026-11-25-G01-watercolor-field-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G01-watercolor-field-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G01/mobile-69c2456e9dc4743b7889d73fa2cecc78083acfbf1683ff91d0c14d295992a324.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G01/mobile-69c2456e9dc4743b7889d73fa2cecc78083acfbf1683ff91d0c14d295992a324.webp",
+      "sha256": "69c2456e9dc4743b7889d73fa2cecc78083acfbf1683ff91d0c14d295992a324",
+      "bytes": 25978,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G02",
+      "originalImageFile": "2026-11-25-G02-marker-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G02-marker-organic-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G02/original-072934f0ed9c2a588c607fff9f720cb7ae7fec60ea5f48ab9ae3f6e849d6bdd0.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G02/original-072934f0ed9c2a588c607fff9f720cb7ae7fec60ea5f48ab9ae3f6e849d6bdd0.jpg",
+      "sha256": "072934f0ed9c2a588c607fff9f720cb7ae7fec60ea5f48ab9ae3f6e849d6bdd0",
+      "bytes": 54611,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G02",
+      "originalImageFile": "2026-11-25-G02-marker-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G02-marker-organic-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G02/desktop-cb014ce7803fba27cc39ab883e2de91f975861f94e99e248a25f8acfbdf30674.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G02/desktop-cb014ce7803fba27cc39ab883e2de91f975861f94e99e248a25f8acfbdf30674.webp",
+      "sha256": "cb014ce7803fba27cc39ab883e2de91f975861f94e99e248a25f8acfbdf30674",
+      "bytes": 15712,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G02",
+      "originalImageFile": "2026-11-25-G02-marker-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G02-marker-organic-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G02/mobile-29b7e48356eb8781071f1c2438fc5eb7fe79d7834e90008be7fe2e4679601861.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G02/mobile-29b7e48356eb8781071f1c2438fc5eb7fe79d7834e90008be7fe2e4679601861.webp",
+      "sha256": "29b7e48356eb8781071f1c2438fc5eb7fe79d7834e90008be7fe2e4679601861",
+      "bytes": 7478,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G03",
+      "originalImageFile": "2026-11-25-G03-marker-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G03-marker-geometric-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G03/original-226ae67153fb832b72378a09479637653600e92eb8810a7a396908981319a9b9.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G03/original-226ae67153fb832b72378a09479637653600e92eb8810a7a396908981319a9b9.jpg",
+      "sha256": "226ae67153fb832b72378a09479637653600e92eb8810a7a396908981319a9b9",
+      "bytes": 59514,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G03",
+      "originalImageFile": "2026-11-25-G03-marker-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G03-marker-geometric-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G03/desktop-a575be0cf6d16b8a0eba5e961f8d52ad5205f4a94bbfa302ce4e3db6d1e3aa37.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G03/desktop-a575be0cf6d16b8a0eba5e961f8d52ad5205f4a94bbfa302ce4e3db6d1e3aa37.webp",
+      "sha256": "a575be0cf6d16b8a0eba5e961f8d52ad5205f4a94bbfa302ce4e3db6d1e3aa37",
+      "bytes": 16032,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G03",
+      "originalImageFile": "2026-11-25-G03-marker-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G03-marker-geometric-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G03/mobile-8c8e1f92ee8b9a8387a22a60d85baf201bfbedebf9210b16b04747ee13e79fb2.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G03/mobile-8c8e1f92ee8b9a8387a22a60d85baf201bfbedebf9210b16b04747ee13e79fb2.webp",
+      "sha256": "8c8e1f92ee8b9a8387a22a60d85baf201bfbedebf9210b16b04747ee13e79fb2",
+      "bytes": 8038,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G04",
+      "originalImageFile": "2026-11-25-G04-watercolor-network-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G04-watercolor-network-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G04/original-6097e458d9632c0fd232cebb1ae0c0853787eb752d7e3398418b657f5f8ca64a.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G04/original-6097e458d9632c0fd232cebb1ae0c0853787eb752d7e3398418b657f5f8ca64a.jpg",
+      "sha256": "6097e458d9632c0fd232cebb1ae0c0853787eb752d7e3398418b657f5f8ca64a",
+      "bytes": 183976,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G04",
+      "originalImageFile": "2026-11-25-G04-watercolor-network-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G04-watercolor-network-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G04/desktop-f09067ae03debf768041b46a9c1afe23d95521370a0ffbe1c92936586caa2463.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G04/desktop-f09067ae03debf768041b46a9c1afe23d95521370a0ffbe1c92936586caa2463.webp",
+      "sha256": "f09067ae03debf768041b46a9c1afe23d95521370a0ffbe1c92936586caa2463",
+      "bytes": 47396,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G04",
+      "originalImageFile": "2026-11-25-G04-watercolor-network-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G04-watercolor-network-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G04/mobile-92c7115cf07cfdeed171796c02ce529f79eea7d154bb3d520e4efad030dfc357.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G04/mobile-92c7115cf07cfdeed171796c02ce529f79eea7d154bb3d520e4efad030dfc357.webp",
+      "sha256": "92c7115cf07cfdeed171796c02ce529f79eea7d154bb3d520e4efad030dfc357",
+      "bytes": 18744,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G05",
+      "originalImageFile": "2026-11-25-G05-watercolour-organic-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G05-watercolour-organic-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G05/original-80b03857cce5cff6b775ace4425ac155a0cd56efcc0dd091354e801f72b1fc69.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G05/original-80b03857cce5cff6b775ace4425ac155a0cd56efcc0dd091354e801f72b1fc69.jpg",
+      "sha256": "80b03857cce5cff6b775ace4425ac155a0cd56efcc0dd091354e801f72b1fc69",
+      "bytes": 131305,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G05",
+      "originalImageFile": "2026-11-25-G05-watercolour-organic-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G05-watercolour-organic-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G05/desktop-197e855d0660ff2f78dbffd75743962cea7fd6ecc3bdb7e5a67f95899bf0d7d8.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G05/desktop-197e855d0660ff2f78dbffd75743962cea7fd6ecc3bdb7e5a67f95899bf0d7d8.webp",
+      "sha256": "197e855d0660ff2f78dbffd75743962cea7fd6ecc3bdb7e5a67f95899bf0d7d8",
+      "bytes": 19184,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G05",
+      "originalImageFile": "2026-11-25-G05-watercolour-organic-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G05-watercolour-organic-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G05/mobile-ef74391959fbfa00c9c1bf17cee115a550ff0d26b9ced2fcf4fd83cca53f2f83.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G05/mobile-ef74391959fbfa00c9c1bf17cee115a550ff0d26b9ced2fcf4fd83cca53f2f83.webp",
+      "sha256": "ef74391959fbfa00c9c1bf17cee115a550ff0d26b9ced2fcf4fd83cca53f2f83",
+      "bytes": 8014,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G06",
+      "originalImageFile": "2026-11-25-G06-watercolor-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G06-watercolor-spiral-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G06/original-5c58524e5fe31cc504ef9db00138f72b26b2162ff5058af20dac04811f494114.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G06/original-5c58524e5fe31cc504ef9db00138f72b26b2162ff5058af20dac04811f494114.jpg",
+      "sha256": "5c58524e5fe31cc504ef9db00138f72b26b2162ff5058af20dac04811f494114",
+      "bytes": 182152,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G06",
+      "originalImageFile": "2026-11-25-G06-watercolor-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G06-watercolor-spiral-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G06/desktop-732176950034932503e0dc1865f8b7fa31ad818e20a5538bbc478dd3519441e1.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G06/desktop-732176950034932503e0dc1865f8b7fa31ad818e20a5538bbc478dd3519441e1.webp",
+      "sha256": "732176950034932503e0dc1865f8b7fa31ad818e20a5538bbc478dd3519441e1",
+      "bytes": 45896,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G06",
+      "originalImageFile": "2026-11-25-G06-watercolor-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G06-watercolor-spiral-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G06/mobile-81d1ccdb72eb8b0ab2111af2d2bfe54e730412923d4087146ca2fd407e965f30.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G06/mobile-81d1ccdb72eb8b0ab2111af2d2bfe54e730412923d4087146ca2fd407e965f30.webp",
+      "sha256": "81d1ccdb72eb8b0ab2111af2d2bfe54e730412923d4087146ca2fd407e965f30",
+      "bytes": 18324,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G07",
+      "originalImageFile": "2026-11-25-G07-oil-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G07-oil-organic-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G07/original-619c0da9db0725ad605541370799d5b981f947523053cd56c05cf0b693bd7b6a.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G07/original-619c0da9db0725ad605541370799d5b981f947523053cd56c05cf0b693bd7b6a.jpg",
+      "sha256": "619c0da9db0725ad605541370799d5b981f947523053cd56c05cf0b693bd7b6a",
+      "bytes": 145742,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G07",
+      "originalImageFile": "2026-11-25-G07-oil-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G07-oil-organic-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G07/desktop-96c6dba6cc127615c6b585b410ec1c87560442b4d6ac9b98983d56d9ee83bb87.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G07/desktop-96c6dba6cc127615c6b585b410ec1c87560442b4d6ac9b98983d56d9ee83bb87.webp",
+      "sha256": "96c6dba6cc127615c6b585b410ec1c87560442b4d6ac9b98983d56d9ee83bb87",
+      "bytes": 21458,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G07",
+      "originalImageFile": "2026-11-25-G07-oil-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G07-oil-organic-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G07/mobile-17f54f4a1c7c5c6b6662b543ec0799ac7b644f79bac3b4bb2dd304bde6f03850.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G07/mobile-17f54f4a1c7c5c6b6662b543ec0799ac7b644f79bac3b4bb2dd304bde6f03850.webp",
+      "sha256": "17f54f4a1c7c5c6b6662b543ec0799ac7b644f79bac3b4bb2dd304bde6f03850",
+      "bytes": 8264,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G08",
+      "originalImageFile": "2026-11-25-G08-watercolour-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G08-watercolour-organic-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G08/original-67d20718d93d91eda8dcb8a1cf2a69d1739e6de909553fedff19a1a960f87837.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G08/original-67d20718d93d91eda8dcb8a1cf2a69d1739e6de909553fedff19a1a960f87837.jpg",
+      "sha256": "67d20718d93d91eda8dcb8a1cf2a69d1739e6de909553fedff19a1a960f87837",
+      "bytes": 122685,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G08",
+      "originalImageFile": "2026-11-25-G08-watercolour-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G08-watercolour-organic-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G08/desktop-c50a82a6e986cc2c6b07201ce0713a90065dc3f08b4f1a18d73a25833d4017bd.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G08/desktop-c50a82a6e986cc2c6b07201ce0713a90065dc3f08b4f1a18d73a25833d4017bd.webp",
+      "sha256": "c50a82a6e986cc2c6b07201ce0713a90065dc3f08b4f1a18d73a25833d4017bd",
+      "bytes": 15346,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G08",
+      "originalImageFile": "2026-11-25-G08-watercolour-organic-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G08-watercolour-organic-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G08/mobile-abc9f872681289617468fa666ff8a2dfb1cdbaabeb8e2896baed8a436653f2dc.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G08/mobile-abc9f872681289617468fa666ff8a2dfb1cdbaabeb8e2896baed8a436653f2dc.webp",
+      "sha256": "abc9f872681289617468fa666ff8a2dfb1cdbaabeb8e2896baed8a436653f2dc",
+      "bytes": 6512,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G09",
+      "originalImageFile": "2026-11-25-G09-oil-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G09-oil-geometric-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G09/original-b8bbe75bcb332027e4a69e939b2149e9a6731bce344f11a7ce0f7610ae67bcd8.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G09/original-b8bbe75bcb332027e4a69e939b2149e9a6731bce344f11a7ce0f7610ae67bcd8.jpg",
+      "sha256": "b8bbe75bcb332027e4a69e939b2149e9a6731bce344f11a7ce0f7610ae67bcd8",
+      "bytes": 212692,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G09",
+      "originalImageFile": "2026-11-25-G09-oil-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G09-oil-geometric-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G09/desktop-bde846dc475caab8c8cbabe7f05187f5f6e3e79c5d3a75fb69ffec93428d4f1f.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G09/desktop-bde846dc475caab8c8cbabe7f05187f5f6e3e79c5d3a75fb69ffec93428d4f1f.webp",
+      "sha256": "bde846dc475caab8c8cbabe7f05187f5f6e3e79c5d3a75fb69ffec93428d4f1f",
+      "bytes": 45794,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G09",
+      "originalImageFile": "2026-11-25-G09-oil-geometric-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G09-oil-geometric-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G09/mobile-afed0c03cb410f9113953f04c93fa227d4da4f73930f745258f76b51264d0b85.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G09/mobile-afed0c03cb410f9113953f04c93fa227d4da4f73930f745258f76b51264d0b85.webp",
+      "sha256": "afed0c03cb410f9113953f04c93fa227d4da4f73930f745258f76b51264d0b85",
+      "bytes": 18620,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G10",
+      "originalImageFile": "2026-11-25-G10-watercolour-scribble-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G10-watercolour-scribble-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G10/original-012fe9a0a69bbda748ed2b66f01756b91231a25762bb236611443657553c93eb.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G10/original-012fe9a0a69bbda748ed2b66f01756b91231a25762bb236611443657553c93eb.jpg",
+      "sha256": "012fe9a0a69bbda748ed2b66f01756b91231a25762bb236611443657553c93eb",
+      "bytes": 107096,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G10",
+      "originalImageFile": "2026-11-25-G10-watercolour-scribble-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G10-watercolour-scribble-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G10/desktop-a476b395357fae772967d5f764d756cd6fecfe6af8e349693c8b0c6607217c6e.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G10/desktop-a476b395357fae772967d5f764d756cd6fecfe6af8e349693c8b0c6607217c6e.webp",
+      "sha256": "a476b395357fae772967d5f764d756cd6fecfe6af8e349693c8b0c6607217c6e",
+      "bytes": 11316,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G10",
+      "originalImageFile": "2026-11-25-G10-watercolour-scribble-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G10-watercolour-scribble-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G10/mobile-0698ee506bfacfa402744915906f31f7cd0b2b6c7e63ea4baa135977ed2935ac.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G10/mobile-0698ee506bfacfa402744915906f31f7cd0b2b6c7e63ea4baa135977ed2935ac.webp",
+      "sha256": "0698ee506bfacfa402744915906f31f7cd0b2b6c7e63ea4baa135977ed2935ac",
+      "bytes": 4606,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G11",
+      "originalImageFile": "2026-11-25-G11-marker-burst-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G11-marker-burst-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G11/original-ec61be69affa86a761e9c00cc66423d89858c9f18e6529ed1c3e9e757852989a.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G11/original-ec61be69affa86a761e9c00cc66423d89858c9f18e6529ed1c3e9e757852989a.jpg",
+      "sha256": "ec61be69affa86a761e9c00cc66423d89858c9f18e6529ed1c3e9e757852989a",
+      "bytes": 119671,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G11",
+      "originalImageFile": "2026-11-25-G11-marker-burst-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G11-marker-burst-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G11/desktop-3a72d772b9bfe245524bdd151873adfbfd64ca8d32bc3b27a3dde2f4d3048eee.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G11/desktop-3a72d772b9bfe245524bdd151873adfbfd64ca8d32bc3b27a3dde2f4d3048eee.webp",
+      "sha256": "3a72d772b9bfe245524bdd151873adfbfd64ca8d32bc3b27a3dde2f4d3048eee",
+      "bytes": 33520,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G11",
+      "originalImageFile": "2026-11-25-G11-marker-burst-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G11-marker-burst-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G11/mobile-d7fb24cc6295dcd8f57f3a7ce403d4d3a4a472f7a41887477bc9a4d27aa53001.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G11/mobile-d7fb24cc6295dcd8f57f3a7ce403d4d3a4a472f7a41887477bc9a4d27aa53001.webp",
+      "sha256": "d7fb24cc6295dcd8f57f3a7ce403d4d3a4a472f7a41887477bc9a4d27aa53001",
+      "bytes": 17044,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-G12",
+      "originalImageFile": "2026-11-25-G12-watercolour-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-G12-watercolour-spiral-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-G12/original-4f1a97bbb505d95ad0dc1787275af4f0a3d30c94f40800199a59ca49f1802b0b.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G12/original-4f1a97bbb505d95ad0dc1787275af4f0a3d30c94f40800199a59ca49f1802b0b.jpg",
+      "sha256": "4f1a97bbb505d95ad0dc1787275af4f0a3d30c94f40800199a59ca49f1802b0b",
+      "bytes": 160760,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-G12",
+      "originalImageFile": "2026-11-25-G12-watercolour-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G12-watercolour-spiral-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-G12/desktop-09067ea1ce3f48afaa6d6ef569aa83c058dd122d9609202b32886d97106e6860.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G12/desktop-09067ea1ce3f48afaa6d6ef569aa83c058dd122d9609202b32886d97106e6860.webp",
+      "sha256": "09067ea1ce3f48afaa6d6ef569aa83c058dd122d9609202b32886d97106e6860",
+      "bytes": 26462,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-G12",
+      "originalImageFile": "2026-11-25-G12-watercolour-spiral-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-G12-watercolour-spiral-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-G12/mobile-7b000c1e09f575f7ddd11dcb8c8d69ab7cdcc3e2cc19e4f6ea7b0b3a3fcb1fa8.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-G12/mobile-7b000c1e09f575f7ddd11dcb8c8d69ab7cdcc3e2cc19e4f6ea7b0b3a3fcb1fa8.webp",
+      "sha256": "7b000c1e09f575f7ddd11dcb8c8d69ab7cdcc3e2cc19e4f6ea7b0b3a3fcb1fa8",
+      "bytes": 10532,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-C01",
+      "originalImageFile": "2026-11-25-C01-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-C01-portrait.jpg",
+      "key": "editions/2026-11-25/2026-11-25-C01/original-b0d130ce32ac2a7d36d33a415933c2a93ae9730674e517cec884d5e4c56ce607.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C01/original-b0d130ce32ac2a7d36d33a415933c2a93ae9730674e517cec884d5e4c56ce607.jpg",
+      "sha256": "b0d130ce32ac2a7d36d33a415933c2a93ae9730674e517cec884d5e4c56ce607",
+      "bytes": 137598,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-C01",
+      "originalImageFile": "2026-11-25-C01-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-C01-portrait-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-C01/desktop-e7b0d5ef55214bff12ca4e0204cfa777b8d08aba528c686925c4033a34f88a48.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C01/desktop-e7b0d5ef55214bff12ca4e0204cfa777b8d08aba528c686925c4033a34f88a48.webp",
+      "sha256": "e7b0d5ef55214bff12ca4e0204cfa777b8d08aba528c686925c4033a34f88a48",
+      "bytes": 65530,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-C01",
+      "originalImageFile": "2026-11-25-C01-portrait.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-C01-portrait-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-C01/mobile-f8861e3b519767ad61049a87c76d8aabd22968986f5978f5bbb5df2d750e1f48.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C01/mobile-f8861e3b519767ad61049a87c76d8aabd22968986f5978f5bbb5df2d750e1f48.webp",
+      "sha256": "f8861e3b519767ad61049a87c76d8aabd22968986f5978f5bbb5df2d750e1f48",
+      "bytes": 29084,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "original",
+      "artworkId": "2026-11-25-C02",
+      "originalImageFile": "2026-11-25-C02-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/2026-11-25-C02-landscape.jpg",
+      "key": "editions/2026-11-25/2026-11-25-C02/original-3b2f9252ecdbf4f30214c58bb13d0d964a36e2607d8375401552351b9a63e946.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C02/original-3b2f9252ecdbf4f30214c58bb13d0d964a36e2607d8375401552351b9a63e946.jpg",
+      "sha256": "3b2f9252ecdbf4f30214c58bb13d0d964a36e2607d8375401552351b9a63e946",
+      "bytes": 127341,
+      "contentType": "image/jpeg"
+    },
+    {
+      "role": "desktop",
+      "artworkId": "2026-11-25-C02",
+      "originalImageFile": "2026-11-25-C02-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-C02-landscape-1100.webp",
+      "key": "editions/2026-11-25/2026-11-25-C02/desktop-ec4a5492287324caedfacbbe9f175f12287d38e6e8fc2c7c0727f1769844e92f.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C02/desktop-ec4a5492287324caedfacbbe9f175f12287d38e6e8fc2c7c0727f1769844e92f.webp",
+      "sha256": "ec4a5492287324caedfacbbe9f175f12287d38e6e8fc2c7c0727f1769844e92f",
+      "bytes": 59796,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "mobile",
+      "artworkId": "2026-11-25-C02",
+      "originalImageFile": "2026-11-25-C02-landscape.jpg",
+      "sourcePath": "gallery/2026-11-25/3d/2026-11-25-C02-landscape-640.webp",
+      "key": "editions/2026-11-25/2026-11-25-C02/mobile-53a2103d15299edd2b13f31d0ff0faefb398a6a3dcd7c4d5ee4e0712c2cf222d.webp",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/2026-11-25-C02/mobile-53a2103d15299edd2b13f31d0ff0faefb398a6a3dcd7c4d5ee4e0712c2cf222d.webp",
+      "sha256": "53a2103d15299edd2b13f31d0ff0faefb398a6a3dcd7c4d5ee4e0712c2cf222d",
+      "bytes": 25300,
+      "contentType": "image/webp"
+    },
+    {
+      "role": "cover",
+      "artworkId": null,
+      "originalImageFile": null,
+      "sourcePath": "gallery/2026-11-25/archive-preview.jpg",
+      "key": "editions/2026-11-25/cover-4b25964562ac189a4669b89787ff6c55ea6a75f21e2c7c16061323743c35a311.jpg",
+      "url": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/cover-4b25964562ac189a4669b89787ff6c55ea6a75f21e2c7c16061323743c35a311.jpg",
+      "sha256": "4b25964562ac189a4669b89787ff6c55ea6a75f21e2c7c16061323743c35a311",
+      "bytes": 78555,
+      "contentType": "image/jpeg"
+    }
+  ],
+  "preservedShareUrls": [
+    {
+      "id": "2026-11-25-G01",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AWL-20261125-01-21791&mode=field&el=52&den=61&cx=53&neg=33&phi=3&rec=6&spi=49&ga=66&nest=32&pen=felt&th=11&wob=32&od=5&op=85&pr=62&dry=27&curve=45&shape=70&overlap=47&rot=84&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=14&sat=84&bri=73&paper=%23f5f0e6&grain=20&material=tissue-v8&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AWL-20261125-01-21791",
+      "imageFile": "2026-11-25-G01-watercolor-field-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G02",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AP-20261125-01-64518&mode=organic&fmt=portrait&el=42&den=52&cx=69&neg=35&phi=18&rec=5&spi=66&ga=76&nest=34&pen=fine&th=8&wob=52&od=2&op=83&pr=38&dry=13&curve=80&shape=52&overlap=57&rot=88&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=9&sat=55&bri=41&paper=%23f5f0e6&grain=12&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AP-20261125-01-64518",
+      "imageFile": "2026-11-25-G02-marker-organic-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-G03",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AA-20261125-01-43358&mode=geometric&el=24&den=59&cx=70&neg=32&phi=75&rec=7&spi=36&ga=46&nest=25&pen=scribble&th=7&wob=52&od=4&op=68&pr=58&dry=24&curve=15&shape=60&overlap=29&rot=57&ln=1&ci=1&re=1&po=1&ar=1&pal=cmyk&cols=11&sat=95&bri=66&paper=%23f5f0e6&grain=19&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AA-20261125-01-43358",
+      "imageFile": "2026-11-25-G03-marker-geometric-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G04",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AWL-20261125-01-67945&mode=network&el=39&den=55&cx=65&neg=36&phi=52&rec=8&spi=52&ga=93&nest=53&pen=paint&th=10&wob=49&od=5&op=69&pr=50&dry=14&curve=24&shape=67&overlap=43&rot=88&ln=1&ci=1&re=1&po=1&ar=1&pal=earth&cols=4&sat=44&bri=67&paper=%23f5f0e6&grain=25&material=tissue-v8&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AWL-20261125-01-67945",
+      "imageFile": "2026-11-25-G04-watercolor-network-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G05",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=CWL-20261125-01-81541&mode=organic&el=42&den=54&cx=54&neg=41&phi=0&rec=8&spi=48&ga=13&nest=45&pen=scribble&th=13&wob=50&od=5&op=76&pr=39&dry=11&curve=74&shape=57&overlap=56&rot=81&ln=1&ci=1&re=1&po=1&ar=1&pal=marker&cols=1&sat=96&bri=51&paper=%23f5f0e6&grain=24&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "CWL-20261125-01-81541",
+      "imageFile": "2026-11-25-G05-watercolour-organic-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G06",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AWP-20261125-01-86627&mode=spiral&fmt=portrait&el=58&den=47&cx=54&neg=37&phi=59&rec=5&spi=85&ga=86&nest=56&pen=felt&th=9&wob=29&od=5&op=64&pr=66&dry=42&curve=70&shape=57&overlap=66&rot=82&ln=1&ci=1&re=1&po=1&ar=1&pal=mono&cols=9&sat=50&bri=36&paper=%23f5f0e6&grain=13&material=tissue-v8&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AWP-20261125-01-86627",
+      "imageFile": "2026-11-25-G06-watercolor-spiral-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-G07",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=OP-20261125-01-14056&mode=geometric&fmt=portrait&el=38&den=42&cx=68&neg=25&phi=73&rec=5&spi=62&ga=15&nest=48&pen=fine&th=5&wob=39&od=6&op=72&pr=37&dry=15&curve=83&shape=63&overlap=32&rot=91&ln=1&ci=1&re=1&po=1&ar=1&pal=pastel&cols=1&sat=79&bri=44&paper=%23f5f0e6&grain=11&material=oil-v8&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "OP-20261125-01-14056",
+      "imageFile": "2026-11-25-G07-oil-organic-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-G08",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=CWP-20261125-01-86773&mode=organic&fmt=portrait&el=38&den=54&cx=68&neg=26&phi=54&rec=8&spi=65&ga=22&nest=43&pen=paint&th=5&wob=30&od=3&op=74&pr=32&dry=21&curve=76&shape=67&overlap=60&rot=59&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=8&sat=96&bri=63&paper=%23f5f0e6&grain=10&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "CWP-20261125-01-86773",
+      "imageFile": "2026-11-25-G08-watercolour-organic-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-G09",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=OL-20261125-01-53773&mode=organic&el=22&den=61&cx=65&neg=31&phi=89&rec=4&spi=30&ga=93&nest=46&pen=paint&th=9&wob=39&od=2&op=84&pr=56&dry=10&curve=18&shape=55&overlap=58&rot=83&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=9&sat=40&bri=78&paper=%23f5f0e6&grain=12&material=oil-v8&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "OL-20261125-01-53773",
+      "imageFile": "2026-11-25-G09-oil-geometric-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G10",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=CWL-20261125-01-36520&mode=scribble&el=41&den=55&cx=57&neg=24&phi=14&rec=8&spi=59&ga=64&nest=34&pen=scribble&th=7&wob=42&od=6&op=65&pr=31&dry=16&curve=66&shape=52&overlap=45&rot=95&ln=1&ci=1&re=1&po=1&ar=1&pal=cold&cols=2&sat=69&bri=32&paper=%23f5f0e6&grain=17&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "CWL-20261125-01-36520",
+      "imageFile": "2026-11-25-G10-watercolour-scribble-landscape.jpg"
+    },
+    {
+      "id": "2026-11-25-G11",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=AP-20261125-01-69603&mode=burst&fmt=portrait&el=44&den=70&cx=72&neg=34&phi=12&rec=8&spi=64&ga=10&nest=33&pen=broad&th=8&wob=45&od=3&op=70&pr=36&dry=20&curve=45&shape=52&overlap=65&rot=77&ln=1&ci=1&re=1&po=1&ar=1&pal=primary&cols=14&sat=80&bri=41&paper=%23f5f0e6&grain=10&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "AP-20261125-01-69603",
+      "imageFile": "2026-11-25-G11-marker-burst-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-G12",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/?v=10&seed=CWP-20261125-01-87732&mode=spiral&fmt=portrait&el=58&den=67&cx=65&neg=32&phi=85&rec=5&spi=94&ga=6&nest=48&pen=scribble&th=7&wob=27&od=4&op=79&pr=51&dry=28&curve=60&shape=48&overlap=59&rot=84&ln=1&ci=1&re=1&po=1&ar=1&pal=neon&cols=1&sat=66&bri=69&paper=%23f5f0e6&grain=19&material=watercolour-v2s&fit=0&sheet=phi",
+      "rendererVersion": 10,
+      "seed": "CWP-20261125-01-87732",
+      "imageFile": "2026-11-25-G12-watercolour-spiral-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-C01",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/confluence/?s=eyJ2IjoxLCJjb25mbHVlbmNlUmVuZGVyZXIiOjIsInNlZWQiOiJDRkwtMjAyNjExMjUtMDEiLCJvcmllbnRhdGlvbiI6InBvcnRyYWl0IiwicGFwZXIiOiIjZjVmMGU2IiwiZ3JhaW4iOjExLCJlZGdlTWFyZ2luIjp0cnVlLCJzdHJlbmd0aCI6NzYsImNvbGxhYm9yYXRpb25QdWxsIjoxMDAsImxlYWRJbmRleCI6MCwidG90YWxUdXJucyI6MzQsImFydGlzdHMiOlt7InN5c3RlbSI6ImJ1cnN0IiwicGFsZXR0ZSI6InByaW1hcnkiLCJtYXRlcmlhbCI6ImFjdGlvbiIsInNldHRpbmdzIjp7ImVsZW1lbnRzIjo0NywiZGVuc2l0eSI6NTksImNvbXBsZXhpdHkiOjY2LCJuZWdhdGl2ZVNwYWNlIjo1Mywic2VlZCI6IiIsInBoaVN0cmVuZ3RoIjo4MSwicmVjdXJzaW9uIjo0LCJzcGlyYWxJbmZsdWVuY2UiOjcxLCJnb2xkZW5BbmdsZSI6ODUsIm5lc3RpbmciOjMyLCJmaXQiOmZhbHNlLCJwZW4iOiJmaW5lIiwidGhpY2tuZXNzIjo4LCJ3b2JibGUiOjQ0LCJvdmVyZHJhdyI6Miwib3BhY2l0eSI6NzcsInByZXNzdXJlIjozOSwiZHJ5bmVzcyI6MTAsImN1cnZlQmlhcyI6NDksInNoYXBlQW1vdW50Ijo2Mywib3ZlcmxhcCI6NTYsInJvdGF0aW9uIjo4MiwibGluZXMiOnRydWUsImNpcmNsZXMiOnRydWUsInJlY3RhbmdsZXMiOnRydWUsInBvbHlnb25zIjp0cnVlLCJhcmNzIjp0cnVlLCJjb2xvdXJDb3VudCI6Nywic2F0dXJhdGlvbiI6NjQsImJyaWdodG5lc3MiOjU3fX0seyJzeXN0ZW0iOiJmaWVsZCIsInBhbGV0dGUiOiJzcGVjdHJ1bSIsIm1hdGVyaWFsIjoid2F0ZXJjb2xvdXIiLCJzZXR0aW5ncyI6eyJlbGVtZW50cyI6NTEsImRlbnNpdHkiOjQ0LCJjb21wbGV4aXR5Ijo1MCwibmVnYXRpdmVTcGFjZSI6NTYsInNlZWQiOiIiLCJwaGlTdHJlbmd0aCI6ODEsInJlY3Vyc2lvbiI6NCwic3BpcmFsSW5mbHVlbmNlIjo3MSwiZ29sZGVuQW5nbGUiOjk1LCJuZXN0aW5nIjozMiwiZml0IjpmYWxzZSwicGVuIjoiYnJvYWQiLCJ0aGlja25lc3MiOjksIndvYmJsZSI6MjgsIm92ZXJkcmF3IjoyLCJvcGFjaXR5Ijo3NywicHJlc3N1cmUiOjM5LCJkcnluZXNzIjoxMCwiY3VydmVCaWFzIjo0OSwic2hhcGVBbW91bnQiOjYzLCJvdmVybGFwIjo1Niwicm90YXRpb24iOjgyLCJsaW5lcyI6dHJ1ZSwiY2lyY2xlcyI6dHJ1ZSwicmVjdGFuZ2xlcyI6dHJ1ZSwicG9seWdvbnMiOnRydWUsImFyY3MiOnRydWUsImNvbG91ckNvdW50Ijo3LCJzYXR1cmF0aW9uIjo2MiwiYnJpZ2h0bmVzcyI6NDJ9fSx7InN5c3RlbSI6Im5ldHdvcmsiLCJwYWxldHRlIjoiZWFydGgiLCJtYXRlcmlhbCI6Im1hcmtlciIsInNldHRpbmdzIjp7ImVsZW1lbnRzIjozNywiZGVuc2l0eSI6NTIsImNvbXBsZXhpdHkiOjcyLCJuZWdhdGl2ZVNwYWNlIjozNywic2VlZCI6IiIsInBoaVN0cmVuZ3RoIjo4NCwicmVjdXJzaW9uIjo0LCJzcGlyYWxJbmZsdWVuY2UiOjcxLCJnb2xkZW5BbmdsZSI6OTAsIm5lc3RpbmciOjMyLCJmaXQiOmZhbHNlLCJwZW4iOiJmaW5lIiwidGhpY2tuZXNzIjoxMCwid29iYmxlIjo0Mywib3ZlcmRyYXciOjIsIm9wYWNpdHkiOjc3LCJwcmVzc3VyZSI6MzksImRyeW5lc3MiOjEwLCJjdXJ2ZUJpYXMiOjQ5LCJzaGFwZUFtb3VudCI6NjMsIm92ZXJsYXAiOjU2LCJyb3RhdGlvbiI6ODIsImxpbmVzIjp0cnVlLCJjaXJjbGVzIjp0cnVlLCJyZWN0YW5nbGVzIjp0cnVlLCJwb2x5Z29ucyI6dHJ1ZSwiYXJjcyI6dHJ1ZSwiY29sb3VyQ291bnQiOjUsInNhdHVyYXRpb24iOjc1LCJicmlnaHRuZXNzIjo0N319XX0",
+      "rendererVersion": 10,
+      "seed": "CFL-20261125-01",
+      "imageFile": "2026-11-25-C01-portrait.jpg"
+    },
+    {
+      "id": "2026-11-25-C02",
+      "shareUrl": "https://southernadd-cmyk.github.io/algoart/confluence/?s=eyJ2IjoxLCJjb25mbHVlbmNlUmVuZGVyZXIiOjIsInNlZWQiOiJDRkwtMjAyNjExMjUtMDIiLCJvcmllbnRhdGlvbiI6ImxhbmRzY2FwZSIsInBhcGVyIjoiI2Y1ZjBlNiIsImdyYWluIjoxMSwiZWRnZU1hcmdpbiI6dHJ1ZSwic3RyZW5ndGgiOjc2LCJjb2xsYWJvcmF0aW9uUHVsbCI6MTAwLCJsZWFkSW5kZXgiOjAsInRvdGFsVHVybnMiOjM0LCJhcnRpc3RzIjpbeyJzeXN0ZW0iOiJidXJzdCIsInBhbGV0dGUiOiJuZW9uIiwibWF0ZXJpYWwiOiJ3YXRlcmNvbG91ciIsInNldHRpbmdzIjp7ImVsZW1lbnRzIjo0NCwiZGVuc2l0eSI6NTcsImNvbXBsZXhpdHkiOjcxLCJuZWdhdGl2ZVNwYWNlIjo0Mywic2VlZCI6IiIsInBoaVN0cmVuZ3RoIjo3MSwicmVjdXJzaW9uIjo0LCJzcGlyYWxJbmZsdWVuY2UiOjcxLCJnb2xkZW5BbmdsZSI6ODgsIm5lc3RpbmciOjMyLCJmaXQiOmZhbHNlLCJwZW4iOiJmaW5lIiwidGhpY2tuZXNzIjo4LCJ3b2JibGUiOjIwLCJvdmVyZHJhdyI6Miwib3BhY2l0eSI6NzcsInByZXNzdXJlIjozOSwiZHJ5bmVzcyI6MTAsImN1cnZlQmlhcyI6NDksInNoYXBlQW1vdW50Ijo2Mywib3ZlcmxhcCI6NTYsInJvdGF0aW9uIjo4MiwibGluZXMiOnRydWUsImNpcmNsZXMiOnRydWUsInJlY3RhbmdsZXMiOnRydWUsInBvbHlnb25zIjp0cnVlLCJhcmNzIjp0cnVlLCJjb2xvdXJDb3VudCI6OSwic2F0dXJhdGlvbiI6NjUsImJyaWdodG5lc3MiOjYwfX0seyJzeXN0ZW0iOiJzcGlyYWwiLCJwYWxldHRlIjoiZ29sZGVuIiwibWF0ZXJpYWwiOiJtYXJrZXIiLCJzZXR0aW5ncyI6eyJlbGVtZW50cyI6MzMsImRlbnNpdHkiOjM4LCJjb21wbGV4aXR5Ijo3NSwibmVnYXRpdmVTcGFjZSI6NDYsInNlZWQiOiIiLCJwaGlTdHJlbmd0aCI6NjksInJlY3Vyc2lvbiI6NCwic3BpcmFsSW5mbHVlbmNlIjo3MSwiZ29sZGVuQW5nbGUiOjEwMCwibmVzdGluZyI6MzIsImZpdCI6ZmFsc2UsInBlbiI6ImZlbHQiLCJ0aGlja25lc3MiOjExLCJ3b2JibGUiOjIzLCJvdmVyZHJhdyI6Miwib3BhY2l0eSI6NzcsInByZXNzdXJlIjozOSwiZHJ5bmVzcyI6MTAsImN1cnZlQmlhcyI6NDksInNoYXBlQW1vdW50Ijo2Mywib3ZlcmxhcCI6NTYsInJvdGF0aW9uIjo4MiwibGluZXMiOnRydWUsImNpcmNsZXMiOnRydWUsInJlY3RhbmdsZXMiOnRydWUsInBvbHlnb25zIjp0cnVlLCJhcmNzIjp0cnVlLCJjb2xvdXJDb3VudCI6OSwic2F0dXJhdGlvbiI6NzQsImJyaWdodG5lc3MiOjYwfX0seyJzeXN0ZW0iOiJnZW9tZXRyaWMiLCJwYWxldHRlIjoiZWFydGgiLCJtYXRlcmlhbCI6Im9pbCIsInNldHRpbmdzIjp7ImVsZW1lbnRzIjo1MiwiZGVuc2l0eSI6NjUsImNvbXBsZXhpdHkiOjY4LCJuZWdhdGl2ZVNwYWNlIjo1MCwic2VlZCI6IiIsInBoaVN0cmVuZ3RoIjo4MywicmVjdXJzaW9uIjo0LCJzcGlyYWxJbmZsdWVuY2UiOjcxLCJnb2xkZW5BbmdsZSI6NjgsIm5lc3RpbmciOjMyLCJmaXQiOmZhbHNlLCJwZW4iOiJicm9hZCIsInRoaWNrbmVzcyI6Niwid29iYmxlIjozOCwib3ZlcmRyYXciOjIsIm9wYWNpdHkiOjc3LCJwcmVzc3VyZSI6MzksImRyeW5lc3MiOjEwLCJjdXJ2ZUJpYXMiOjQ5LCJzaGFwZUFtb3VudCI6NjMsIm92ZXJsYXAiOjU2LCJyb3RhdGlvbiI6ODIsImxpbmVzIjp0cnVlLCJjaXJjbGVzIjp0cnVlLCJyZWN0YW5nbGVzIjp0cnVlLCJwb2x5Z29ucyI6dHJ1ZSwiYXJjcyI6dHJ1ZSwiY29sb3VyQ291bnQiOjEwLCJzYXR1cmF0aW9uIjo4NSwiYnJpZ2h0bmVzcyI6NjF9fV19",
+      "rendererVersion": 10,
+      "seed": "CFL-20261125-02",
+      "imageFile": "2026-11-25-C02-landscape.jpg"
+    }
+  ]
+}

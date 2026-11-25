@@ -2,6 +2,24 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-25",
+      "cover": "2026-11-25-G01-watercolor-field-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Orbital Studies",
+        "Growth Systems",
+        "Constructed Forms",
+        "Connected Fields",
+        "Golden Trajectories",
+        "Automatic Marks",
+        "Radiant Systems",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-25/cover-4b25964562ac189a4669b89787ff6c55ea6a75f21e2c7c16061323743c35a311.jpg",
+      "mediaCoverBytes": 78555
+    },
+    {
       "date": "2026-11-24",
       "cover": "2026-11-24-G01-watercolour-spiral-landscape.jpg",
       "coverOrientation": "landscape",
