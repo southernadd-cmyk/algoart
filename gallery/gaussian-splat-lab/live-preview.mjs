@@ -1,7 +1,8 @@
+import {planFloorSamples} from './floor-plan.mjs';
 import {summarizeFrameTimes,pairedComparison,benchmarkViewMatches} from './benchmark.mjs';
 // Only bundled into the isolated Spark tower. Never imported by the live renderer.
 // Read back actual shaded architecture faces, then replace only those triangles.
-export function architectureFaces(THREE,meshes,eye,limit=18){
+export function architectureFaces(THREE,meshes,eye=null,limit=eye?18:Infinity){
  const candidates=[];
  for(const mesh of meshes){
   if(!mesh.parent||!mesh.visible||!mesh.isMesh||Array.isArray(mesh.material)||mesh.material.transparent||mesh.material.opacity!==1)continue;
@@ -21,27 +22,26 @@ export function architectureFaces(THREE,meshes,eye,limit=18){
    const width=hi-lo,height=top-bottom;
    if(width<.45||height<.45)continue;
    const centre=a.clone().addScaledVector(u,(lo+hi)/2).addScaledVector(v,(bottom+top)/2);
-   const towards=eye.clone().sub(centre);
-   if(towards.dot(n)<.12||towards.length()>15)continue;
-   // Prefer nearby surfaces, including floor/ceiling, without selecting trim.
-   candidates.push({mesh,at,centre,u,v,n,width,height,distance:towards.length()});
+   const towards=eye?eye.clone().sub(centre):null;
+   if(towards&&(towards.dot(n)<.12||towards.length()>15))continue;
+   candidates.push({mesh,at,centre,u,v,n,width,height,distance:towards?.length()??0});
   }
  }
- return candidates.sort((a,b)=>a.distance-b.distance).slice(0,limit);
+ return eye?candidates.sort((a,b)=>a.distance-b.distance).slice(0,limit):candidates;
 }
 export function remainingArchitectureIndices(index,removed){
  const out=[];for(let i=0;i<index.count;i++)if(!removed.has(i-i%6))out.push(index.getX(i));return out;
 }
-export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,getReady}){
+export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,getReady,selectBakeLights=()=>()=>{}}){
  let sources=[],spark=null,splat=null,patches=[],generation=0,busy=false,active=false,captureDate='',captureCount=0,faceCount=0,captureMs=0,last=performance.now(),frames=0,fps=0;
- let benchmark=null,measurement=null,report=null;
+ let benchmark=null,measurement=null,report=null,wantHybrid=false,floorStats=null;
  const panel=document.getElementById('spark-tower-preview');
  if(!panel)throw Error('Gaussian preview controls missing from the generated tower HTML');
  panel.dataset.ready='true';
  for(const id of ['spark-triangles','spark-splats','spark-recapture','spark-reset'])panel.querySelector('#'+id).disabled=false;
  const $=id=>panel.querySelector('#'+id);
  let message='Mesh baseline · live materials and lighting';
- function update(){ $('spark-status').textContent=message+' | '+fps.toFixed(1)+' FPS'+(captureCount?' | '+captureCount.toLocaleString()+' splats / '+faceCount+' faces / '+captureMs+' ms':'');$('spark-triangles').setAttribute('aria-pressed',String(!active));$('spark-splats').setAttribute('aria-pressed',String(active));$('spark-splats').disabled=busy||!!benchmark;$('spark-recapture').disabled=busy||!!benchmark;$('spark-density').disabled=busy||!!benchmark;$('spark-benchmark').disabled=busy&&!benchmark;$('spark-benchmark').textContent=benchmark?'Cancel benchmark':'Benchmark all densities';$('spark-export').disabled=!report;panel.dataset.mode=active?'splats':'triangles';}
+ function update(){ $('spark-status').textContent=message+' | '+fps.toFixed(1)+' FPS'+(captureCount?' | '+captureCount.toLocaleString()+' splats / '+faceCount+'/'+floorStats?.eligibleFaces+' faces / '+Math.round(floorStats?.effectiveDensity??0)+' samples/m / '+captureMs+' ms':'');$('spark-triangles').setAttribute('aria-pressed',String(!active));$('spark-splats').setAttribute('aria-pressed',String(active));$('spark-splats').disabled=busy||!!benchmark;$('spark-recapture').disabled=busy||!!benchmark;$('spark-density').disabled=busy||!!benchmark;$('spark-benchmark').disabled=busy&&!benchmark;$('spark-benchmark').textContent=benchmark?'Cancel benchmark':'Benchmark all densities';$('spark-export').disabled=!report;panel.dataset.mode=active?'splats':'triangles';}
  function restore(){
   for(const p of patches)if(p.mesh.geometry===p.replacement)p.mesh.geometry=p.original;
   if(splat)splat.removeFromParent();
@@ -51,7 +51,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
  function reset(){
   generation++;restore();
   for(const p of patches)p.replacement.dispose();patches=[];
-  splat?.dispose?.();splat=null;captureDate='';captureCount=faceCount=captureMs=0;
+  splat?.dispose?.();splat=null;captureDate='';captureCount=faceCount=captureMs=0;floorStats=null;
   message='Mesh baseline · live materials and lighting';update();
  }
  function show(){
@@ -59,8 +59,8 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
   try{
    scene.add(spark,splat);
    for(const p of patches)p.mesh.geometry=p.replacement;
-   active=true;message='Hybrid · sampled actual architectural surfaces';
-  }catch(e){restore();message='Spark failed; original meshes restored: '+e.message;}
+   active=true;message='Full-floor hybrid · all eligible static faces';
+  }catch(e){restore();wantHybrid=false;message='Spark failed; original meshes restored: '+e.message;}
   update();
  }
  function captureFace(face,px,py){
@@ -70,11 +70,14 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
   const target=new THREE.WebGLRenderTarget(px,py,{depthBuffer:true,stencilBuffer:false});
   const previousTarget=renderer.getRenderTarget(),viewport=renderer.getViewport(new THREE.Vector4()),scissor=renderer.getScissor(new THREE.Vector4()),scissorTest=renderer.getScissorTest();
   const oldColour=renderer.getClearColor(new THREE.Color()),oldAlpha=renderer.getClearAlpha(),oldAuto=renderer.autoClear,background=scene.background;
-  const shadowAuto=renderer.shadowMap.autoUpdate,shadowNeeds=renderer.shadowMap.needsUpdate;
+  const shadowAuto=renderer.shadowMap.autoUpdate,shadowNeeds=renderer.shadowMap.needsUpdate,shadowEnabled=renderer.shadowMap.enabled;
   const masks=[];const enable=o=>{masks.push([o,o.layers.mask]);o.layers.enable(30);};
   view.layers.set(30);enable(mesh);scene.traverse(o=>{if(o.isLight)enable(o);});
+  let restoreLights=()=>{};
   try{
-   scene.background=null;renderer.autoClear=true;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;
+   restoreLights=selectBakeLights(centre.clone().addScaledVector(n,.3));
+   // No stale, viewer-dependent shadow maps are baked into remote rooms.
+   scene.background=null;renderer.autoClear=true;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;renderer.shadowMap.enabled=false;
    renderer.setRenderTarget(target);renderer.setScissorTest(false);renderer.setClearColor(0,0);renderer.clear(true,true,true);
    renderer.render(scene,view);
    const bytes=new Uint8Array(px*py*4);renderer.readRenderTargetPixels(target,0,0,px,py,bytes);
@@ -83,7 +86,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    return bytes;
   }finally{
    for(const [o,mask] of masks)o.layers.mask=mask;
-   scene.background=background;renderer.autoClear=oldAuto;renderer.shadowMap.autoUpdate=shadowAuto;renderer.shadowMap.needsUpdate=shadowNeeds;
+   scene.background=background;renderer.autoClear=oldAuto;renderer.shadowMap.enabled=shadowEnabled;renderer.shadowMap.autoUpdate=shadowAuto;renderer.shadowMap.needsUpdate=shadowNeeds;restoreLights();
    renderer.setRenderTarget(previousTarget);renderer.setViewport(viewport);renderer.setScissor(scissor);renderer.setScissorTest(scissorTest);renderer.setClearColor(oldColour,oldAlpha);target.dispose();
   }
  }
@@ -97,19 +100,23 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    const {SparkRenderer,SplatMesh}=await import('@sparkjsdev/spark');
    if(ticket!==generation)return;
    spark??=new SparkRenderer({renderer,depthTest:true,depthWrite:false});
-   const eye=camera.getWorldPosition(new THREE.Vector3()),density=Number($('spark-density').value),faces=architectureFaces(THREE,sources,eye);
-   if(!faces.length)throw Error('No nearby opaque architecture surfaces. Walk into a room first.');
+   // No visitor position, facing test, radius or nearby-face limit.
+   const faces=architectureFaces(THREE,sources);
+   const density=Number($('spark-density').value);
+   const budget=matchMedia('(pointer: coarse)').matches?450000:1000000;
+   const floor=planFloorSamples(faces,density,budget);
+   const origin=faces.reduce((sum,f)=>sum.add(f.centre),new THREE.Vector3()).multiplyScalar(1/faces.length);
    const captures=[];let total=0;
-   for(const face of faces){
-    if(ticket!==generation||!getReady()||getDate()!==date||eye.distanceTo(camera.getWorldPosition(new THREE.Vector3()))>1)throw Error('Capture interrupted by movement or floor change');
-    const px=Math.min(256,Math.max(8,Math.ceil(face.width*density))),py=Math.min(256,Math.max(8,Math.ceil(face.height*density)));
-    if(total+px*py>240000)continue;
-    const bytes=captureFace(face,px,py);if(!bytes)continue;
+   for(const {face,px,py} of floor.items){
+    if(ticket!==generation||!getReady()||getDate()!==date)throw Error('Floor preparation interrupted');
+    const bytes=captureFace(face,px,py);
+    if(!bytes)throw Error('Incomplete floor bake at face '+(captures.length+1)+' of '+faces.length+'; original triangles retained');
     captures.push({face,px,py,bytes});total+=px*py;
-    message='Sampling actual textured, illuminated surfaces · '+captures.length+' / '+faces.length;update();
+    message='Preparing complete floor · '+captures.length+' / '+faces.length+' faces';update();
     await new Promise(requestAnimationFrame);
    }
-   if(!captures.length)throw Error('No complete surface captures; original geometry retained');
+   if(ticket!==generation)return;
+   floorStats={eligibleFaces:faces.length,area:floor.area,requestedDensity:density,effectiveDensity:floor.effectiveDensity,budget,plannedSplats:floor.total};
    if(ticket!==generation)return;
    const pos=new THREE.Vector3(),scales=new THREE.Vector3(),colour=new THREE.Color(),q=new THREE.Quaternion();
    const basis=new THREE.Matrix4();
@@ -120,7 +127,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
      scales.set(width/px*.66,height/py*.66,.006);
      for(let y=0;y<py;y++)for(let x=0;x<px;x++){
       const i=(y*px+x)*4;if(bytes[i+3]<251)continue;
-      pos.copy(centre).sub(eye).addScaledVector(u,((x+.5)/px-.5)*width).addScaledVector(v,((y+.5)/py-.5)*height).addScaledVector(n,.004);
+      pos.copy(centre).sub(origin).addScaledVector(u,((x+.5)/px-.5)*width).addScaledVector(v,((y+.5)/py-.5)*height).addScaledVector(n,.004);
       colour.setRGB(bytes[i]/255,bytes[i+1]/255,bytes[i+2]/255);
       packed.pushSplat(pos,scales,q,1,colour);
      }
@@ -128,7 +135,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    }});
    await next.initialized;
    if(ticket!==generation||getDate()!==date||!getReady()){next.dispose();next=null;return;}
-   next.position.copy(eye);splat=next;next=null;
+   next.position.copy(origin);splat=next;next=null;
    const removed=new Map();
    for(const {face} of captures){if(!removed.has(face.mesh))removed.set(face.mesh,new Set());removed.get(face.mesh).add(face.at);}
    for(const [mesh,indices] of removed){
@@ -137,15 +144,15 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
     patches.push({mesh,original,replacement});
    }
    captureDate=date;captureCount=splat.numSplats??total;faceCount=captures.length;captureMs=Math.round(performance.now()-start);
-   message='Capture ready. Switch between original mesh and hybrid at this viewpoint.';
-  }catch(e){next?.dispose?.();if(ticket===generation){reset();message='Capture failed; original geometry retained: '+e.message;}}
+   message='Entire floor prepared. Walk freely or switch to triangles.';
+  }catch(e){next?.dispose?.();if(ticket===generation){reset();if(getReady()&&getDate()===date)wantHybrid=false;message='Full-floor preparation failed; original geometry retained: '+e.message;}}
   finally{busy=false;if(activate&&splat&&ticket===generation)show();else update();}
  }
- $('spark-triangles').onclick=()=>{if(benchmark){cancelBenchmark();return;}if(busy){reset();message='Capture cancelled · original triangles';update();return;}restore();message='Triangles · original geometry and lighting';update();};
- $('spark-splats').onclick=()=>{if(active)return;if(splat&&getDate()===captureDate&&getReady())show();else void capture(true);};
- $('spark-recapture').onclick=()=>void capture(true);
- $('spark-density').onchange=()=>{reset();message='Density changed · select Gaussian splats to recapture';update();};
- $('spark-reset').onclick=()=>{if(benchmark)cancelBenchmark();else reset();};
+ $('spark-triangles').onclick=()=>{wantHybrid=false;if(benchmark){cancelBenchmark();return;}if(busy){reset();message='Capture cancelled · original triangles';update();return;}restore();message='Triangles · original geometry and lighting';update();};
+ $('spark-splats').onclick=()=>{wantHybrid=true;if(active)return;if(splat&&getDate()===captureDate&&getReady())show();else if(getReady())void capture(true);else{message='Hybrid selected · waiting for gallery floor';update();}};
+ $('spark-recapture').onclick=()=>{wantHybrid=true;void capture(true);};
+ $('spark-density').onchange=()=>{reset();message='Density changed · rebuilding when hybrid is selected';update();};
+ $('spark-reset').onclick=()=>{wantHybrid=false;if(benchmark)cancelBenchmark();else reset();};
  function view(){
   return {date:getDate(),position:camera.getWorldPosition(new THREE.Vector3()).toArray(),quaternion:camera.getWorldQuaternion(new THREE.Quaternion()).toArray(),width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio()};
  }
@@ -188,7 +195,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    const resources={geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures};
    let screenshot=null;
    try{screenshot=renderer.domElement.toDataURL('image/png');if(!screenshot.startsWith('data:image/png'))screenshot=null;}catch{}
-   finishMeasurement(null,{label:m.label,mode:m.mode,...stats,resources,splats:active?captureCount:0,faces:active?faceCount:0,buildMs:active?captureMs:0,screenshot});
+   finishMeasurement(null,{label:m.label,mode:m.mode,...stats,resources,splats:active?captureCount:0,faces:active?faceCount:0,buildMs:active?captureMs:0,floor:active?floorStats:null,screenshot});
   }catch(e){finishMeasurement(e);}
  }
  function displayReport(result){
@@ -213,8 +220,8 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
   if(benchmark){cancelBenchmark();return;}
   if(busy||!getReady()||renderer.xr.isPresenting){message='Enter a gallery room before benchmarking';update();return;}
   const run={reference:view(),cancelled:false},oldDensity=$('spark-density').value;
-  benchmark=run;report=null;reset();$('spark-results').hidden=true;
-  const result={version:1,view:run.reference,userAgent:navigator.userAgent,method:'Stationary real post-FX render cadence; 1.5 s warm-up and 4 s measurement; original triangles before and after; no VRAM estimate',phases:[]};
+  benchmark=run;wantHybrid=false;report=null;reset();$('spark-results').hidden=true;
+  const result={version:1,view:run.reference,userAgent:navigator.userAgent,method:'Whole-floor hybrid; stationary real post-FX render cadence; 1.5 s warm-up and 4 s measurement; original triangles before and after; no VRAM estimate',phases:[]};
   try{
    result.phases.push(await measure(run,'Triangles (before)','triangles'));
    for(const [density,label] of [['12','Low'],['24','Medium'],['40','High']]){
@@ -247,9 +254,10 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
  function tick(){
   frames++;const now=performance.now();
   if(now-last>=1000){fps=frames*1000/(now-last);frames=0;last=now;update();}
-  if(active&&(!getReady()||getDate()!==captureDate||patches.some(p=>!p.mesh.parent)))reset();
+  if(active&&(getDate()!==captureDate||patches.some(p=>!p.mesh.parent)))reset();
+  if(wantHybrid&&!active&&!busy&&!benchmark&&getReady()&&sources.length&&!renderer.xr.isPresenting)void capture(true);
   requestAnimationFrame(tick);
  }
  requestAnimationFrame(tick);update();
- return {reset,setArchitecture(meshes){reset();sources=meshes;},beforeRender(){if(active&&renderer.xr.isPresenting)reset();},afterRender};
+ return {reset(){reset();sources=[];},setArchitecture(meshes){reset();sources=meshes;},beforeRender(){if(active&&renderer.xr.isPresenting){wantHybrid=false;reset();}},afterRender};
 }
