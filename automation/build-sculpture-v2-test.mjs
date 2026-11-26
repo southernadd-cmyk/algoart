@@ -9,7 +9,8 @@ import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
 
 const gaussianPreview=process.argv.includes('--gaussian-preview');
-const target=resolve(gaussianPreview?'gallery/visit/gallery-phi-gaussian-preview-bundle.js':'gallery/visit/gallery-phi-sculpture-v2-test-bundle.js');
+const productionSplats=process.argv.includes('--production-splats');
+const target=resolve(productionSplats?'gallery/visit/gallery-phi-splats-bundle.js':gaussianPreview?'gallery/visit/gallery-phi-gaussian-preview-bundle.js':'gallery/visit/gallery-phi-sculpture-v2-test-bundle.js');
 const replacement=resolve('gallery/sculpture-v2-test/sculpture-render-v2.mjs');
 const nodeAO=resolve('node_modules/n8ao/dist/N8AO.js');
 const original=readFileSync(nodeAO,'utf8');
@@ -27,7 +28,7 @@ await build({
   bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
   outfile:target,
   // One Three.js runtime for the tower, its add-ons and Spark. Normal builds stay bundled.
-  ...(gaussianPreview?{external:['three','three/*','@sparkjsdev/spark']}:{}),
+  ...((gaussianPreview||productionSplats)?{external:['three','three/*','@sparkjsdev/spark']}:{}),
   plugins:[{
     name:'sculpture-v2-isolated-preview',
     setup(plugin){
@@ -69,6 +70,22 @@ await build({
         assert.equal(transformed.split(legacyPackCall).length-1,1,
           'Expected exactly one legacy V1 pack request');
         transformed=transformed.replace(legacyPackCall,'    Promise.resolve({})');
+        if(productionSplats){
+          const inject=(from,to)=>{
+            assert.equal(transformed.split(from).length-1,1,'Production splat anchor changed: '+from);
+            transformed=transformed.replace(from,()=>to);
+          };
+          transformed="import {createSculptureSplatRenderer} from '../sculpture-splats/renderer.mjs';\n"+transformed;
+          inject('createPortraitSculpture, setSculptureArchitecturalMaterials','createPortraitSculpture, setSculptureArchitecturalMaterials, setSculptureSplatEnhancer');
+          const fx='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
+          inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();");
+          // Staged, retained and active floor disposal must release Spark-owned buffers.
+          transformed=transformed.replaceAll('object.userData.galleryDisposed=true;', 'object.userData.disposeSculptureSplats?.();object.userData.galleryDisposed=true;')
+            .replaceAll('child.userData.galleryDisposed=true;', 'child.userData.disposeSculptureSplats?.();child.userData.galleryDisposed=true;');
+          // Includes modal rendering and XR; original meshes are restored before a VR frame.
+          transformed=transformed.replaceAll("phiStablePointLights.sync('before-render');phiPostFX.render", "sculptureSplats?.beforeRender();phiStablePointLights.sync('before-render');phiPostFX.render");
+          inject("  phiStablePointLights.sync('before-render');\n  phiPostFX.render", "  sculptureSplats?.beforeRender();\n  phiStablePointLights.sync('before-render');\n  phiPostFX.render");
+        }
         if(gaussianPreview){
           const inject=(from,to)=>{
             assert.equal(transformed.split(from).length-1,1,'Gaussian preview anchor changed: '+from);
@@ -165,6 +182,15 @@ const live=await readFile('gallery/visit/index.html','utf8');
 const originalUrl='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261117-assembly';
 assert.equal(live.split(originalUrl).length-1,2,
   'Public tower must use the verified V2 bundle for preload and import');
+if(productionSplats){
+  const imports={three:'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js','three/':'https://cdn.jsdelivr.net/npm/three@0.187.0/','three/addons/':'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/','three/webgpu':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js','three/tsl':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js','@sparkjsdev/spark':'https://sparkjs.dev/releases/spark/2.4.0/spark.module.js'};
+  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs3-01')
+    .replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>\n<meta name="robots" content="noindex,nofollow">')
+    .replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'');
+  await writeFile('gallery/visit/splats.html',html);
+  console.log('GS3_PRODUCTION_SPLAT_BUNDLE_BUILT');
+  process.exit(0);
+}
 let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);

@@ -281,7 +281,7 @@ async function readR2Pack(date,quality,{fetcher=fetch}={}){
     throw Error('V2 R2 catalog portrait count mismatch');
   Object.defineProperty(pack,'__v2Transport',{enumerable:false,value:{
     source:'r2',fallback:false,
-    downloadMs:Math.round(performance.now()-started),bytes:bytes.byteLength
+    downloadMs:Math.round(performance.now()-started),bytes:bytes.byteLength,sha256:spec.sha256
   }});
   return pack;
 }
