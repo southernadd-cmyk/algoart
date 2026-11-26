@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'gallery/sculpture-splats/**'
+      - 'tests/sculpture-splat-renderer.test.mjs'
+      - 'automation/build-sculpture-v2-test.mjs'
+      - 'gallery/sculpture-v2-test/**'
       - 'automation/build-sculpture-splats.mjs'
       - 'automation/lib/sculpture-splat-pack.mjs'
       - 'automation/publish-sculpture-splats-r2.py'
@@ -38,11 +41,17 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: node --test tests/sculpture-splat-r2.test.mjs tests/sculpture-v2-media-gateway.test.mjs
+      - run: node --test tests/sculpture-splat-r2.test.mjs tests/sculpture-v2-media-gateway.test.mjs tests/sculpture-splat-renderer.test.mjs
       - run: |
           python3 -m venv /tmp/gs2-venv
           /tmp/gs2-venv/bin/pip install 'boto3>=1.37,<2'
           /tmp/gs2-venv/bin/python -m unittest discover -s tests -p test_sculpture_splat_r2.py -v
+      - name: Build the full opt-in production tower
+        run: |
+          node automation/build-sculpture-v2-test.mjs --production-splats
+          node --check gallery/visit/gallery-phi-splats-bundle.js
+          grep -q 'gallery-phi-splats-bundle.js?v=gs3-01' gallery/visit/splats.html
+          grep -q 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-' gallery/visit/index.html
       - name: Validate real source packs without R2 writes
         run: |
           node automation/build-sculpture-splats.mjs --date 2026-11-26 --quality both --out "$RUNNER_TEMP/gs2"
