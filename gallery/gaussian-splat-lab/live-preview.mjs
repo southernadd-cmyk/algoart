@@ -33,13 +33,12 @@ export function remainingArchitectureIndices(index,removed){
 }
 export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,getReady}){
  let sources=[],spark=null,splat=null,patches=[],generation=0,busy=false,active=false,captureDate='',captureCount=0,faceCount=0,captureMs=0,last=performance.now(),frames=0,fps=0;
- const panel=document.createElement('details');panel.open=true;panel.id='spark-tower-preview';
- panel.style.cssText='position:fixed;z-index:85;right:12px;top:82px;width:min(320px,calc(100vw - 24px));background:#f0ede6f5;color:#304237;border:1px solid #607665;padding:10px;font:12px/1.45 Arial,sans-serif;max-height:42dvh;overflow:auto';
- panel.innerHTML='<summary style="cursor:pointer;font-weight:600">Gaussian tower experiment</summary><p>Actual gallery renderer. Stand still and capture nearby walls, floors and ceilings. Press Esc to unlock the mouse.</p><label>Sampling density <select id="spark-density"><option value="12">Low</option><option value="24" selected>Medium</option><option value="40">High</option></select></label> <button id="spark-capture" type="button">Capture nearby surfaces</button><p><button id="spark-mode" type="button" disabled>Show splats</button> <button id="spark-reset" type="button">Reset</button></p><div id="spark-status" role="status">Mesh baseline · live materials and lighting</div><p>Captured colours are baked, not dynamically relit. Non-converted geometry, artworks, lights and navigation stay native.</p>';
- document.body.append(panel);
+ const panel=document.getElementById('spark-tower-preview');
+ if(!panel)throw Error('Gaussian preview controls missing from the generated tower HTML');
+ panel.dataset.ready='true';
  const $=id=>panel.querySelector('#'+id);
  let message='Mesh baseline · live materials and lighting';
- function update(){ $('spark-status').textContent=message+' | '+fps.toFixed(1)+' FPS'+(captureCount?' | '+captureCount.toLocaleString()+' splats / '+faceCount+' faces / '+captureMs+' ms':'');$('spark-mode').textContent=active?'Show original meshes':'Show splats';$('spark-mode').disabled=busy||!splat;$('spark-capture').disabled=busy;$('spark-density').disabled=busy;}
+ function update(){ $('spark-status').textContent=message+' | '+fps.toFixed(1)+' FPS'+(captureCount?' | '+captureCount.toLocaleString()+' splats / '+faceCount+' faces / '+captureMs+' ms':'');$('spark-triangles').setAttribute('aria-pressed',String(!active));$('spark-splats').setAttribute('aria-pressed',String(active));$('spark-splats').disabled=busy;$('spark-recapture').disabled=busy;$('spark-density').disabled=busy;panel.dataset.mode=active?'splats':'triangles';}
  function restore(){
   for(const p of patches)if(p.mesh.geometry===p.replacement)p.mesh.geometry=p.original;
   if(splat)splat.removeFromParent();
@@ -85,7 +84,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    renderer.setRenderTarget(previousTarget);renderer.setViewport(viewport);renderer.setScissor(scissor);renderer.setScissorTest(scissorTest);renderer.setClearColor(oldColour,oldAlpha);target.dispose();
   }
  }
- async function capture(){
+ async function capture(activate=false){
   if(busy)return;
   if(!getReady()||renderer.xr.isPresenting){message='Enter the gallery and finish the lift journey first; capture in desktop/mobile mode.';update();return;}
   reset();busy=true;const ticket=generation,date=getDate(),start=performance.now();update();
@@ -137,9 +136,16 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    captureDate=date;captureCount=splat.numSplats??total;faceCount=captures.length;captureMs=Math.round(performance.now()-start);
    message='Capture ready. Switch between original mesh and hybrid at this viewpoint.';
   }catch(e){next?.dispose?.();if(ticket===generation){reset();message='Capture failed; original geometry retained: '+e.message;}}
-  finally{busy=false;update();}
+  finally{busy=false;if(activate&&splat&&ticket===generation)show();else update();}
  }
- $('spark-capture').onclick=capture;$('spark-mode').onclick=()=>{if(active){restore();message='Mesh baseline · original geometry restored';update();}else show();};$('spark-reset').onclick=reset;
+ $('spark-triangles').onclick=()=>{if(busy){reset();message='Capture cancelled · original triangles';update();return;}restore();message='Triangles · original geometry and lighting';update();};
+ $('spark-splats').onclick=()=>{if(active)return;if(splat&&getDate()===captureDate&&getReady())show();else void capture(true);};
+ $('spark-recapture').onclick=()=>void capture(true);
+ $('spark-density').onchange=()=>{reset();message='Density changed · select Gaussian splats to recapture';update();};
+ $('spark-reset').onclick=reset;
+ // Pointer lock must not hide the controls or swallow their clicks.
+ panel.addEventListener('pointerdown',e=>{e.stopPropagation();if(document.pointerLockElement)document.exitPointerLock?.();});
+ panel.addEventListener('click',e=>e.stopPropagation());
  function tick(){
   frames++;const now=performance.now();
   if(now-last>=1000){fps=frames*1000/(now-last);frames=0;last=now;update();}
