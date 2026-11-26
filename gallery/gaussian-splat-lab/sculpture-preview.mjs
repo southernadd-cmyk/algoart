@@ -21,7 +21,7 @@ export function createSculpturePreview({THREE,renderer,scene,camera,getDate,getR
   if(next!=='triangles'&&!ready)return false;
   for(const r of records){
    for(const m of r.meshes){m.mesh.geometry=next==='simplified'?m.simple:m.original;m.mesh.visible=next==='splats'?false:m.visible;}
-   if(next==='splats')r.body.add(r.splat);else r.splat.removeFromParent();
+   if(next==='splats')r.body.add(r.splat);else r.splat?.removeFromParent();
   }
   if(spark){if(next==='splats')scene.add(spark);else spark.removeFromParent();}
   mode=next;message=labels[mode]+' · architecture unchanged';update();return true;
