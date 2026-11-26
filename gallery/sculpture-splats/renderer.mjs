@@ -16,7 +16,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
 
  function runtime(){
   if(disabled)throw Error('Splat rendering disabled');
-  sparkRequest??=loadSpark().then(api=>{spark=new api.SparkRenderer({renderer,depthTest:true,depthWrite:false});return api;}).catch(e=>{disabled=true;throw e;});
+  sparkRequest??=loadSpark().then(api=>{if(disabled)throw Error('Splat rendering disabled');spark=new api.SparkRenderer({renderer,depthTest:true,depthWrite:false});return api;}).catch(e=>{disabled=true;throw e;});
   return sparkRequest;
  }
  function evict(){
@@ -67,7 +67,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
  }
  function dispose(body){
   const r=records.get(body);if(!r)return;
-  toggle(r,false);r.splat.dispose?.();records.delete(body);delete body.userData.disposeSculptureSplats;
+  toggle(r,false);try{r.splat.dispose?.();}catch(error){stats.lastError=String(error?.message||error);}records.delete(body);delete body.userData.disposeSculptureSplats;
   stats.disposed++;stats.ready=records.size;
  }
  function sceneVisibility(body){
@@ -97,7 +97,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
   disabled=true;stats.lastError=String(error?.message||error);
   for(const body of [...records.keys()])dispose(body);
   packs.clear();cacheBytes=0;recentFailures.clear();
-  spark?.removeFromParent();spark?.dispose?.();spark=null;
+  spark?.removeFromParent();try{spark?.dispose?.();}catch{}spark=null;
  }
  async function enhance({body,pivot,date,quality,name,seed,sourceSha256}){
   if(disabled||!live(body,pivot)||records.has(body)||!sourceSha256)return false;
@@ -107,7 +107,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
    if(disabled||!live(body,pivot))return false;
    return await scheduleConstruction(async()=>{
    if(disabled||!live(body,pivot)||records.has(body))return false;
-   const textures=new WeakMap(); // Temporary canvas pixels only for this construction.
+   const textures=new Map(); // Temporary canvas pixels only for this construction.
    const asset=Object.hasOwn(pack.studies,name)?pack.studies[name]:null;
    const originals=body.children.filter(m=>m.isMesh);
    if(!asset||asset.seed!==seed||asset.originalTriangles!==body.userData.polygonTriangles||asset.meshCounts.length!==originals.length)throw Error('Splat source does not match mounted sculpture');
@@ -125,7 +125,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
       position.fromArray(points,i);normal.fromArray(points,i+3).normalize();q.setFromUnitVectors(z,normal);
       const radius=points[i+8];scale.set(radius,radius,Math.max(.0008,radius*.12));
       const material=originals[points[i+9]].material[points[i+10]];
-      colour.copy(material.color);const image=texturePixels(material.map);
+      colour.copy(material.color);const image=texturePixels(material.map,textures);
       if(image){
        const x=Math.min(image.w-1,Math.max(0,Math.floor(points[i+6]*image.w))),y=Math.min(image.h-1,Math.max(0,Math.floor((1-points[i+7])*image.h))),at=(y*image.w+x)*4;
        sampleColour.setRGB(image.data[at]/255,image.data[at+1]/255,image.data[at+2]/255,THREE.SRGBColorSpace);colour.multiply(sampleColour);
@@ -136,6 +136,7 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
     }});
 
    await splat.initialized;
+   textures.clear();
    if(disabled||!live(body,pivot)||records.has(body)){splat.dispose?.();return false;}
    records.set(body,{body,pivot,splat,meshes:originals.map(mesh=>({mesh,visible:mesh.visible})),active:false});
    body.userData.disposeSculptureSplats=()=>dispose(body);stats.ready=records.size;
