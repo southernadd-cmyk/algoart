@@ -36,13 +36,18 @@ const V2_DAILY_PACK=new RegExp(
 const V2_DAILY_MANIFEST=new RegExp(
   "^"+V2_DAILY+"/"+DATE+"/manifest\\.json$"
 );
+// Separate immutable splat representation; no arbitrary bucket access.
+const SPLAT_PREFIX="sculptures-splats/v1/assembly-20261117/(?:reception|"+DATE+")";
+const SPLAT_PACK=new RegExp("^"+SPLAT_PREFIX+"/(?:desktop|mobile)/"+HASH+"\\.json\\.gz$");
+const SPLAT_MANIFEST=new RegExp("^"+SPLAT_PREFIX+"/manifest\\.json$");
 const MIME={jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",
   webp:"image/webp","json.gz":"application/gzip",json:"application/json"};
 function allowedKey(key){
   return key.length<=320&&(
     LEGACY_ART.test(key)||LEGACY_EDITION.test(key)||
     V2_FLOOR.test(key)||V2_RECEPTION.test(key)||V2_CATALOG.test(key)||
-    V2_DAILY_PACK.test(key)||V2_DAILY_MANIFEST.test(key)
+    V2_DAILY_PACK.test(key)||V2_DAILY_MANIFEST.test(key)||
+    SPLAT_PACK.test(key)||SPLAT_MANIFEST.test(key)
   );
 }
 function typeFor(key){
