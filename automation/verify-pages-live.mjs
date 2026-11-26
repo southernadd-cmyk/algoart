@@ -14,6 +14,7 @@ export const STATIC_PROBES = [
   'gallery/visit/index.html',
   'gallery/sculpture-lab/index.html',
   'gallery/gaussian-splat-lab/index.html',
+  'gallery/gaussian-splat-lab/portrait-slots.mjs',
   'gallery/sculpture-lab/lab-v2.mjs',
   'gallery/sculpture-lab/sculpture-v2-engines.mjs',
   'confluence/index.html'
