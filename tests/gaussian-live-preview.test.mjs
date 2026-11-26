@@ -161,3 +161,31 @@ test('sculpture-only test does not replace architecture and requires prepared so
  assert.ok(build.includes('sculptureComparison?createSculpturePreview:createGaussianLivePreview'));
  assert.ok(!preview.includes('readRenderTargetPixels'));
 });
+
+import {buildSplatPack,sha256} from '../automation/lib/sculpture-splat-pack.mjs';
+import {SPLAT_BUDGETS,SPLAT_GEOMETRY_REVISION,decodePointBytes,validatePointRecords,validEdition} from '../gallery/sculpture-splats/format.mjs';
+import {gunzipSync} from 'node:zlib';
+test('GS1 production packs are date-independent, deterministic and retain approved surface samples',()=>{
+ const mesh={position:[1,2,3],rotation:[0,0,0,'XYZ'],scale:[1,1,1],materials:[{}],geometry:{
+ position:[0,0,0,100000,0,0,0,100000,0],normal:[0,0,10000,0,0,10000,0,0,10000],uv:[0,0,100000,0,0,100000],index:[0,1,2],groups:[{start:0,count:3,materialIndex:0}]
+ }};
+ const name='source.jpg',sourceSha256='a'.repeat(64);
+ for(const [date,quality] of [['2026-10-05','mobile'],['reception','desktop'],['2027-02-01','mobile']]){
+  const study={schema:'pp-sculpture-v2-study',version:2,seed:'test',imageFile:name,sourceFile:name,quality,method:'assembly',geometryRevision:SPLAT_GEOMETRY_REVISION,coverage:1,omittedCells:0,regionCount:1,triangleCount:1,meshes:[mesh]};
+  const source={schema:'pp-sculpture-v2-floor',version:2,date,quality,complete:true,method:'assembly',geometryRevision:SPLAT_GEOMETRY_REVISION,expectedPortraits:1,studies:{[name]:study}};
+  const options={date,quality,sourceSha256};
+  const a=buildSplatPack(source,options),b=buildSplatPack(source,options);
+  assert.deepEqual(a.bytes,b.bytes);assert.equal(a.sha256,sha256(a.bytes));
+  const pack=JSON.parse(gunzipSync(a.bytes)),asset=pack.studies[name];
+  assert.equal(pack.date,date);assert.equal(pack.sourceSha256,sourceSha256);
+  const bytes=Buffer.from(asset.points,'base64'),points=decodePointBytes(bytes);
+  assert.equal(asset.pointCount,SPLAT_BUDGETS[quality]);assert.equal(asset.pointsSha256,sha256(bytes));
+  assert.deepEqual(points,new Float32Array(buildSculptureAlternatives(study,SPLAT_BUDGETS[quality]).points));
+  assert.ok(!Object.hasOwn(asset,'simplified'));
+  assert.equal(validatePointRecords(points,asset.meshCounts,asset.materialCounts,asset.pointCount)[0],asset.pointCount);
+  assert.throws(()=>buildSplatPack({...source,expectedPortraits:2},options),/Incomplete/);
+  assert.throws(()=>buildSplatPack(source,{...options,sourceSha256:'bad'}),/identity/);
+  points[8]=0;assert.throws(()=>validatePointRecords(points,asset.meshCounts,asset.materialCounts,asset.pointCount),/radius/);
+ }
+ assert.ok(!validEdition('2026-02-30'));assert.ok(validEdition('2028-02-29'));
+});

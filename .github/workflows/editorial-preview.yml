@@ -7,6 +7,8 @@ on:
       - 'automation/build-gallery.mjs'
       - 'automation/build-sculpture-v2-test.mjs'
       - 'automation/build-sculpture-comparison.mjs'
+      - 'automation/build-sculpture-splats.mjs'
+      - 'automation/lib/sculpture-splat-pack.mjs'
       - 'tests/gaussian-live-preview.test.mjs'
       - 'tests/editorial-preview.test.mjs'
       - '.github/workflows/editorial-preview.yml'
@@ -39,6 +41,13 @@ jobs:
             timeout 240s node automation/build-sculpture-comparison.mjs
             test -s gallery/gaussian-splat-lab/sculptures-2026-11-26-mobile-v1.json.gz
             test -s gallery/gaussian-splat-lab/sculptures-2026-11-26-desktop-v1.json.gz
+          fi
+      - name: GS1 production-format smoke bake from verified R2
+        run: |
+          if [[ "${{ github.event_name }}" == workflow_dispatch ]] || git diff --name-only HEAD^1 HEAD | grep -Eq '^(gallery/sculpture-splats/|automation/build-sculpture-splats\.mjs|automation/lib/sculpture-splat-pack\.mjs)'; then
+            timeout 240s node automation/build-sculpture-splats.mjs --date 2026-11-26 --quality both --out /tmp/gs1
+            timeout 120s node automation/build-sculpture-splats.mjs --date reception --quality mobile --out /tmp/gs1
+            test "$(find /tmp/gs1 -name '*.json.gz' | wc -l)" -eq 3
           fi
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/editorial-http.log 2>&1 &
