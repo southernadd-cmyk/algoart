@@ -7,6 +7,9 @@ on:
       - 'automation/lib/sculpture-splat-backfill.mjs'
       - 'automation/lib/sculpture-splat-publication.mjs'
       - 'tests/sculpture-splat-backfill.test.mjs'
+      - 'tests/sculpture-splat-public.test.mjs'
+      - 'automation/verify-sculpture-splat-public.mjs'
+      - 'automation/publish-sculpture-splats-r2.py'
       - '.github/workflows/sculpture-splat-backfill.yml'
   push:
     branches: [main]
@@ -38,7 +41,7 @@ jobs:
       - run: npm ci
       - run: |
           node --check automation/backfill-sculpture-splats.mjs
-          node --test tests/sculpture-splat-backfill.test.mjs tests/sculpture-splat-daily.test.mjs
+          node --test tests/sculpture-splat-backfill.test.mjs tests/sculpture-splat-daily.test.mjs tests/sculpture-splat-public.test.mjs
       - name: Verify actual immutable V2 source plan without writes
         run: |
           node --input-type=module <<'JS'
@@ -48,6 +51,15 @@ jobs:
           const plan=archivePlan(catalog);
           const historical=plan.filter(d=>d==='reception'||d<'2026-11-18').map(day=>({day,portraits:archiveSource(catalog,day).portraits}));
           console.log('GS5_SOURCE_PLAN',JSON.stringify({plan,historical,emptyFloors:historical.filter(x=>x.portraits===0).map(x=>x.day),cataloguePacks:historical.filter(x=>x.portraits>0).length*2}));
+          JS
+      - name: Verify previously uploaded reception pack through actual public gateway
+        run: |
+          node --input-type=module <<'JS'
+          import {verifyPublicSplat} from './automation/verify-sculpture-splat-public.mjs';
+          const sha256='86291fbd63d423cce91d50b397b8318d89b612e0686573ea4245af381288d005';
+          const key='sculptures-splats/v1/assembly-20261117/reception/mobile/'+sha256+'.json.gz';
+          await verifyPublicSplat({key,url:'https://proportion-piece-sculpture-v2.mr-adam-clement.workers.dev/'+key,sha256,bytes:384584,contentType:'application/gzip'});
+          console.log('GS5_REAL_PUBLIC_TRANSPORT_OK');
           JS
   backfill:
     needs: safety
