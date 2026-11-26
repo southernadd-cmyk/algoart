@@ -73,7 +73,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
   view.layers.set(30);enable(mesh);scene.traverse(o=>{if(o.isLight)enable(o);});
   try{
    scene.background=null;renderer.autoClear=true;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=false;
-   renderer.setRenderTarget(target);renderer.setViewport(0,0,px,py);renderer.setScissorTest(false);renderer.setClearColor(0,0);renderer.clear(true,true,true);
+   renderer.setRenderTarget(target);renderer.setScissorTest(false);renderer.setClearColor(0,0);renderer.clear(true,true,true);
    renderer.render(scene,view);
    const bytes=new Uint8Array(px*py*4);renderer.readRenderTargetPixels(target,0,0,px,py,bytes);
    let covered=0;for(let i=3;i<bytes.length;i+=4)if(bytes[i]>250)covered++;
