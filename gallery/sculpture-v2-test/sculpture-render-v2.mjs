@@ -15,8 +15,8 @@ export function setSculptureArchitecturalMaterials({plinth,metal}={}){
   if(plinth)pedestalFinish=plinth;
   if(metal)edgeFinish=metal;
 }
-let enhanceSculpture=null;
-export function setSculptureSplatEnhancer(enhancer){enhanceSculpture=typeof enhancer==='function'?enhancer:null;}
+let enhanceSculpture=null,prefetchSculpture=null;
+export function setSculptureSplatEnhancer(enhancer,prefetch){enhanceSculpture=typeof enhancer==='function'?enhancer:null;prefetchSculpture=typeof prefetch==='function'?prefetch:null;}
 export const V2_TEST_METHOD='assembly';
 const status={
   mode:'test-only-prepared-v2',variant:'v2.0-prepared-archive',
@@ -145,6 +145,8 @@ export function createPortraitSculpture({
     if(prepared.quality!==requestedQuality||prepared.method!=='assembly'||
        prepared.coverage!==1||prepared.omittedCells!==0)
       throw Error('V2 prepared sculpture has invalid source geometry');
+    if(pivot.userData.galleryDisposed){count(study,'cancelled');return;}
+    prefetchSculpture?.({date,quality:requestedQuality,sourceSha256:transport.sha256});
     const image=await sourceImage(study);
     if(pivot.userData.galleryDisposed){count(study,'cancelled');return;}
     const paintingTexture=new THREE.Texture(image);
