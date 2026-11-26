@@ -53,7 +53,8 @@ export function createSculpturePreview({THREE,renderer,scene,camera,getDate,getR
    const quality=bodies[0].userData.quality;
    const response=await fetch(new URL('../gaussian-splat-lab/sculptures-'+DATE+'-'+quality+'-v'+VERSION+'.json.gz',document.baseURI),{signal:AbortSignal.timeout(30000)});
    if(!response.ok)throw Error('Prepared comparison assets unavailable (HTTP '+response.status+')');
-   const pack=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();
+   const bytesOnWire=new Uint8Array(await response.arrayBuffer());
+   const pack=bytesOnWire[0]===31&&bytesOnWire[1]===139?await new Response(new Blob([bytesOnWire]).stream().pipeThrough(new DecompressionStream('gzip'))).json():JSON.parse(new TextDecoder().decode(bytesOnWire));
    if(pack.version!==VERSION||pack.date!==DATE||pack.quality!==quality)throw Error('Comparison asset manifest mismatch');
    const {SparkRenderer,SplatMesh}=await import('@sparkjsdev/spark');
    spark??=new SparkRenderer({renderer,depthTest:true,depthWrite:false});
