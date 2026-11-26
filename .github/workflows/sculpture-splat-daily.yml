@@ -1,0 +1,92 @@
+name: GS4 daily sculpture splat publishing
+
+on:
+  pull_request:
+    paths:
+      - 'automation/publish-sculpture-splats-daily.mjs'
+      - 'automation/lib/sculpture-splat-daily.mjs'
+      - 'automation/publish-sculpture-splats-r2.py'
+      - 'tests/sculpture-splat-daily.test.mjs'
+      - '.github/workflows/sculpture-splat-daily.yml'
+  workflow_run:
+    workflows: ['Build ALGO ART daily gallery', 'Sculpture V2 post-publication daily archive']
+    types: [completed]
+    branches: [main]
+  schedule:
+    # Independent recovery even when the upstream scheduler is delayed or misses a run.
+    # UTC, with the target edition date resolved in Europe/London.
+    - cron: '25 10 * * *'
+    - cron: '25 16 * * *'
+    - cron: '25 23 * * *'
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Recover one published daily V2 edition (YYYY-MM-DD); blank scans the last seven days'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  # Serialize with the existing GS2 pilot to avoid concurrent publication.
+  group: ${{ github.event_name == 'pull_request' && format('sculpture-splat-daily-pr-{0}', github.event.pull_request.number) || 'sculpture-splat-r2-pilot' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  safety:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: |
+          node --check automation/publish-sculpture-splats-daily.mjs
+          node --test tests/sculpture-splat-daily.test.mjs
+          python3 -m py_compile automation/publish-sculpture-splats-r2.py
+  publish:
+    # R2 writes occur only in a trusted main run, not a PR.
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.event != 'pull_request'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    environment: archive-media-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Install verified R2 storage client
+        run: |
+          python3 -m venv "$RUNNER_TEMP/splat-venv"
+          "$RUNNER_TEMP/splat-venv/bin/pip" install 'boto3>=1.37,<2'
+      - name: Publish or verify missing daily editions without touching artwork or meshes
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          SPLAT_PUBLICATION_ARMED: 'true'
+          AWS_EC2_METADATA_DISABLED: 'true'
+          REQUESTED_DATE: ${{ inputs.date || '' }}
+        shell: bash
+        run: |
+          export SPLAT_PYTHON="$RUNNER_TEMP/splat-venv/bin/python"
+          node automation/publish-sculpture-splats-daily.mjs --date "$REQUESTED_DATE"
