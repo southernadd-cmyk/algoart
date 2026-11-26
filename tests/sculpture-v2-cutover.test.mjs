@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {normalizeGalleryEntry} from '../automation/gallery-entry-template.mjs';
 
 const html=readFileSync('gallery/visit/index.html','utf8');
 const deploy=readFileSync('.github/workflows/deploy-pages.yml','utf8');
@@ -9,12 +10,21 @@ const daily=readFileSync('.github/workflows/gallery-daily.yml','utf8');
 const follower=readFileSync('.github/workflows/sculpture-v2-postpublish-daily.yml','utf8');
 const publisher=readFileSync('automation/publish-sculpture-v2-daily-r2.py','utf8');
 const loader=readFileSync('gallery/sculpture-v2-test/v2-pack-loader.mjs','utf8');
-test('Production uses V2 exclusively, not a permanent V1 fallback',()=>{
-  const urls=[...html.matchAll(/\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-[\w-]+/g)].map(match=>match[0]);
-  assert.equal(urls.length,2,'Preload and import must both select V2');
-  assert.equal(new Set(urls).size,1,'Preload and import must use the same release');
-  assert.doesNotMatch(html,/get\('sculptures'\)|await import\(useV1/);
-  assert.doesNotMatch(html,/gallery-phi-bundle\.js\?v=classical-aac/);
+test('Production defaults to Gaussian V2 sculptures with an independent V2 mesh rollback',()=>{
+  const entry=normalizeGalleryEntry(html);
+  assert.match(entry.mesh,/gallery-phi-sculpture-v2-test-bundle\.js\?v=/);
+  assert.match(entry.splats,/gallery-phi-splats-bundle\.js\?v=/);
+  assert.match(html,/window\.__ppSculptureMode='splats';\s*await import\('\.\/gallery-phi-splats-bundle\.js/);
+  assert.match(html,/window\.__ppSculptureMode='mesh';\s*await import\('\.\/gallery-phi-sculpture-v2-test-bundle\.js/);
+  assert.match(html,/window\.__ppSculptureMode='mesh-fallback';\s*await import\('\.\/gallery-phi-sculpture-v2-test-bundle\.js/);
+  assert.match(entry.html,/<link rel="modulepreload" href="\.\/gallery-phi-sculpture-v2-test-bundle\.js/);
+  assert.doesNotMatch(entry.html,/GS6_(HEAD|ENTRY)_|gallery-phi-splats-bundle\.js/);
+  assert.doesNotMatch(html,/await import\(useV1|gallery-phi-bundle\.js\?v=classical-aac/);
+});
+test('Isolated entry rejects inconsistent release selection and missing anchors',()=>{
+  assert.throws(()=>normalizeGalleryEntry(html.replace('GS6_HEAD_START','REMOVED_HEAD')),/Exactly one/);
+  assert.throws(()=>normalizeGalleryEntry(html.replace(/gallery-phi-splats-bundle\.js\?v=[\w-]+/,'gallery-phi-splats-bundle.js?v=wrong')), /Gaussian release mismatch/);
+  assert.throws(()=>normalizeGalleryEntry(html.replace(/gallery-phi-sculpture-v2-test-bundle\.js\?v=[\w-]+/,'gallery-phi-sculpture-v2-test-bundle.js?v=wrong')), /Mesh release mismatch/);
 });
 test('Release bundle is required and the test mirror retains exact source anchors',()=>{
   assert.match(deploy,/test -s _site\/gallery\/visit\/gallery-phi-sculpture-v2-test-bundle\.js/);

@@ -49,3 +49,15 @@ test('GS3 cancellation during asynchronous source preparation leaves no splat or
  s.pivot.userData.galleryDisposed=true;
  assert.equal(await pending,false);assert.equal(s.mesh.visible,true);assert.equal(f.manager.stats().ready,0);
 });
+
+test('GS6 a failed active Spark frame retries with restored meshes and no Spark',async()=>{
+ const f=fixture(),s=f.sculpture();
+ await f.manager.enhance(s);
+ let frames=0;
+ f.manager.renderFrame(()=>{frames++;if(frames===1)throw Error('GPU splat failure');assert.equal(s.mesh.visible,true);});
+ assert.equal(frames,2);
+ assert.equal(f.manager.stats().active,0);
+ assert.equal(f.manager.stats().disabled,true);
+ assert.match(f.manager.stats().lastError,/GPU splat failure/);
+ assert.throws(()=>f.manager.renderFrame(()=>{throw Error('ordinary mesh frame failure');}),/ordinary mesh frame failure/);
+});

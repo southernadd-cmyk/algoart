@@ -5,6 +5,7 @@ import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
+import {normalizeGalleryEntry} from './gallery-entry-template.mjs';
 
 const target=resolve('gallery/visit/gallery-phi-hybrid-test-bundle.js');
 const replacement=resolve('gallery/hybrid-tower-test/sculpture-render-hybrid.mjs');
@@ -40,7 +41,7 @@ await build({
 assert.equal(replaced,1,'Failed to intercept gallery portrait sculptures');
 assert.equal(n8aoFixes,1,'Three r187 N8AO compatibility patch missing');
 assert.ok((await readFile(target)).length>200000);
-const live=await readFile('gallery/visit/index.html','utf8');
+const {html:live}=normalizeGalleryEntry(await readFile('gallery/visit/index.html','utf8'));
 let html=live.replace('<head>','<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
 // Match the production V2 bundle identity, not its changing release cache key.

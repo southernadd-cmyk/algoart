@@ -50,7 +50,7 @@ jobs:
         run: |
           node automation/build-sculpture-v2-test.mjs --production-splats
           node --check gallery/visit/gallery-phi-splats-bundle.js
-          grep -q 'gallery-phi-splats-bundle.js?v=gs3-01' gallery/visit/splats.html
+          grep -q 'gallery-phi-splats-bundle.js?v=gs6-01' gallery/visit/splats.html
           grep -q 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-' gallery/visit/index.html
       - name: Validate real source packs without R2 writes
         run: |
