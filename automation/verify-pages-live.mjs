@@ -13,6 +13,7 @@ export const STATIC_PROBES = [
   'gallery/archive.json',
   'gallery/visit/index.html',
   'gallery/sculpture-lab/index.html',
+  'gallery/gaussian-splat-lab/index.html',
   'gallery/sculpture-lab/lab-v2.mjs',
   'gallery/sculpture-lab/sculpture-v2-engines.mjs',
   'confluence/index.html'
