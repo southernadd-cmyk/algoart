@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {archivePlan,archiveSource,shardPlan,verifiedRecord,auditRecords,SHARD_COUNT} from '../automation/lib/sculpture-splat-backfill.mjs';
+import {archivePlan,archiveSource,shardPlan,verifiedRecord,emptyRecord,auditRecords,SHARD_COUNT} from '../automation/lib/sculpture-splat-backfill.mjs';
 
 const qualities={mobile:{sha256:'a'.repeat(64)},desktop:{sha256:'b'.repeat(64)}};
 const source={portraits:6,qualities};
@@ -54,4 +54,27 @@ test('GS5 rejects missing batches, gaps, repeated shards, invalid hashes or fail
  ]){
   const f=fixture();mutate(f);assert.throws(()=>auditRecords(f.entries,f.reports,f.sources));
  }
+});
+
+test('GS5 accepts a catalogue-confirmed empty floor without inventing a splat pack',()=>{
+ const f=fixture(),day='2026-10-05',catalog=catalogue();
+ catalog.days[day]={portraits:0,qualities:{}};
+ assert.deepEqual(archiveSource(catalog,day),{portraits:0,qualities:{}});
+ f.sources.set(day,archiveSource(catalog,day));
+ const records=f.reports.find(r=>r.records.some(x=>x.day===day)).records;
+ const index=records.findIndex(r=>r.day===day);
+ records[index]=emptyRecord(day,f.sources.get(day));
+ const report=auditRecords(f.entries,f.reports,f.sources);
+ assert.equal(report.complete,true);
+ assert.equal(report.floors,52);
+ assert.equal(report.emptyFloors,1);
+ assert.equal(report.sculptedFloors,51);
+ assert.equal(report.packs,104);
+ assert.equal(report.portraits,307);
+ records[index].state='published';
+ assert.throws(()=>auditRecords(f.entries,f.reports,f.sources),/Incorrect empty floor/);
+ catalog.days[day]={portraits:0,qualities};
+ assert.throws(()=>archiveSource(catalog,day),/unexpected packs/);
+ catalog.days[day]={portraits:1,qualities:{}};
+ assert.throws(()=>archiveSource(catalog,day),/source packs/);
 });
