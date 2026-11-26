@@ -146,8 +146,10 @@ def connect():
     from botocore.config import Config
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart"
             and os.environ.get("GITHUB_REF") == "refs/heads/main"
-            and os.environ.get("GITHUB_EVENT_NAME") in ("workflow_dispatch", "workflow_run", "schedule")
+            and os.environ.get("GITHUB_EVENT_NAME") in ("workflow_dispatch", "workflow_run", "schedule", "push")
             and os.environ.get("SPLAT_PUBLICATION_ARMED") == "true", "Splat publication requires trusted main workflow")
+    if os.environ.get("GITHUB_EVENT_NAME") == "push":
+        require(os.environ.get("SPLAT_ARCHIVE_BACKFILL") == "true", "Push publication is restricted to archive backfill")
     account = os.environ["R2_ACCOUNT_ID"]
     require(re.fullmatch(r"[a-fA-F0-9]{32}", account), "Invalid R2 account")
     return boto3.client("s3", endpoint_url=f"https://{account}.r2.cloudflarestorage.com",

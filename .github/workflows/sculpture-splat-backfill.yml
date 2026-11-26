@@ -1,0 +1,118 @@
+name: GS5 historical sculpture splat backfill
+
+on:
+  pull_request:
+    paths:
+      - 'automation/backfill-sculpture-splats.mjs'
+      - 'automation/lib/sculpture-splat-backfill.mjs'
+      - 'automation/lib/sculpture-splat-publication.mjs'
+      - 'tests/sculpture-splat-backfill.test.mjs'
+      - '.github/workflows/sculpture-splat-backfill.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'automation/backfill-sculpture-splats.mjs'
+      - 'automation/lib/sculpture-splat-backfill.mjs'
+      - '.github/workflows/sculpture-splat-backfill.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('gs5-pr-{0}', github.event.pull_request.number) || 'gs5-archive-backfill' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: |
+          node --check automation/backfill-sculpture-splats.mjs
+          node --test tests/sculpture-splat-backfill.test.mjs tests/sculpture-splat-daily.test.mjs
+      - name: Verify actual immutable V2 source plan without writes
+        run: |
+          node --input-type=module <<'JS'
+          import {getV2R2Catalog} from './gallery/sculpture-v2-test/v2-pack-loader.mjs';
+          import {archivePlan,archiveSource} from './automation/lib/sculpture-splat-backfill.mjs';
+          const catalog=await getV2R2Catalog();
+          const plan=archivePlan(catalog);
+          const historical=plan.filter(d=>d==='reception'||d<'2026-11-18').map(day=>({day,portraits:archiveSource(catalog,day).portraits}));
+          console.log('GS5_SOURCE_PLAN',JSON.stringify({plan,historical,emptyFloors:historical.filter(x=>x.portraits===0).map(x=>x.day),cataloguePacks:historical.filter(x=>x.portraits>0).length*2}));
+          JS
+  backfill:
+    needs: safety
+    if: github.repository == 'southernadd-cmyk/algoart' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    environment: archive-media-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: |
+          python3 -m venv "$RUNNER_TEMP/splat-venv"
+          "$RUNNER_TEMP/splat-venv/bin/pip" install 'boto3>=1.37,<2'
+      - name: Publish or fully verify each edition without modifying artwork or meshes
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          SPLAT_PUBLICATION_ARMED: 'true'
+          SPLAT_ARCHIVE_BACKFILL: 'true'
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          export SPLAT_PYTHON="$RUNNER_TEMP/splat-venv/bin/python"
+          node automation/backfill-sculpture-splats.mjs --shard ${{ matrix.shard }} --out "$RUNNER_TEMP/gs5"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gs5-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/gs5/shard-${{ matrix.shard }}.json
+          if-no-files-found: error
+          retention-days: 30
+  audit:
+    needs: backfill
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gs5-shard-*
+          path: ${{ runner.temp }}/gs5
+          merge-multiple: true
+      - name: Require complete source-linked coverage of all 53 editions
+        run: node automation/backfill-sculpture-splats.mjs --audit --out "$RUNNER_TEMP/gs5"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gs5-verified-archive-coverage
+          path: ${{ runner.temp }}/gs5/coverage.json
+          if-no-files-found: error
+          retention-days: 90
