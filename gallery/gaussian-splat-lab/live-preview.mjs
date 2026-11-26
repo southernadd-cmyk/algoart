@@ -36,6 +36,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
  const panel=document.getElementById('spark-tower-preview');
  if(!panel)throw Error('Gaussian preview controls missing from the generated tower HTML');
  panel.dataset.ready='true';
+ for(const id of ['spark-triangles','spark-splats','spark-recapture','spark-reset'])panel.querySelector('#'+id).disabled=false;
  const $=id=>panel.querySelector('#'+id);
  let message='Mesh baseline · live materials and lighting';
  function update(){ $('spark-status').textContent=message+' | '+fps.toFixed(1)+' FPS'+(captureCount?' | '+captureCount.toLocaleString()+' splats / '+faceCount+' faces / '+captureMs+' ms':'');$('spark-triangles').setAttribute('aria-pressed',String(!active));$('spark-splats').setAttribute('aria-pressed',String(active));$('spark-splats').disabled=busy;$('spark-recapture').disabled=busy;$('spark-density').disabled=busy;panel.dataset.mode=active?'splats':'triangles';}
