@@ -109,11 +109,12 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           test -s gallery/sculpture-v2-test/index.html
-      - name: Build opt-in production sculpture splat gallery
+      - name: Build default Gaussian sculpture gallery and independent mesh rollback
         run: |
           node automation/build-sculpture-v2-test.mjs --production-splats
           node --check gallery/visit/gallery-phi-splats-bundle.js
           test -s gallery/visit/splats.html
+          test -s gallery/visit/vendor/three-0.187.0/build/three.module.js
       - name: Build isolated Gaussian tower experiment
         run: |
           if ! node automation/build-sculpture-v2-test.mjs --gaussian-preview || ! node --check gallery/visit/gallery-phi-gaussian-preview-bundle.js; then
@@ -141,9 +142,8 @@ jobs:
             echo "::warning::Optional hybrid sculpture tower build failed; publishing live gallery unchanged"
             rm -f gallery/hybrid-tower-test/index.html gallery/visit/gallery-phi-hybrid-test-bundle.js
           fi
-          # V2 is the selected production renderer in this release.
+          # Retain the independent V2 mesh rollback alongside the Gaussian viewer.
           # Fail the deployment if its verified bundle cannot be rebuilt.
-          # The original V1 bundle is retained for ?sculptures=v1 rollback.
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           ./node_modules/.bin/esbuild test/virtual-gallery/gallery-phi.js --bundle --minify --format=esm --platform=browser --target=es2022 --outfile=test/virtual-gallery/gallery-phi-bundle.js
@@ -240,6 +240,8 @@ jobs:
           test -s _site/gallery/visit/splats.html
           test -s _site/gallery/visit/gallery-phi-splats-bundle.js
           grep -Fq 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-' _site/gallery/visit/index.html
+          grep -Fq 'gallery-phi-splats-bundle.js?v=gs6-01' _site/gallery/visit/index.html
+          test -s _site/gallery/visit/vendor/three-0.187.0/build/three.module.js
           if [[ -e _site/test ]]; then echo 'Retired test tower must not be published' >&2; exit 1; fi
           test -s _site/js/generator.js
           test -s _site/css/marker-font.css
