@@ -60,7 +60,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    scene.add(spark,splat);
    for(const p of patches)p.mesh.geometry=p.replacement;
    active=true;message='Full-floor hybrid · all eligible static faces';
-  }catch(e){restore();message='Spark failed; original meshes restored: '+e.message;}
+  }catch(e){restore();wantHybrid=false;message='Spark failed; original meshes restored: '+e.message;}
   update();
  }
  function captureFace(face,px,py){
@@ -115,6 +115,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
     message='Preparing complete floor · '+captures.length+' / '+faces.length+' faces';update();
     await new Promise(requestAnimationFrame);
    }
+   if(ticket!==generation)return;
    floorStats={eligibleFaces:faces.length,area:floor.area,requestedDensity:density,effectiveDensity:floor.effectiveDensity,budget,plannedSplats:floor.total};
    if(ticket!==generation)return;
    const pos=new THREE.Vector3(),scales=new THREE.Vector3(),colour=new THREE.Color(),q=new THREE.Quaternion();
@@ -144,7 +145,7 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
    }
    captureDate=date;captureCount=splat.numSplats??total;faceCount=captures.length;captureMs=Math.round(performance.now()-start);
    message='Entire floor prepared. Walk freely or switch to triangles.';
-  }catch(e){next?.dispose?.();if(ticket===generation){reset();wantHybrid=false;message='Full-floor preparation failed; original geometry retained: '+e.message;}}
+  }catch(e){next?.dispose?.();if(ticket===generation){reset();if(getReady()&&getDate()===date)wantHybrid=false;message='Full-floor preparation failed; original geometry retained: '+e.message;}}
   finally{busy=false;if(activate&&splat&&ticket===generation)show();else update();}
  }
  $('spark-triangles').onclick=()=>{wantHybrid=false;if(benchmark){cancelBenchmark();return;}if(busy){reset();message='Capture cancelled · original triangles';update();return;}restore();message='Triangles · original geometry and lighting';update();};
