@@ -35,11 +35,19 @@ try{
    await page.waitForFunction(expected=>window.__sculptureSplats?.().active>=(expected||window.__phiFullEngine.sculptures)&&window.__sculptureSplats?.().active>0,scenario.expected||0,{timeout:120000});
    const stats=await page.evaluate(()=>window.__sculptureSplats());
    assert.equal(stats.failed,0,JSON.stringify(stats));assert.equal(stats.disabled,false);
+   assert.equal(stats.packLoads,1,'One shared public pack per edition');
+   assert.ok(stats.cacheBytes>0&&stats.cacheBytes<=24*1048576,'Bounded decoded point cache');
+   assert.ok(stats.constructedPoints>=stats.ready*12000,'No quality reduction during optimization');
    assert.equal(await page.evaluate(()=>window.__ppSculptureMode),'splats');
   }
   await page.waitForFunction(()=>!document.getElementById('enter').disabled,null,{timeout:120000});
   await page.locator('#enter').click();
   await page.waitForFunction(()=>document.getElementById('welcome').hidden,null,{timeout:30000});
+  if(!scenario.mesh&&!scenario.missing){
+   const after=await page.evaluate(()=>window.__sculptureSplats());
+   assert.equal(after.failed,0);assert.equal(after.disabled,false);
+   assert.equal(after.packLoads,1);
+  }
   assert.deepEqual(errors,[],scenario.name+' browser errors');
   console.log('GS6_BROWSER_OK',scenario.name,await page.evaluate(()=>({mode:window.__ppSculptureMode,splats:window.__sculptureSplats?.(),v2Complete:window.__sculptureV2TowerStatus.complete})));
   await context.close();
