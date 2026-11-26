@@ -74,7 +74,7 @@ await build({
             assert.equal(transformed.split(from).length-1,1,'Gaussian preview anchor changed: '+from);
             transformed=transformed.replace(from,()=>to);
           };
-          transformed="import {createGaussianLivePreview} from '../gaussian-splat-lab/live-preview.mjs';\n"+transformed;
+          transformed="import {createGaussianLivePreview} from '../gaussian-splat-lab/live-preview.mjs';\nimport {createSculpturePreview} from '../gaussian-splat-lab/sculpture-preview.mjs';\nconst sculptureComparison=new URLSearchParams(location.search).get('experiment')==='sculptures';\n"+transformed;
           // Reposition only the production light pools for the sampled room, never the visitor.
           inject('function updatePhiBoundedRoomLights(){','function updatePhiBoundedRoomLights(position=rig.position){');
           inject('chooseNearestPhiRoomAnchors(phiBoundedRoomAnchors,rig.position)','chooseNearestPhiRoomAnchors(phiBoundedRoomAnchors,position)');
@@ -82,7 +82,7 @@ await build({
           const exhibitLightsAnchor='  updatePhiBoundedRoomLights();\n  const nearest=exhibitLightTargets.slice()\n    .sort((a,b)=>a.position.distanceToSquared(rig.position)-b.position.distanceToSquared(rig.position));';
           inject(exhibitLightsAnchor,exhibitLightsAnchor.replace('updatePhiBoundedRoomLights()','updatePhiBoundedRoomLights(position)').replaceAll('distanceToSquared(rig.position)','distanceToSquared(position)'));
           const fxAnchor='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
-          inject(fxAnchor,fxAnchor+"\nlet gaussianStartupPreparing=false;\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&(gaussianStartupPreparing||!!welcome?.hidden)&&$('lift').hidden,selectBakeLights:position=>{updateExhibitLighting(position);return ()=>updateExhibitLighting();}}):null;");
+          inject(fxAnchor,fxAnchor+"\nlet gaussianStartupPreparing=false;\nconst gaussianLab=renderer?(sculptureComparison?createSculpturePreview:createGaussianLivePreview)({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&(gaussianStartupPreparing||!!welcome?.hidden)&&$('lift').hidden,getExpected:()=>plan?.phi?.exhibition?.sculptures?.length||0,selectBakeLights:position=>{updateExhibitLighting(position);return ()=>updateExhibitLighting();}}):null;");
           // Fixed comparison edition: spawn in a real walkable room before warming the scene.
           inject('function openLift(){','function openLift(){return;');
           inject('function openXRLift(){','function openXRLift(){return;');
@@ -92,9 +92,12 @@ await build({
     const candidates=phi.pieces.flatMap(p=>[.5,.3,.7].flatMap(u=>[.5,.3,.7].map(v=>({...phi.world.toWorld(p.x+p.w*u,p.z+p.h*v),area:p.w*p.h}))));
     const clear=candidates.filter(p=>phi.canWalk(p.x,p.z)&&clearOfSculptures(sculpturePlacements,p.x,p.z)&&clearOfSculptures(phiFurnishingObstacles,p.x,p.z)&&!phiDoorBlocked(p.x,p.z)&&(!liftPosition||Math.hypot(p.x-liftPosition.x,p.z-liftPosition.z)>3.5)).sort((a,b)=>b.area-a.area);
     if(!clear.length)throw Error('No safe comparison viewpoint on the pinned floor');
+    const sculptureTargets=artExhibits.filter(a=>a.study?.portrait&&!a.normal);
+    const nearestDistance=p=>Math.min(...sculptureTargets.map(a=>Math.hypot(a.position.x-p.x,a.position.z-p.z)));
+    if(sculptureComparison&&sculptureTargets.length)clear.sort((a,b)=>Math.abs(nearestDistance(a)-3.4)-Math.abs(nearestDistance(b)-3.4));
     const p=clear[0];rig.position.set(p.x,elevation,p.z);
     const eye=rig.position.clone();eye.y+=1.68;
-    const art=artExhibits.filter(a=>a.normal&&a.normal.dot(eye.clone().sub(a.position))>.2).sort((a,b)=>a.position.distanceToSquared(eye)-b.position.distanceToSquared(eye))[0];
+    const art=(sculptureComparison&&sculptureTargets.length?sculptureTargets:artExhibits.filter(a=>a.normal&&a.normal.dot(eye.clone().sub(a.position))>.2)).sort((a,b)=>a.position.distanceToSquared(eye)-b.position.distanceToSquared(eye))[0];
     yaw=art?Math.atan2(p.x-art.position.x,p.z-art.position.z):0;pitch=0;
     rig.rotation.y=yaw;camera.rotation.x=pitch;rig.updateMatrixWorld(true);
     liftWasNear=false;liftPickerConsumed=true;updateExhibitLighting();
@@ -104,7 +107,7 @@ await build({
           inject(startupAnchor,`    const comparisonDate='2026-11-26';
     if(!archiveDates.includes(comparisonDate))throw Error('Pinned Gaussian comparison floor unavailable');
     await loadEdition(comparisonDate);
-    enter.disabled=true;enter.textContent='Preparing full-floor hybrid…';
+    enter.disabled=true;enter.textContent=sculptureComparison?'Preparing sculpture comparisons…':'Preparing full-floor hybrid…';
     const controls=$('spark-tower-preview');controls.inert=true;
     gaussianStartupPreparing=true;
     try{await gaussianLab?.prepareComparison();}
@@ -166,7 +169,7 @@ let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
 html=html.replaceAll(originalUrl,
-  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=fixed-floor-splat-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
+  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=sculpture-comparison-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
   'Sculpture V2 Test Tower | PROPORTION PIECE');
 html=html.replace('</body>',

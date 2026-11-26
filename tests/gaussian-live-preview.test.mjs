@@ -115,7 +115,7 @@ test('full hybrid has no camera-distance cutoff or skipped faces and carries acr
  assert.ok(src.includes('pos.copy(centre).sub(origin)'));
  assert.ok(!src.includes('eye.distanceTo(camera.getWorldPosition'));
  assert.ok(build.includes('selectBakeLights:position=>'));
- assert.ok(build.includes('fixed-floor-splat-01'));
+ assert.ok(build.includes('sculpture-comparison-01'));
 });
 
 test('fixed comparison starts on one published floor, prepares hybrid before revealing it, and bypasses lift',async()=>{
@@ -132,4 +132,32 @@ test('fixed comparison starts on one published floor, prepares hybrid before rev
  const meta=JSON.parse(await readFile(new URL('../gallery/2026-11-26/meta.json',import.meta.url),'utf8'));
  assert.equal(meta.date,'2026-11-26');
  assert.ok(meta.entries.length>0);
+});
+
+import {buildSculptureAlternatives,simplifyRegion} from '../gallery/gaussian-splat-lab/sculpture-assets.mjs';
+test('sculpture alternatives use real indexed source triangles and preserve material regions',()=>{
+ const mesh={position:[1,2,3],rotation:[0,0,0,'XYZ'],scale:[1,1,1],geometry:{
+ position:[0,0,0,100000,0,0,0,100000,0,0,0,0],normal:[0,0,10000,0,0,10000,0,0,10000,0,0,10000],uv:[0,0,100000,0,0,100000,0,0],
+ index:[0,1,2,3,1,2],groups:[{start:0,count:6,materialIndex:0}]
+ }};
+ const study={seed:'test',sourceFile:'test.jpg',meshes:[mesh]};
+ const alt=buildSculptureAlternatives(study,128);
+ assert.equal(alt.originalTriangles,2);assert.equal(alt.simpleTriangles,1);
+ assert.equal(alt.pointCount,128);assert.equal(alt.points.length,128*11);
+ assert.deepEqual(alt,buildSculptureAlternatives(study,128));
+ for(let i=0;i<alt.points.length;i+=11){
+  const [x,y,z,nx,ny,nz,u,v,radius,mi,material]=alt.points.slice(i,i+11);
+  assert.ok(x>=1-1e-9&&y>=2-1e-9&&x+y<=4.000001);assert.ok(Math.abs(z-3)<1e-9);assert.ok(Math.abs(nz-1)<1e-9);
+  assert.ok(u>=0&&v>=0&&u+v<=1.000001&&radius>0);assert.equal(mi,0);assert.equal(material,0);
+ }
+ assert.equal(simplifyRegion(mesh).groups[0].count,3);
+});
+test('sculpture-only test does not replace architecture and requires prepared source assets',async()=>{
+ const preview=await readFile(new URL('../gallery/gaussian-splat-lab/sculpture-preview.mjs',import.meta.url),'utf8');
+ const build=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
+ assert.ok(preview.includes('setArchitecture(){}'));
+ assert.ok(preview.includes('asset.originalTriangles!==body.userData.polygonTriangles'));
+ assert.ok(preview.includes("['triangles','simplified','splats','triangles']"));
+ assert.ok(build.includes('sculptureComparison?createSculpturePreview:createGaussianLivePreview'));
+ assert.ok(!preview.includes('readRenderTargetPixels'));
 });
