@@ -7,6 +7,7 @@ import {readFile,writeFile,mkdir,cp} from 'node:fs/promises';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
+import {normalizeGalleryEntry} from './gallery-entry-template.mjs';
 
 const gaussianPreview=process.argv.includes('--gaussian-preview');
 const productionSplats=process.argv.includes('--production-splats');
@@ -178,10 +179,7 @@ assert.equal(n8aoReplacements,1,
   'N8AO compatibility patch was not included exactly once');
 assert.ok((await readFile(target)).length>200000,
   'V2 test tower did not produce a complete browser bundle');
-const liveSource=await readFile('gallery/visit/index.html','utf8');
-const originalUrl='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261117-assembly';
-const live=liveSource.replace(/<!-- GS6_HEAD_START -->[\s\S]*?<!-- GS6_HEAD_END -->/,'<link rel="modulepreload" href="'+originalUrl+'">')
-  .replace(/\/\* GS6_ENTRY_START \*\/[\s\S]*?\/\* GS6_ENTRY_END \*\//,"await import('"+originalUrl+"');");
+const {html:live,mesh:originalUrl}=normalizeGalleryEntry(await readFile('gallery/visit/index.html','utf8'));
 assert.equal(live.split(originalUrl).length-1,2,
   'Public tower must use the verified V2 bundle for preload and import');
 if(productionSplats){
