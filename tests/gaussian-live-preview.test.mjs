@@ -34,3 +34,20 @@ test('the full tower is built with isolated source injection and one Three runti
  assert.match(preview,/renderer\.readRenderTargetPixels/);
  assert.match(preview,/p\.mesh\.geometry=p\.original/);
 });
+
+test('generated preview contains two persistent labelled mode buttons and automatically captures splats',async()=>{
+ const build=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
+ const preview=await readFile(new URL('../gallery/gaussian-splat-lab/live-preview.mjs',import.meta.url),'utf8');
+ const line=build.split('\n').find(line=>line.trim().startsWith('const gaussianControls='));
+ assert.ok(line,'Expected statically generated control markup');
+ const markup=JSON.parse(line.trim().slice('const gaussianControls='.length,-1));
+ assert.match(markup,/<button id="spark-triangles"[^>]*>Triangles<\/button>/);
+ assert.match(markup,/<button id="spark-splats"[^>]*>Gaussian splats<\/button>/);
+ assert.ok(markup.includes('data-ready="false"'));
+ assert.ok(markup.includes('role="status"'));
+ assert.ok(preview.includes("else void capture(true)"));
+ assert.ok(preview.includes("if(activate&&splat&&ticket===generation)show()"));
+ assert.ok(preview.includes("panel.dataset.mode=active?'splats':'triangles'"));
+ assert.ok(preview.includes("panel.dataset.ready='true'"));
+ assert.doesNotMatch(preview,/spark-mode/);
+});
