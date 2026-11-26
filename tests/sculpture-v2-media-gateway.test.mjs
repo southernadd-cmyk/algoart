@@ -9,6 +9,9 @@ const h='a'.repeat(64);
 const legacy='editions/2026-11-09/2026-11-09-G01/original-'+h+'.jpg';
 const release='sculptures-v2/v4.2.1-20261110/';
 const good=[
+  ['sculptures-splats/v1/assembly-20261117/2026-11-26/manifest.json','application/json'],
+  ['sculptures-splats/v1/assembly-20261117/reception/mobile/'+h+'.json.gz','application/gzip'],
+  ['sculptures-splats/v1/assembly-20261117/2026-10-05/desktop/'+h+'.json.gz','application/gzip'],
   ['sculptures-v2/assembly-20261117/catalog/'+h+'.json','application/json'],
   ['sculptures-v2/assembly-20261117/floors/2026-11-17/desktop/'+h+'.json.gz','application/gzip'],
   ['sculptures-v2/assembly-20261117/reception/mobile/'+h+'.json.gz','application/gzip'],
@@ -64,6 +67,10 @@ test('HEAD serves verified V2 metadata without reading bodies',async()=>{
 });
 test('private backups and all non-whitelisted non-SHA paths are never accessed',async()=>{
   const bad=[
+    'sculptures-splats/v1/assembly-20261117/2026-11-26/mobile/unhashed.json.gz',
+    'sculptures-splats/v2/assembly-20261117/reception/manifest.json',
+    'sculptures-splats/v1/assembly-20261117/reception/private/'+h+'.json.gz',
+    'sculptures-splats/v1/assembly-20261117/reception/mobile/'+h+'.json.gz?download=1',
     'sculptures-v2/v4.2.1-20261110/reception/image/'+h+'.jpg',
     release+'floors/2026-11-10/desktop/studies.json.gz',
     release+'floors/2026-11-10/desktop/'+'Z'.repeat(64)+'.json.gz',

@@ -1,0 +1,94 @@
+name: GS2 sculpture splat R2 storage
+
+on:
+  pull_request:
+    paths:
+      - 'gallery/sculpture-splats/**'
+      - 'automation/build-sculpture-splats.mjs'
+      - 'automation/lib/sculpture-splat-pack.mjs'
+      - 'automation/publish-sculpture-splats-r2.py'
+      - 'automation/upload-sculpture-v2-r2.py'
+      - 'tests/sculpture-splat-r2.test.mjs'
+      - 'tests/test_sculpture_splat_r2.py'
+      - 'cloudflare/media-read-only/**'
+      - '.github/workflows/sculpture-splat-r2.yml'
+  workflow_run:
+    workflows: ['Sculpture V2 isolated R2 media gateway']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sculpture-splat-r2-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'pilot' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  safety:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/sculpture-splat-r2.test.mjs tests/sculpture-v2-media-gateway.test.mjs
+      - run: |
+          python3 -m venv /tmp/gs2-venv
+          /tmp/gs2-venv/bin/pip install 'boto3>=1.37,<2'
+          /tmp/gs2-venv/bin/python -m unittest discover -s tests -p test_sculpture_splat_r2.py -v
+      - name: Validate real source packs without R2 writes
+        run: |
+          node automation/build-sculpture-splats.mjs --date 2026-11-26 --quality both --out "$RUNNER_TEMP/gs2"
+          python3 automation/publish-sculpture-splats-r2.py --date 2026-11-26 --out "$RUNNER_TEMP/gs2" --dry-run
+  publish-pilot:
+    needs: safety
+    if: >-
+      github.repository == 'southernadd-cmyk/algoart' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.event == 'push'))
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: archive-media-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Prepare fixed pilot edition from verified V2 packs
+        run: |
+          node automation/build-sculpture-splats.mjs --date 2026-11-26 --quality both --out "$RUNNER_TEMP/gs2"
+          python3 -m venv /tmp/gs2-venv
+          /tmp/gs2-venv/bin/pip install 'boto3>=1.37,<2'
+      - name: Publish two immutable quality packs and manifest last
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID || vars.R2_ACCOUNT_ID }}
+          R2_MEDIA_ACCESS_KEY_ID: ${{ secrets.R2_MEDIA_ACCESS_KEY_ID }}
+          R2_MEDIA_SECRET_ACCESS_KEY: ${{ secrets.R2_MEDIA_SECRET_ACCESS_KEY }}
+          SPLAT_PUBLICATION_ARMED: 'true'
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: /tmp/gs2-venv/bin/python automation/publish-sculpture-splats-r2.py --date 2026-11-26 --out "$RUNNER_TEMP/gs2"
+      - name: Verify browser-compatible loader against the public pilot
+        run: |
+          node --input-type=module <<'JS'
+          import {fetchSplatManifest,downloadSplatPack} from './gallery/sculpture-splats/r2-loader.mjs';
+          import {getV2DailyManifest} from './gallery/sculpture-v2-test/v2-pack-loader.mjs';
+          const date='2026-11-26', manifest=await fetchSplatManifest(date), source=await getV2DailyManifest(date);
+          for(const quality of ['mobile','desktop']){
+            const pack=await downloadSplatPack(date,quality,{manifest,sourceSha256:source.qualities[quality].sha256});
+            if(pack.expectedPortraits!==source.portraits)throw Error('Source roster count mismatch');
+            console.log('GS2_PUBLIC_PACK_VERIFIED',quality,pack.expectedPortraits);
+          }
+          JS
