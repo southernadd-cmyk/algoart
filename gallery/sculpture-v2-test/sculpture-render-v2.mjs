@@ -15,6 +15,8 @@ export function setSculptureArchitecturalMaterials({plinth,metal}={}){
   if(plinth)pedestalFinish=plinth;
   if(metal)edgeFinish=metal;
 }
+let enhanceSculpture=null;
+export function setSculptureSplatEnhancer(enhancer){enhanceSculpture=typeof enhancer==='function'?enhancer:null;}
 export const V2_TEST_METHOD='assembly';
 const status={
   mode:'test-only-prepared-v2',variant:'v2.0-prepared-archive',
@@ -199,6 +201,8 @@ export function createPortraitSculpture({
       if(transport.fallback)status.transport.fallbacks++;
       count(study,'complete',stats);
       onComplete?.({strokeCount:0,pigmentCount:stats.regions,prepared:true,v2:true});
+      // Meshes and supports are already mounted; an optional representation must never delay completion.
+      if(enhanceSculpture)Promise.resolve().then(()=>enhanceSculpture({body,pivot,date,quality:requestedQuality,name,seed:prepared.seed,sourceSha256:transport.sha256})).catch(error=>console.warn('[Sculpture splats] original mesh retained',error));
     }finally{
       if(!attached){
         if(fixture)disposeHybridSupport(fixture);
