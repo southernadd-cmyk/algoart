@@ -92,9 +92,12 @@ await build({
     const candidates=phi.pieces.flatMap(p=>[.5,.3,.7].flatMap(u=>[.5,.3,.7].map(v=>({...phi.world.toWorld(p.x+p.w*u,p.z+p.h*v),area:p.w*p.h}))));
     const clear=candidates.filter(p=>phi.canWalk(p.x,p.z)&&clearOfSculptures(sculpturePlacements,p.x,p.z)&&clearOfSculptures(phiFurnishingObstacles,p.x,p.z)&&!phiDoorBlocked(p.x,p.z)&&(!liftPosition||Math.hypot(p.x-liftPosition.x,p.z-liftPosition.z)>3.5)).sort((a,b)=>b.area-a.area);
     if(!clear.length)throw Error('No safe comparison viewpoint on the pinned floor');
+    const sculptureTargets=artExhibits.filter(a=>a.study?.portrait&&!a.normal);
+    const nearestDistance=p=>Math.min(...sculptureTargets.map(a=>Math.hypot(a.position.x-p.x,a.position.z-p.z)));
+    if(sculptureComparison&&sculptureTargets.length)clear.sort((a,b)=>Math.abs(nearestDistance(a)-3.4)-Math.abs(nearestDistance(b)-3.4));
     const p=clear[0];rig.position.set(p.x,elevation,p.z);
     const eye=rig.position.clone();eye.y+=1.68;
-    const art=artExhibits.filter(a=>a.normal&&a.normal.dot(eye.clone().sub(a.position))>.2).sort((a,b)=>a.position.distanceToSquared(eye)-b.position.distanceToSquared(eye))[0];
+    const art=(sculptureComparison&&sculptureTargets.length?sculptureTargets:artExhibits.filter(a=>a.normal&&a.normal.dot(eye.clone().sub(a.position))>.2)).sort((a,b)=>a.position.distanceToSquared(eye)-b.position.distanceToSquared(eye))[0];
     yaw=art?Math.atan2(p.x-art.position.x,p.z-art.position.z):0;pitch=0;
     rig.rotation.y=yaw;camera.rotation.x=pitch;rig.updateMatrixWorld(true);
     liftWasNear=false;liftPickerConsumed=true;updateExhibitLighting();
