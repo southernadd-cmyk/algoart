@@ -46,8 +46,8 @@ jobs:
           import {archivePlan,archiveSource} from './automation/lib/sculpture-splat-backfill.mjs';
           const catalog=await getV2R2Catalog();
           const plan=archivePlan(catalog);
-          for(const day of plan.filter(d=>d==='reception'||d<'2026-11-18'))archiveSource(catalog,day);
-          console.log('GS5_SOURCE_PLAN',JSON.stringify(plan));
+          const historical=plan.filter(d=>d==='reception'||d<'2026-11-18').map(day=>({day,portraits:archiveSource(catalog,day).portraits}));
+          console.log('GS5_SOURCE_PLAN',JSON.stringify({plan,historical,emptyFloors:historical.filter(x=>x.portraits===0).map(x=>x.day),cataloguePacks:historical.filter(x=>x.portraits>0).length*2}));
           JS
   backfill:
     needs: safety
