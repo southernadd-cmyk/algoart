@@ -42,10 +42,10 @@ test('generated preview contains two persistent labelled mode buttons and automa
  assert.ok(line,'Expected statically generated control markup');
  const markup=JSON.parse(line.trim().slice('const gaussianControls='.length,-1));
  assert.match(markup,/<button id="spark-triangles"[^>]*>Triangles<\/button>/);
- assert.match(markup,/<button id="spark-splats"[^>]*>Gaussian splats<\/button>/);
+ assert.match(markup,/<button id="spark-splats"[^>]*>Full-floor hybrid<\/button>/);
  assert.ok(markup.includes('data-ready="false"'));
  assert.ok(markup.includes('role="status"'));
- assert.ok(preview.includes("else void capture(true)"));
+ assert.ok(preview.includes("else if(getReady())void capture(true)"));
  assert.ok(preview.includes("if(activate&&splat&&ticket===generation)show()"));
  assert.ok(preview.includes("panel.dataset.mode=active?'splats':'triangles'"));
  assert.ok(preview.includes("panel.dataset.ready='true'"));
@@ -82,4 +82,38 @@ test('benchmark observes completed post-FX frames and validates active conversio
  assert.ok(preview.includes("['12','Low'],['24','Medium'],['40','High']"));
  assert.ok(preview.includes('validateRun(m.run)'));
  assert.ok(preview.includes('benchmarkViewMatches(run.reference,view())'));
+});
+
+import {planFloorSamples} from '../gallery/gaussian-splat-lab/floor-plan.mjs';
+test('whole-floor enumeration includes distant rooms and both sides regardless of viewpoint',()=>{
+ const scene=new THREE.Scene(),material=new THREE.MeshStandardMaterial();
+ const meshes=Array.from({length:12},(_,i)=>{
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(8,4,.19),material);
+  mesh.position.set(i*25,2,0);scene.add(mesh);return mesh;
+ });
+ const all=architectureFaces(THREE,meshes);
+ assert.equal(all.length,24);
+ assert.equal(new Set(all.map(f=>f.mesh)).size,12);
+ assert.equal(all.filter(f=>f.n.z>.99).length,12);
+ assert.equal(all.filter(f=>f.n.z<-.99).length,12);
+ assert.ok(architectureFaces(THREE,meshes,new THREE.Vector3(0,2,3)).length<all.length);
+ const plan=planFloorSamples(all,40,25000);
+ assert.equal(plan.items.length,all.length);
+ assert.ok(plan.total<=25000);
+ assert.ok(plan.effectiveDensity<40);
+ assert.ok(plan.items.every(p=>p.px>=4&&p.py>=4));
+ assert.deepEqual(planFloorSamples(all,40,25000),plan);
+ assert.throws(()=>planFloorSamples(all,40,100),/coverage budget/);
+});
+test('full hybrid has no camera-distance cutoff or skipped faces and carries across editions',async()=>{
+ const src=await readFile(new URL('../gallery/gaussian-splat-lab/live-preview.mjs',import.meta.url),'utf8');
+ const build=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
+ assert.ok(src.includes('const faces=architectureFaces(THREE,sources);'));
+ assert.ok(src.includes('for(const {face,px,py} of floor.items)'));
+ assert.ok(src.includes("if(!bytes)throw Error('Incomplete floor bake"));
+ assert.ok(src.includes('wantHybrid&&!active&&!busy&&!benchmark'));
+ assert.ok(src.includes('pos.copy(centre).sub(origin)'));
+ assert.ok(!src.includes('eye.distanceTo(camera.getWorldPosition'));
+ assert.ok(build.includes('selectBakeLights:position=>'));
+ assert.ok(build.includes('full-floor-splat-01'));
 });
