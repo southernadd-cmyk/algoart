@@ -146,7 +146,7 @@ def connect():
     from botocore.config import Config
     require(os.environ.get("GITHUB_REPOSITORY") == "southernadd-cmyk/algoart"
             and os.environ.get("GITHUB_REF") == "refs/heads/main"
-            and os.environ.get("GITHUB_EVENT_NAME") in ("workflow_dispatch", "workflow_run")
+            and os.environ.get("GITHUB_EVENT_NAME") in ("workflow_dispatch", "workflow_run", "schedule")
             and os.environ.get("SPLAT_PUBLICATION_ARMED") == "true", "Splat publication requires trusted main workflow")
     account = os.environ["R2_ACCOUNT_ID"]
     require(re.fullmatch(r"[a-fA-F0-9]{32}", account), "Invalid R2 account")
@@ -162,8 +162,14 @@ def main():
     parser.add_argument("--date", required=True)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--source-mobile-sha")
+    parser.add_argument("--source-desktop-sha")
     args = parser.parse_args()
     manifest, objects = prepare(args.date, args.out)
+    if args.source_mobile_sha is not None or args.source_desktop_sha is not None:
+        for quality, expected in (("mobile", args.source_mobile_sha), ("desktop", args.source_desktop_sha)):
+            require(expected and HASH.fullmatch(expected) and manifest["qualities"][quality]["sourceSha256"] == expected,
+                    "Staged pack does not match expected V2 source: " + quality)
     if not args.dry_run:
         client = connect()
         client.head_bucket(Bucket=BUCKET)
