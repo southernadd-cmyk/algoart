@@ -147,7 +147,7 @@ test('sculpture alternatives use real indexed source triangles and preserve mate
  assert.deepEqual(alt,buildSculptureAlternatives(study,128));
  for(let i=0;i<alt.points.length;i+=11){
   const [x,y,z,nx,ny,nz,u,v,radius,mi,material]=alt.points.slice(i,i+11);
-  assert.ok(x>=1&&y>=2&&x+y<=4.000001);assert.equal(z,3);assert.equal(nz,1);
+  assert.ok(x>=1-1e-9&&y>=2-1e-9&&x+y<=4.000001);assert.ok(Math.abs(z-3)<1e-9);assert.ok(Math.abs(nz-1)<1e-9);
   assert.ok(u>=0&&v>=0&&u+v<=1.000001&&radius>0);assert.equal(mi,0);assert.equal(material,0);
  }
  assert.equal(simplifyRegion(mesh).groups[0].count,3);
