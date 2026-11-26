@@ -82,7 +82,38 @@ await build({
           const exhibitLightsAnchor='  updatePhiBoundedRoomLights();\n  const nearest=exhibitLightTargets.slice()\n    .sort((a,b)=>a.position.distanceToSquared(rig.position)-b.position.distanceToSquared(rig.position));';
           inject(exhibitLightsAnchor,exhibitLightsAnchor.replace('updatePhiBoundedRoomLights()','updatePhiBoundedRoomLights(position)').replaceAll('distanceToSquared(rig.position)','distanceToSquared(position)'));
           const fxAnchor='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
-          inject(fxAnchor,fxAnchor+"\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&!!welcome?.hidden&&$('lift').hidden,selectBakeLights:position=>{updateExhibitLighting(position);return ()=>updateExhibitLighting();}}):null;");
+          inject(fxAnchor,fxAnchor+"\nlet gaussianStartupPreparing=false;\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&(gaussianStartupPreparing||!!welcome?.hidden)&&$('lift').hidden,selectBakeLights:position=>{updateExhibitLighting(position);return ()=>updateExhibitLighting();}}):null;");
+          // Fixed comparison edition: spawn in a real walkable room before warming the scene.
+          inject('function openLift(){','function openLift(){return;');
+          inject('function openXRLift(){','function openXRLift(){return;');
+          const spawnAnchor="  $('liftMonth').value=(reception?archiveDates[1]:date).slice(0,7);";
+          inject(spawnAnchor,`  if(!viaLift&&!reception){
+    const phi=plan.phi;
+    const candidates=phi.pieces.flatMap(p=>[.5,.3,.7].flatMap(u=>[.5,.3,.7].map(v=>({...phi.world.toWorld(p.x+p.w*u,p.z+p.h*v),area:p.w*p.h}))));
+    const clear=candidates.filter(p=>phi.canWalk(p.x,p.z)&&clearOfSculptures(sculpturePlacements,p.x,p.z)&&clearOfSculptures(phiFurnishingObstacles,p.x,p.z)&&!phiDoorBlocked(p.x,p.z)&&(!liftPosition||Math.hypot(p.x-liftPosition.x,p.z-liftPosition.z)>3.5)).sort((a,b)=>b.area-a.area);
+    if(!clear.length)throw Error('No safe comparison viewpoint on the pinned floor');
+    const p=clear[0];rig.position.set(p.x,elevation,p.z);
+    const eye=rig.position.clone();eye.y+=1.68;
+    const art=artExhibits.filter(a=>a.normal&&a.normal.dot(eye.clone().sub(a.position))>.2).sort((a,b)=>a.position.distanceToSquared(eye)-b.position.distanceToSquared(eye))[0];
+    yaw=art?Math.atan2(p.x-art.position.x,p.z-art.position.z):0;pitch=0;
+    rig.rotation.y=yaw;camera.rotation.x=pitch;rig.updateMatrixWorld(true);
+    liftWasNear=false;liftPickerConsumed=true;updateExhibitLighting();
+  }
+`+spawnAnchor);
+          const startupAnchor='    await loadEdition(qp&&archiveDates.includes(qp)?qp:RECEPTION);';
+          inject(startupAnchor,`    const comparisonDate='2026-11-26';
+    if(!archiveDates.includes(comparisonDate))throw Error('Pinned Gaussian comparison floor unavailable');
+    await loadEdition(comparisonDate);
+    enter.disabled=true;enter.textContent='Preparing full-floor hybrid…';
+    const controls=$('spark-tower-preview');controls.inert=true;
+    gaussianStartupPreparing=true;
+    try{await gaussianLab?.prepareComparison();}
+    finally{
+      gaussianStartupPreparing=false;controls.inert=false;
+      enter.disabled=false;welcome.hidden=true;
+      liftWasNear=false;liftPickerConsumed=true;canvas.focus({preventScroll:true});
+    }
+`);
           const constructAnchor='function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){';
           inject(constructAnchor,constructAnchor+'\n gaussianLab?.reset();');
           const batchAnchor='window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);';
@@ -135,7 +166,7 @@ let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
 html=html.replaceAll(originalUrl,
-  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=full-floor-splat-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
+  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=fixed-floor-splat-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
   'Sculpture V2 Test Tower | PROPORTION PIECE');
 html=html.replace('</body>',
@@ -145,7 +176,7 @@ if(gaussianPreview){
   html=html.replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>');
   html=html.replaceAll('Sculpture V2 Test Tower | PROPORTION PIECE','Gaussian Test Tower | PROPORTION PIECE').replace('SCULPTURE V2 TEST TOWER · NOT THE LIVE EXHIBITION','GAUSSIAN TEST TOWER · NOT THE LIVE EXHIBITION');
   html=html.replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'').replace(/<link rel="canonical"[^>]*>/g,'');
-  const gaussianControls="<style>\n#spark-tower-preview{position:fixed;z-index:105;left:50%;bottom:12px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;background:#f0ede6f5;color:#304237;border:1px solid #607665;border-radius:6px;padding:9px 12px;font:12px/1.4 Arial,sans-serif;pointer-events:auto;box-shadow:0 3px 12px #0003}\n#spark-tower-preview .spark-switch{display:flex;align-items:center;gap:6px;flex-wrap:wrap}\n#spark-tower-preview button{font:inherit;padding:6px 10px;border:1px solid #607665;border-radius:3px;background:#fff;color:#304237;cursor:pointer}\n#spark-tower-preview button[aria-pressed=\"true\"]{background:#344a3d;color:white;font-weight:bold}\n#spark-tower-preview button:disabled{opacity:.55;cursor:wait}\n#spark-status{max-width:min(520px,calc(100vw - 52px));overflow-wrap:anywhere;margin-top:5px}\n#spark-tower-preview details{margin-top:4px}#spark-tower-preview details p{margin:5px 0}\n@media(max-width:700px){#spark-tower-preview{top:65px;bottom:auto;padding:6px 8px}#spark-tower-preview .spark-switch{gap:4px}}\n#spark-results{max-height:36vh;overflow:auto}#spark-results table{border-collapse:collapse;font-size:11px;width:100%}#spark-results th,#spark-results td{text-align:right;padding:3px 5px;border-bottom:1px solid #60766555}#spark-results th:first-child,#spark-results td:first-child{text-align:left}.spark-benchmark-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.spark-benchmark-images img{display:block;width:100%;height:auto}.spark-benchmark-images a{color:inherit}\n</style>\n<section id=\"spark-tower-preview\" aria-label=\"Gaussian tower renderer comparison\" data-mode=\"triangles\" data-ready=\"false\">\n<div class=\"spark-switch\" role=\"group\" aria-label=\"Rendering mode\"><strong>Renderer</strong><button id=\"spark-triangles\" type=\"button\" aria-pressed=\"true\" disabled>Triangles</button><button id=\"spark-splats\" type=\"button\" aria-pressed=\"false\" disabled>Full-floor hybrid</button></div>\n<div id=\"spark-status\" role=\"status\">Waiting for the experimental renderer to initialise…</div>\n<details><summary>Floor settings</summary><label>Density <select id=\"spark-density\"><option value=\"12\">Low</option><option value=\"24\" selected>Medium</option><option value=\"40\">High</option></select></label> <button id=\"spark-recapture\" type=\"button\" disabled>Rebuild floor</button> <button id=\"spark-reset\" type=\"button\" disabled>Reset</button><p>Select Full-floor hybrid to prepare all eligible walls, ceilings and floors for the loaded edition. Walk freely once ready; changing floors prepares the new edition automatically. Artworks, sculptures, lift, trim and other interactive geometry stay as triangles. Lighting is baked using the room light pools without dynamic shadows; density may be reduced to fit the whole-floor budget.</p></details>\n<div class=\"spark-switch\"><button id=\"spark-benchmark\" type=\"button\" disabled>Benchmark all densities</button><button id=\"spark-export\" type=\"button\" disabled>Export JSON</button></div><div id=\"spark-results\" hidden></div>\n</section>";
+  const gaussianControls="<style>\n#spark-tower-preview{position:fixed;z-index:105;left:50%;bottom:12px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;background:#f0ede6f5;color:#304237;border:1px solid #607665;border-radius:6px;padding:9px 12px;font:12px/1.4 Arial,sans-serif;pointer-events:auto;box-shadow:0 3px 12px #0003}\n#spark-tower-preview .spark-switch{display:flex;align-items:center;gap:6px;flex-wrap:wrap}\n#spark-tower-preview button{font:inherit;padding:6px 10px;border:1px solid #607665;border-radius:3px;background:#fff;color:#304237;cursor:pointer}\n#spark-tower-preview button[aria-pressed=\"true\"]{background:#344a3d;color:white;font-weight:bold}\n#spark-tower-preview button:disabled{opacity:.55;cursor:wait}\n#spark-status{max-width:min(520px,calc(100vw - 52px));overflow-wrap:anywhere;margin-top:5px}\n#spark-tower-preview details{margin-top:4px}#spark-tower-preview details p{margin:5px 0}\n@media(max-width:700px){#spark-tower-preview{top:65px;bottom:auto;padding:6px 8px}#spark-tower-preview .spark-switch{gap:4px}}\n#spark-results{max-height:36vh;overflow:auto}#spark-results table{border-collapse:collapse;font-size:11px;width:100%}#spark-results th,#spark-results td{text-align:right;padding:3px 5px;border-bottom:1px solid #60766555}#spark-results th:first-child,#spark-results td:first-child{text-align:left}.spark-benchmark-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}.spark-benchmark-images img{display:block;width:100%;height:auto}.spark-benchmark-images a{color:inherit}\n#openLift,#floorIndicator,#xr-controls{display:none!important}\n</style>\n<section id=\"spark-tower-preview\" aria-label=\"Gaussian tower renderer comparison\" data-mode=\"triangles\" data-ready=\"false\">\n<div class=\"spark-switch\" role=\"group\" aria-label=\"Rendering mode\"><strong>26 Nov 2026 · Renderer</strong><button id=\"spark-triangles\" type=\"button\" aria-pressed=\"true\" disabled>Triangles</button><button id=\"spark-splats\" type=\"button\" aria-pressed=\"false\" disabled>Full-floor hybrid</button></div>\n<div id=\"spark-status\" role=\"status\">Waiting for the experimental renderer to initialise…</div>\n<details><summary>Floor settings</summary><label>Density <select id=\"spark-density\"><option value=\"12\">Low</option><option value=\"24\" selected>Medium</option><option value=\"40\">High</option></select></label> <button id=\"spark-recapture\" type=\"button\" disabled>Rebuild floor</button> <button id=\"spark-reset\" type=\"button\" disabled>Reset</button><p>This fixed comparison floor opens directly in hybrid mode when preparation is complete. Switch to Triangles instantly; walk freely around the same edition. Artworks, sculptures, lift, trim and other interactive geometry stay as triangles. Lighting is baked using the room light pools without dynamic shadows; density may be reduced to fit the whole-floor budget.</p></details>\n<div class=\"spark-switch\"><button id=\"spark-benchmark\" type=\"button\" disabled>Benchmark all densities</button><button id=\"spark-export\" type=\"button\" disabled>Export JSON</button></div><div id=\"spark-results\" hidden></div>\n</section>";
   html=html.replace('</body>',gaussianControls+'</body>');
   await mkdir('gallery/gaussian-splat-lab',{recursive:true});
   await writeFile('gallery/gaussian-splat-lab/tower.html',html);

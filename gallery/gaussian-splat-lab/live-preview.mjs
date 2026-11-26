@@ -259,5 +259,5 @@ export function createGaussianLivePreview({THREE,renderer,scene,camera,getDate,g
   requestAnimationFrame(tick);
  }
  requestAnimationFrame(tick);update();
- return {reset(){reset();sources=[];},setArchitecture(meshes){reset();sources=meshes;},beforeRender(){if(active&&renderer.xr.isPresenting){wantHybrid=false;reset();}},afterRender};
+ return {async prepareComparison(){wantHybrid=true;await capture(true);return active;},reset(){reset();sources=[];},setArchitecture(meshes){reset();sources=meshes;},beforeRender(){if(active&&renderer.xr.isPresenting){wantHybrid=false;reset();}},afterRender};
 }

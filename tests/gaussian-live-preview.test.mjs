@@ -115,5 +115,21 @@ test('full hybrid has no camera-distance cutoff or skipped faces and carries acr
  assert.ok(src.includes('pos.copy(centre).sub(origin)'));
  assert.ok(!src.includes('eye.distanceTo(camera.getWorldPosition'));
  assert.ok(build.includes('selectBakeLights:position=>'));
- assert.ok(build.includes('full-floor-splat-01'));
+ assert.ok(build.includes('fixed-floor-splat-01'));
+});
+
+test('fixed comparison starts on one published floor, prepares hybrid before revealing it, and bypasses lift',async()=>{
+ const build=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
+ const preview=await readFile(new URL('../gallery/gaussian-splat-lab/live-preview.mjs',import.meta.url),'utf8');
+ assert.ok(build.includes("const comparisonDate='2026-11-26'"));
+ assert.ok(build.includes('await loadEdition(comparisonDate)'));
+ assert.ok(build.indexOf('await loadEdition(comparisonDate)')<build.indexOf('await gaussianLab?.prepareComparison()'));
+ assert.ok(build.indexOf('await gaussianLab?.prepareComparison()')<build.indexOf('enter.disabled=false;welcome.hidden=true'));
+ assert.ok(build.includes("inject('function openLift(){','function openLift(){return;')"));
+ assert.ok(build.includes('phi.canWalk(p.x,p.z)'));
+ assert.ok(build.includes('clearOfSculptures(sculpturePlacements,p.x,p.z)'));
+ assert.ok(preview.includes('async prepareComparison(){wantHybrid=true;await capture(true);return active;}'));
+ const meta=JSON.parse(await readFile(new URL('../gallery/2026-11-26/meta.json',import.meta.url),'utf8'));
+ assert.equal(meta.date,'2026-11-26');
+ assert.ok(meta.entries.length>0);
 });
