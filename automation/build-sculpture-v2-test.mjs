@@ -189,7 +189,7 @@ if(productionSplats){
   await mkdir(vendor+'/examples',{recursive:true});
   await cp('node_modules/three/build',vendor+'/build',{recursive:true});
   await cp('node_modules/three/examples/jsm',vendor+'/examples/jsm',{recursive:true});
-  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs6-01')
+  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs7-01')
     .replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>\n<meta name="robots" content="noindex,nofollow">')
     .replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'');
   await writeFile('gallery/visit/splats.html',html);
