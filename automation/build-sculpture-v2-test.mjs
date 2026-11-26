@@ -8,7 +8,8 @@ import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
 
-const target=resolve('gallery/visit/gallery-phi-sculpture-v2-test-bundle.js');
+const gaussianPreview=process.argv.includes('--gaussian-preview');
+const target=resolve(gaussianPreview?'gallery/visit/gallery-phi-gaussian-preview-bundle.js':'gallery/visit/gallery-phi-sculpture-v2-test-bundle.js');
 const replacement=resolve('gallery/sculpture-v2-test/sculpture-render-v2.mjs');
 const nodeAO=resolve('node_modules/n8ao/dist/N8AO.js');
 const original=readFileSync(nodeAO,'utf8');
@@ -25,6 +26,8 @@ await build({
   entryPoints:['gallery/visit/gallery-phi.js'],
   bundle:true,minify:true,platform:'browser',format:'esm',target:'es2022',
   outfile:target,
+  // One Three.js runtime for the tower, its add-ons and Spark. Normal builds stay bundled.
+  ...(gaussianPreview?{external:['three','three/*','@sparkjsdev/spark']}:{}),
   plugins:[{
     name:'sculpture-v2-isolated-preview',
     setup(plugin){
@@ -66,8 +69,31 @@ await build({
         assert.equal(transformed.split(legacyPackCall).length-1,1,
           'Expected exactly one legacy V1 pack request');
         transformed=transformed.replace(legacyPackCall,'    Promise.resolve({})');
+        if(gaussianPreview){
+          const inject=(from,to)=>{
+            assert.equal(transformed.split(from).length-1,1,'Gaussian preview anchor changed: '+from);
+            transformed=transformed.replace(from,()=>to);
+          };
+          transformed="import {createGaussianLivePreview} from '../gaussian-splat-lab/live-preview.mjs';\n"+transformed;
+          const fxAnchor='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
+          inject(fxAnchor,fxAnchor+"\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&!!welcome?.hidden}):null;");
+          const constructAnchor='function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){';
+          inject(constructAnchor,constructAnchor+'\n gaussianLab?.reset();');
+          const batchAnchor='window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);';
+          inject(batchAnchor,'const gaussianBefore=new Set(scene.children);\n '+batchAnchor+"\n gaussianLab?.setArchitecture([...staticArchitecture.filter(m=>m.parent===scene),...scene.children.filter(m=>!gaussianBefore.has(m)&&m.name==='phi-static-architecture-batch')]);");
+          const tickAnchor="phiStablePointLights.sync('before-render');\n  phiPostFX.render(dt,";
+          inject(tickAnchor,"gaussianLab?.beforeRender();\n  "+tickAnchor);
+        }
         receptionReplacements++;
         return{contents:transformed,loader:'js',resolveDir:dirname(args.path)};
+      });
+      plugin.onLoad({filter:/[/\\]phi-curation-groups\.mjs$/},async(args)=>{
+        if(!gaussianPreview)return;
+        let contents=await readFile(args.path,'utf8');
+        const anchor='if(!sa||!sb||!!sa.portrait!==!!sb.portrait)return false;';
+        assert.equal(contents.split(anchor).length-1,1,'Curator compatibility anchor changed');
+        contents=contents.replace(anchor,anchor+"\n  const solo=s=>s.portrait&&s.material!=='confluence'&&s.material?.type!=='confluence';\n  if(solo(sa)!==solo(sb))return false;");
+        return {contents,loader:'js',resolveDir:dirname(args.path)};
       });
       plugin.onLoad({filter:/[/\\]sculpture-render-traced\.mjs$/},async()=>{
         rendererReplacements++;
@@ -101,13 +127,22 @@ let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
 html=html.replaceAll(originalUrl,
-  './gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
+  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=live-splat-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
   'Sculpture V2 Test Tower | PROPORTION PIECE');
 html=html.replace('</body>',
   '<div role="note" style="position:fixed;z-index:31;right:12px;bottom:12px;pointer-events:none;background:#21302ae9;color:#f8f0d8;border:1px solid #b69b62;padding:7px 11px;font:600 12px Arial,Helvetica,sans-serif">SCULPTURE V2 TEST TOWER · NOT THE LIVE EXHIBITION</div></body>');
-await mkdir('gallery/sculpture-v2-test',{recursive:true});
-await writeFile('gallery/sculpture-v2-test/index.html',html);
+if(gaussianPreview){
+  const imports={three:'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js','three/':'https://cdn.jsdelivr.net/npm/three@0.187.0/','three/addons/':'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/','three/webgpu':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js','three/tsl':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js','@sparkjsdev/spark':'https://sparkjs.dev/releases/spark/2.4.0/spark.module.js'};
+  html=html.replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>');
+  html=html.replaceAll('Sculpture V2 Test Tower | PROPORTION PIECE','Gaussian Test Tower | PROPORTION PIECE').replace('SCULPTURE V2 TEST TOWER · NOT THE LIVE EXHIBITION','GAUSSIAN TEST TOWER · NOT THE LIVE EXHIBITION');
+  html=html.replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'').replace(/<link rel="canonical"[^>]*>/g,'');
+  await mkdir('gallery/gaussian-splat-lab',{recursive:true});
+  await writeFile('gallery/gaussian-splat-lab/tower.html',html);
+}else{
+  await mkdir('gallery/sculpture-v2-test',{recursive:true});
+  await writeFile('gallery/sculpture-v2-test/index.html',html);
+}
 console.log('SCULPTURE_V2_TEST_BUILT '+JSON.stringify({
   route:'gallery/sculpture-v2-test/',rendererReplacements,n8aoReplacements,
   receptionReplacements,
