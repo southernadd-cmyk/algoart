@@ -8,6 +8,7 @@ import importlib.util
 import json
 import math
 import struct
+import subprocess
 import os
 import re
 from datetime import date
@@ -114,7 +115,12 @@ def prepare(day, folder):
     objects.append(entry(path, f"{PREFIX}/{day}/manifest.json", "application/json", "manifest"))
     return manifest, objects
 
-def publish(client, objects, persist=_storage.persist, verify_public=_storage.verify_public):
+def verify_public_splat(item):
+    # Use the gallery's Fetch transport and retain all GET/HEAD/CORS/hash checks.
+    subprocess.run(["node", str(Path(__file__).with_name("verify-sculpture-splat-public.mjs"))],
+                   input=json.dumps(item), text=True, check=True, timeout=200)
+
+def publish(client, objects, persist=_storage.persist, verify_public=verify_public_splat):
     # A conflicting immutable manifest must fail before uploading orphan packs.
     from botocore.exceptions import ClientError
     pointer = objects[-1]
