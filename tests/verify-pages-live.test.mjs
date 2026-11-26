@@ -33,10 +33,13 @@ test('fails closed on a missing expected file or insecure destination',async()=>
 test('Gaussian lab includes Spark documented addons prefix and repairs Confluence portrait slots',async()=>{
   const {readFile}=await import('node:fs/promises');
   const {repairPortraitSlots,isSoloPortrait}=await import('../gallery/gaussian-splat-lab/portrait-slots.mjs');
+  const builder=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
   const html=await readFile(new URL('../gallery/gaussian-splat-lab/index.html',import.meta.url),'utf8');
-  const {imports}=JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]);
-  assert.equal(imports['three/addons/'],'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/');
-  assert.equal(imports.three,'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js');
+  assert.match(html,/tower\.html/);
+  assert.ok(builder.includes("'three/addons/':'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/'"));
+  assert.ok(builder.includes("three:'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js'"));
+  assert.ok(builder.includes("external:['three','three/*','@sparkjsdev/spark']"));
+  assert.ok(builder.includes('if(solo(sa)!==solo(sb))return false;'));
   const meta=JSON.parse(await readFile(new URL('../gallery/2026-11-26/meta.json',import.meta.url),'utf8'));
   const studies=meta.entries.map(e=>({id:e.id,portrait:e.orientation==='portrait',aspect:e.orientation==='portrait'?1/1.4:1.4,material:{type:e.material}}));
   const exhibition={paintings:studies.filter(s=>!isSoloPortrait(s)).map(s=>({studyId:s.id,width:s.aspect*2,height:2})),sculptures:studies.filter(isSoloPortrait).map(s=>({studyId:s.id}))};

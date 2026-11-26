@@ -108,6 +108,13 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           test -s gallery/sculpture-v2-test/index.html
+      - name: Build isolated Gaussian tower experiment
+        run: |
+          if ! node automation/build-sculpture-v2-test.mjs --gaussian-preview || ! node --check gallery/visit/gallery-phi-gaussian-preview-bundle.js; then
+            echo "::warning::Gaussian preview build failed; publishing the live exhibition unchanged"
+            rm -f gallery/visit/gallery-phi-gaussian-preview-bundle.js
+            git checkout -- gallery/gaussian-splat-lab/tower.html
+          fi
       # Pages should not depend on archived test experiments (photoreal/CSM,
       # legacy visitor palette, gltfpack pilots). Those have separate workflows,
       # and the test tower is deliberately a clean mirror of live plus chat v2.
