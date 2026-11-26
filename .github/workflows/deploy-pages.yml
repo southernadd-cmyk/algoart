@@ -115,6 +115,12 @@ jobs:
             rm -f gallery/visit/gallery-phi-gaussian-preview-bundle.js
             git checkout -- gallery/gaussian-splat-lab/tower.html
           fi
+      - name: Prepare sculpture-only comparison assets
+        run: |
+          if ! timeout 240s node automation/build-sculpture-comparison.mjs; then
+            echo "::warning::Sculpture comparison bake unavailable; original meshes remain available"
+            rm -f gallery/gaussian-splat-lab/sculptures-2026-11-26-*-v1.json.gz*
+          fi
       # Pages should not depend on archived test experiments (photoreal/CSM,
       # legacy visitor palette, gltfpack pilots). Those have separate workflows,
       # and the test tower is deliberately a clean mirror of live plus chat v2.
