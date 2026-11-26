@@ -2,6 +2,22 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-26",
+      "cover": "2026-11-26-G01-action-organic-landscape.jpg",
+      "coverOrientation": "landscape",
+      "count": 14,
+      "series": [
+        "Automatic Marks",
+        "Connected Fields",
+        "Constructed Forms",
+        "Recursive Divisions",
+        "Golden Trajectories",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-26/cover-505d39606bffa02621f3da034ae32f1252ead98a3f0a2e846a55329b10bb25d8.jpg",
+      "mediaCoverBytes": 94657
+    },
+    {
       "date": "2026-11-25",
       "cover": "2026-11-25-G01-watercolor-field-landscape.jpg",
       "coverOrientation": "landscape",
