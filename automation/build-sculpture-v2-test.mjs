@@ -76,7 +76,7 @@ await build({
           };
           transformed="import {createGaussianLivePreview} from '../gaussian-splat-lab/live-preview.mjs';\n"+transformed;
           const fxAnchor='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
-          inject(fxAnchor,fxAnchor+"\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&!!welcome?.hidden}):null;");
+          inject(fxAnchor,fxAnchor+"\nconst gaussianLab=renderer?createGaussianLivePreview({THREE,renderer,scene,camera,getDate:()=>exhibitDate,getReady:()=>!!plan?.phi&&!liftTravelling&&!!welcome?.hidden&&$('lift').hidden}):null;");
           const constructAnchor='function constructPhiGallery(layout,studies,{viaLift=false,duringRide=false}={}){';
           inject(constructAnchor,constructAnchor+'\n gaussianLab?.reset();');
           const batchAnchor='window.__phiArchitectureBatches=batchPhiStaticArchitecture(THREE,scene,staticArchitecture);';
@@ -127,7 +127,7 @@ let html=live.replace('<head>',
   '<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
 html=html.replaceAll(originalUrl,
-  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=live-splat-01':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
+  gaussianPreview?'./gallery-phi-gaussian-preview-bundle.js?v=live-splat-02':'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-preview-01');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
   'Sculpture V2 Test Tower | PROPORTION PIECE');
 html=html.replace('</body>',
@@ -137,6 +137,8 @@ if(gaussianPreview){
   html=html.replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>');
   html=html.replaceAll('Sculpture V2 Test Tower | PROPORTION PIECE','Gaussian Test Tower | PROPORTION PIECE').replace('SCULPTURE V2 TEST TOWER · NOT THE LIVE EXHIBITION','GAUSSIAN TEST TOWER · NOT THE LIVE EXHIBITION');
   html=html.replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'').replace(/<link rel="canonical"[^>]*>/g,'');
+  const gaussianControls="<style>\n#spark-tower-preview{position:fixed;z-index:105;left:50%;bottom:12px;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);box-sizing:border-box;background:#f0ede6f5;color:#304237;border:1px solid #607665;border-radius:6px;padding:9px 12px;font:12px/1.4 Arial,sans-serif;pointer-events:auto;box-shadow:0 3px 12px #0003}\n#spark-tower-preview .spark-switch{display:flex;align-items:center;gap:6px;flex-wrap:wrap}\n#spark-tower-preview button{font:inherit;padding:6px 10px;border:1px solid #607665;border-radius:3px;background:#fff;color:#304237;cursor:pointer}\n#spark-tower-preview button[aria-pressed=\"true\"]{background:#344a3d;color:white;font-weight:bold}\n#spark-tower-preview button:disabled{opacity:.55;cursor:wait}\n#spark-status{max-width:min(520px,calc(100vw - 52px));overflow-wrap:anywhere;margin-top:5px}\n#spark-tower-preview details{margin-top:4px}#spark-tower-preview details p{margin:5px 0}\n@media(max-width:700px){#spark-tower-preview{top:65px;bottom:auto;padding:6px 8px}#spark-tower-preview .spark-switch{gap:4px}}\n</style>\n<section id=\"spark-tower-preview\" aria-label=\"Gaussian tower renderer comparison\" data-mode=\"triangles\" data-ready=\"false\">\n<div class=\"spark-switch\" role=\"group\" aria-label=\"Rendering mode\"><strong>Renderer</strong><button id=\"spark-triangles\" type=\"button\" aria-pressed=\"true\" disabled>Triangles</button><button id=\"spark-splats\" type=\"button\" aria-pressed=\"false\" disabled>Gaussian splats</button></div>\n<div id=\"spark-status\" role=\"status\">Waiting for the experimental renderer to initialise…</div>\n<details><summary>Capture settings</summary><label>Density <select id=\"spark-density\"><option value=\"12\">Low</option><option value=\"24\" selected>Medium</option><option value=\"40\">High</option></select></label> <button id=\"spark-recapture\" type=\"button\" disabled>Recapture</button> <button id=\"spark-reset\" type=\"button\" disabled>Reset</button><p>Enter a room, press Esc to release the mouse, and select Gaussian splats. Captures nearby architectural surfaces; artwork and other geometry remain triangles. Captured lighting is baked.</p></details>\n</section>";
+  html=html.replace('</body>',gaussianControls+'</body>');
   await mkdir('gallery/gaussian-splat-lab',{recursive:true});
   await writeFile('gallery/gaussian-splat-lab/tower.html',html);
 }else{
