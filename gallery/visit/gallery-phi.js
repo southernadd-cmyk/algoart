@@ -2922,7 +2922,10 @@ async function loadEdition(date,{viaLift=false,rollback=false,prepared=null,duri
     liftWasNear=true;liftPickerConsumed=true;welcome.hidden=true;
     liftDoorClosure=1;liftDoorTarget=1;
     for(const leaf of liftDoors)leaf.position.copy(leaf.userData.closed);
-    history.replaceState(null,'',date===RECEPTION?location.pathname:'?date='+date);
+    const nextLocation=new URL(location.href);
+    if(date===RECEPTION)nextLocation.searchParams.delete('date');else nextLocation.searchParams.set('date',date);
+    // Preserve a visitor's explicit mesh rollback across lift journeys and reloads.
+    history.replaceState(null,'',nextLocation.pathname+nextLocation.search+nextLocation.hash);
   }
   $('liftMonth').value=(reception?archiveDates[1]:date).slice(0,7);
   $('archiveLink').href='../'+(reception?archiveDates[1]:date)+'/';
