@@ -79,7 +79,7 @@ await build({
           transformed="import {createSculptureSplatRenderer} from '../sculpture-splats/renderer.mjs';\nglobalThis.__ppSplatTowerStarted=true;\n"+transformed;
           inject('createPortraitSculpture, setSculptureArchitecturalMaterials','createPortraitSculpture, setSculptureArchitecturalMaterials, setSculptureSplatEnhancer');
           const fx='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
-          inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();\nconst renderSculptureFrame=(...args)=>sculptureSplats?sculptureSplats.renderFrame(()=>phiPostFX.render(...args)):phiPostFX.render(...args);");
+          inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance,sculptureSplats?.prefetch);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();\nconst renderSculptureFrame=(...args)=>sculptureSplats?sculptureSplats.renderFrame(()=>phiPostFX.render(...args)):phiPostFX.render(...args);");
           // Staged, retained and active floor disposal must release Spark-owned buffers.
           transformed=transformed.replaceAll('object.userData.galleryDisposed=true;', 'object.userData.disposeSculptureSplats?.();object.userData.galleryDisposed=true;')
             .replaceAll('child.userData.galleryDisposed=true;', 'child.userData.disposeSculptureSplats?.();child.userData.galleryDisposed=true;');
@@ -189,7 +189,7 @@ if(productionSplats){
   await mkdir(vendor+'/examples',{recursive:true});
   await cp('node_modules/three/build',vendor+'/build',{recursive:true});
   await cp('node_modules/three/examples/jsm',vendor+'/examples/jsm',{recursive:true});
-  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs6-01')
+  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs7-01')
     .replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>\n<meta name="robots" content="noindex,nofollow">')
     .replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'');
   await writeFile('gallery/visit/splats.html',html);

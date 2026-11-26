@@ -109,7 +109,7 @@
 <script type="importmap">{"imports":{"three":"./vendor/three-0.187.0/build/three.module.js","three/":"./vendor/three-0.187.0/","three/addons/":"./vendor/three-0.187.0/examples/jsm/","three/webgpu":"./vendor/three-0.187.0/build/three.webgpu.js","three/tsl":"./vendor/three-0.187.0/build/three.tsl.js","@sparkjsdev/spark":"https://sparkjs.dev/releases/spark/2.4.0/spark.module.js"}}</script>
 <script>
 (()=>{const link=document.createElement('link');link.rel='modulepreload';
-link.href=new URLSearchParams(location.search).get('sculptures')==='mesh'?'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261117-assembly':'./gallery-phi-splats-bundle.js?v=gs6-01';document.head.append(link);})();
+link.href=new URLSearchParams(location.search).get('sculptures')==='mesh'?'./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261117-assembly':'./gallery-phi-splats-bundle.js?v=gs7-01';document.head.append(link);})();
 </script>
 <!-- GS6_HEAD_END -->
 <link rel="preload" href="../../fonts/AlgoArt-Marker-Regular.woff2" as="font" type="font/woff2" crossorigin>
@@ -159,7 +159,7 @@ link.href=new URLSearchParams(location.search).get('sculptures')==='mesh'?'./gal
     }else{
       try{
         window.__ppSculptureMode='splats';
-        await import('./gallery-phi-splats-bundle.js?v=gs6-01');
+        await import('./gallery-phi-splats-bundle.js?v=gs7-01');
       }catch(splatError){
         console.warn('[Gallery startup] Splat bundle unavailable; restoring V2 meshes',splatError);
         if(window.__ppSplatTowerStarted){

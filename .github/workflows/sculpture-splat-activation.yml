@@ -55,7 +55,7 @@ jobs:
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           node --test tests/sculpture-splat-renderer.test.mjs tests/sculpture-v2-tower-coverage.test.mjs tests/verify-pages-live.test.mjs
           test -s gallery/visit/vendor/three-0.187.0/build/three.module.js
-          grep -q 'gallery-phi-splats-bundle.js?v=gs6-01' gallery/visit/index.html
+          grep -q 'gallery-phi-splats-bundle.js?v=gs7-01' gallery/visit/index.html
           if grep -q GS6_ENTRY_START gallery/sculpture-v2-test/index.html; then exit 1; fi
       - run: npx playwright install --with-deps chromium
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/gs6-http.log 2>&1 &
