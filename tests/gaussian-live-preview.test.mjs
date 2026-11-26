@@ -51,3 +51,35 @@ test('generated preview contains two persistent labelled mode buttons and automa
  assert.ok(preview.includes("panel.dataset.ready='true'"));
  assert.doesNotMatch(preview,/spark-mode/);
 });
+
+import {summarizeFrameTimes,pairedComparison,benchmarkViewMatches} from '../gallery/gaussian-splat-lab/benchmark.mjs';
+test('benchmark measures real elapsed frames rather than averages of instantaneous FPS',()=>{
+ const stats=summarizeFrameTimes([...Array(19).fill(16),64]);
+ assert.equal(stats.frames,20);assert.equal(stats.meanMs,18.4);
+ assert.equal(stats.medianMs,16);assert.equal(stats.p95Ms,16);assert.equal(stats.p99Ms,64);assert.equal(stats.stalls50ms,1);
+ assert.equal(stats.fps,1000/18.4);
+ assert.throws(()=>summarizeFrameTimes([0,16]));
+ assert.throws(()=>summarizeFrameTimes(Array(10).fill(NaN)));
+ const paired=pairedComparison({meanMs:20},{meanMs:24},{meanMs:11});
+ assert.equal(paired.fpsGainPct,100);assert.equal(paired.frameTimeReductionPct,50);assert.equal(paired.baselineDriftPct,20);
+});
+test('benchmark rejects motion, floor changes, resizing and pixel ratio changes',()=>{
+ const view={date:'2026-11-26',position:[1,2,3],quaternion:[0,0,0,1],width:1920,height:1080,pixelRatio:1};
+ assert.ok(benchmarkViewMatches(view,{...view,quaternion:[0,0,0,-1]}));
+ assert.ok(!benchmarkViewMatches(view,{...view,position:[1.2,2,3]}));
+ assert.ok(!benchmarkViewMatches(view,{...view,quaternion:[0,.1,0,Math.sqrt(.99)]}));
+ assert.ok(!benchmarkViewMatches(view,{...view,date:'reception'}));
+ assert.ok(!benchmarkViewMatches(view,{...view,width:1600}));
+ assert.ok(!benchmarkViewMatches(view,{...view,pixelRatio:2}));
+});
+test('benchmark observes completed post-FX frames and validates active conversion',async()=>{
+ const build=await readFile(new URL('../automation/build-sculpture-v2-test.mjs',import.meta.url),'utf8');
+ const preview=await readFile(new URL('../gallery/gaussian-splat-lab/live-preview.mjs',import.meta.url),'utf8');
+ assert.ok(build.includes('gaussianLab?.afterRender()'));
+ assert.ok(preview.includes("if(!active||!captureCount)throw Error"));
+ assert.ok(preview.includes("Triangles (before)"));
+ assert.ok(preview.includes("Triangles (after)"));
+ assert.ok(preview.includes("['12','Low'],['24','Medium'],['40','High']"));
+ assert.ok(preview.includes('validateRun(m.run)'));
+ assert.ok(preview.includes('benchmarkViewMatches(run.reference,view())'));
+});
