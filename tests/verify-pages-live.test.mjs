@@ -6,7 +6,7 @@ const read = async () => bytes;
 const response = data => ({ok:true,arrayBuffer:async()=>Uint8Array.from(data).buffer});
 
 test('monitors production HTML, sculpture scripts, gallery archive and Confluence',()=>{
-  for(const file of ['index.html','gallery/index.html','gallery/archive.json','gallery/sculpture-lab/lab-v2.mjs','confluence/index.html'])
+  for(const file of ['index.html','gallery/index.html','gallery/archive.json','gallery/sculpture-lab/lab-v2.mjs','gallery/gaussian-splat-lab/index.html','confluence/index.html'])
     assert.ok(STATIC_PROBES.includes(file),file);
 });
 test('verifies exact bytes of all published static entrypoints',async()=>{
