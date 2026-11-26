@@ -5,6 +5,7 @@ on:
     paths:
       - 'automation/publish-sculpture-splats-daily.mjs'
       - 'automation/lib/sculpture-splat-daily.mjs'
+      - 'automation/lib/sculpture-splat-publication.mjs'
       - 'automation/publish-sculpture-splats-r2.py'
       - 'tests/sculpture-splat-daily.test.mjs'
       - '.github/workflows/sculpture-splat-daily.yml'
