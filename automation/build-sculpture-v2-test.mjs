@@ -3,7 +3,7 @@
 // Reception source metadata/image use immutable R2 URLs; Pages mesh staging is retired.
 // Does not touch live production bundles, V1 baked packs or daily generation.
 import {build} from 'esbuild';
-import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,cp} from 'node:fs/promises';
 import {readFileSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
 import assert from 'node:assert/strict';
@@ -75,7 +75,7 @@ await build({
             assert.equal(transformed.split(from).length-1,1,'Production splat anchor changed: '+from);
             transformed=transformed.replace(from,()=>to);
           };
-          transformed="import {createSculptureSplatRenderer} from '../sculpture-splats/renderer.mjs';\n"+transformed;
+          transformed="import {createSculptureSplatRenderer} from '../sculpture-splats/renderer.mjs';\nglobalThis.__ppSplatTowerStarted=true;\n"+transformed;
           inject('createPortraitSculpture, setSculptureArchitecturalMaterials','createPortraitSculpture, setSculptureArchitecturalMaterials, setSculptureSplatEnhancer');
           const fx='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
           inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();");
@@ -147,7 +147,7 @@ await build({
         return{contents:transformed,loader:'js',resolveDir:dirname(args.path)};
       });
       plugin.onLoad({filter:/[/\\]phi-curation-groups\.mjs$/},async(args)=>{
-        if(!gaussianPreview)return;
+        if(!gaussianPreview&&!productionSplats)return;
         let contents=await readFile(args.path,'utf8');
         const anchor='if(!sa||!sb||!!sa.portrait!==!!sb.portrait)return false;';
         assert.equal(contents.split(anchor).length-1,1,'Curator compatibility anchor changed');
@@ -178,13 +178,20 @@ assert.equal(n8aoReplacements,1,
   'N8AO compatibility patch was not included exactly once');
 assert.ok((await readFile(target)).length>200000,
   'V2 test tower did not produce a complete browser bundle');
-const live=await readFile('gallery/visit/index.html','utf8');
+const liveSource=await readFile('gallery/visit/index.html','utf8');
 const originalUrl='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261117-assembly';
+const live=liveSource.replace(/<!-- GS6_HEAD_START -->[\s\S]*?<!-- GS6_HEAD_END -->/,'<link rel="modulepreload" href="'+originalUrl+'">')
+  .replace(/\/\* GS6_ENTRY_START \*\/[\s\S]*?\/\* GS6_ENTRY_END \*\//,"await import('"+originalUrl+"');");
 assert.equal(live.split(originalUrl).length-1,2,
   'Public tower must use the verified V2 bundle for preload and import');
 if(productionSplats){
   const imports={three:'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js','three/':'https://cdn.jsdelivr.net/npm/three@0.187.0/','three/addons/':'https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/','three/webgpu':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js','three/tsl':'https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js','@sparkjsdev/spark':'https://sparkjs.dev/releases/spark/2.4.0/spark.module.js'};
-  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs3-01')
+  // Same-origin Three modules for live startup; keep the mesh bundle self-contained.
+  const vendor='gallery/visit/vendor/three-0.187.0';
+  await mkdir(vendor+'/examples',{recursive:true});
+  await cp('node_modules/three/build',vendor+'/build',{recursive:true});
+  await cp('node_modules/three/examples/jsm',vendor+'/examples/jsm',{recursive:true});
+  const html=live.replaceAll(originalUrl,'./gallery-phi-splats-bundle.js?v=gs6-01')
     .replace('<head>','<head>\n<script type="importmap">'+JSON.stringify({imports})+'</script>\n<meta name="robots" content="noindex,nofollow">')
     .replace(/<meta name="robots" content="index,follow,max-image-preview:large">/g,'');
   await writeFile('gallery/visit/splats.html',html);
