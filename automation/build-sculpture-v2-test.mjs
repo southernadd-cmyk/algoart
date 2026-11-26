@@ -78,13 +78,13 @@ await build({
           transformed="import {createSculptureSplatRenderer} from '../sculpture-splats/renderer.mjs';\nglobalThis.__ppSplatTowerStarted=true;\n"+transformed;
           inject('createPortraitSculpture, setSculptureArchitecturalMaterials','createPortraitSculpture, setSculptureArchitecturalMaterials, setSculptureSplatEnhancer');
           const fx='const phiPostFX=createPhiPostFX(THREE,renderer,scene,camera,{production:true});';
-          inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();");
+          inject(fx,fx+"\nconst sculptureSplats=renderer?createSculptureSplatRenderer({THREE,renderer,scene}):null;\nsetSculptureSplatEnhancer(sculptureSplats?.enhance);\nwindow.__sculptureSplats=()=>sculptureSplats?.stats();\nconst renderSculptureFrame=(...args)=>sculptureSplats?sculptureSplats.renderFrame(()=>phiPostFX.render(...args)):phiPostFX.render(...args);");
           // Staged, retained and active floor disposal must release Spark-owned buffers.
           transformed=transformed.replaceAll('object.userData.galleryDisposed=true;', 'object.userData.disposeSculptureSplats?.();object.userData.galleryDisposed=true;')
             .replaceAll('child.userData.galleryDisposed=true;', 'child.userData.disposeSculptureSplats?.();child.userData.galleryDisposed=true;');
-          // Includes modal rendering and XR; original meshes are restored before a VR frame.
-          transformed=transformed.replaceAll("phiStablePointLights.sync('before-render');phiPostFX.render", "sculptureSplats?.beforeRender();phiStablePointLights.sync('before-render');phiPostFX.render");
-          inject("  phiStablePointLights.sync('before-render');\n  phiPostFX.render", "  sculptureSplats?.beforeRender();\n  phiStablePointLights.sync('before-render');\n  phiPostFX.render");
+          // Includes modal rendering and XR; retry a failed Spark frame using meshes.
+          assert.equal(transformed.split('phiPostFX.render(dt,').length-1,2,'Expected two tower frame call sites');
+          transformed=transformed.replaceAll('phiPostFX.render(dt,','renderSculptureFrame(dt,');
         }
         if(gaussianPreview){
           const inject=(from,to)=>{
