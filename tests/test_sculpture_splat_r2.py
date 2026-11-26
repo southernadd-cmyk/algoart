@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import struct
 import tempfile
 import unittest
 from botocore.exceptions import ClientError
@@ -31,13 +32,14 @@ class Store:
 
 def stage(folder, day="reception", mismatch=False):
     for quality, count in publisher.BUDGETS.items():
-        points = bytes(count * 44)
+        points = struct.pack('<11f', 0,0,0,0,0,1,0,0,.01,0,0) * count
         pack = {"schema": "pp-sculpture-splats", "version": 1,
             "algorithm": publisher.ALGORITHM, "geometryRevision": publisher.REVISION,
             "date": day, "quality": quality, "stride": 11, "encoding": "f32le-base64",
             "sourceSha256": "a" * 64, "expectedPortraits": 1,
             "studies": {"source.jpg": {"seed": "different" if mismatch and quality == "desktop" else "seed",
             "imageFile": "source.jpg", "sourceGeometrySha256": "b" * 64,
+            "meshCounts": [[3,3]], "materialCounts": [1], "originalTriangles": 1,
             "pointCount": count, "points": base64.b64encode(points).decode(),
             "pointsSha256": publisher.digest(points)}}}
         data = gzip.compress(json.dumps(pack).encode(), mtime=0)
