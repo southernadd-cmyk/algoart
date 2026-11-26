@@ -43,8 +43,14 @@ assert.ok((await readFile(target)).length>200000);
 const live=await readFile('gallery/visit/index.html','utf8');
 let html=live.replace('<head>','<head>\n<base href="../visit/">\n<meta name="robots" content="noindex,nofollow">');
 assert.notEqual(html,live);
-const old='./gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-20261111';
-assert.ok(html.includes(old),'Live tower import URL changed; review test build');
+// Match the production V2 bundle identity, not its changing release cache key.
+const preload=[...live.matchAll(/<link\b[^>]*\brel="modulepreload"[^>]*\bhref="(\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=[A-Za-z0-9._-]+)"[^>]*>/g)];
+const imports=[...live.matchAll(/\bawait import\(['"](\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=[A-Za-z0-9._-]+)['"]\)/g)];
+assert.equal(preload.length,1,'Expected one production V2 module preload');
+assert.equal(imports.length,1,'Expected one production V2 module import');
+assert.equal(preload[0][1],imports[0][1],'Production preload and import must reference the same release');
+const old=imports[0][1];
+assert.equal(html.split(old).length-1,2,'Expected exactly two production bundle references');
 html=html.replaceAll(old,'./gallery-phi-hybrid-test-bundle.js?v=hybrid-pin-test-02');
 html=html.replaceAll('Virtual Exhibition | PROPORTION PIECE',
  'Hybrid Sculpture Test Tower | PROPORTION PIECE');
