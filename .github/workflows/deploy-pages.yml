@@ -22,6 +22,7 @@ on:
       - 'automation/build-reception-v2.mjs'
       - 'automation/build-sculpture-v2-test.mjs'
       - 'gallery/sculpture-v2-test/**'
+      - 'gallery/sculpture-splats/**'
       - 'tests/phi-mesh-bvh.test.mjs'
       - 'tests/phi-csm.test.mjs'
       - 'tests/phi-lighting-study.test.mjs'
@@ -108,6 +109,11 @@ jobs:
           node automation/build-sculpture-v2-test.mjs
           node --check gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           test -s gallery/sculpture-v2-test/index.html
+      - name: Build opt-in production sculpture splat gallery
+        run: |
+          node automation/build-sculpture-v2-test.mjs --production-splats
+          node --check gallery/visit/gallery-phi-splats-bundle.js
+          test -s gallery/visit/splats.html
       - name: Build isolated Gaussian tower experiment
         run: |
           if ! node automation/build-sculpture-v2-test.mjs --gaussian-preview || ! node --check gallery/visit/gallery-phi-gaussian-preview-bundle.js; then
@@ -231,6 +237,8 @@ jobs:
           test -s _site/gallery/visit/gallery-phi-bundle.js
           test -s _site/gallery/visit/gallery-phi-sculpture-v2-test-bundle.js
           test -s _site/gallery/visit/index.html
+          test -s _site/gallery/visit/splats.html
+          test -s _site/gallery/visit/gallery-phi-splats-bundle.js
           grep -Fq 'gallery-phi-sculpture-v2-test-bundle.js?v=sculpture-v2-' _site/gallery/visit/index.html
           if [[ -e _site/test ]]; then echo 'Retired test tower must not be published' >&2; exit 1; fi
           test -s _site/js/generator.js
