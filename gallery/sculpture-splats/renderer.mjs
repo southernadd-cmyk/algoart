@@ -48,6 +48,14 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
   }
   if(spark){if(stats.active>0&&spark.parent!==scene)scene.add(spark);else if(!stats.active)spark.removeFromParent();}
  }
+ function renderFrame(draw){
+  try{beforeRender();return draw();}
+  catch(error){
+   if(!stats.active)throw error;
+   // Restore physical geometry and retry the same frame without Spark.
+   fail(error);return draw();
+  }
+ }
  function fail(error){
   disabled=true;stats.lastError=String(error?.message||error);
   for(const r of records.values())toggle(r,false);
@@ -97,5 +105,5 @@ export function createSculptureSplatRenderer({THREE,renderer,scene,loadSpark=()=
   }
  }
  renderer.domElement?.addEventListener('webglcontextlost',()=>fail(Error('WebGL context lost')));
- return {enhance,beforeRender,fail,dispose,stats:()=>({...stats,disabled,cachedPacks:packs.size})};
+ return {enhance,beforeRender,renderFrame,fail,dispose,stats:()=>({...stats,disabled,cachedPacks:packs.size})};
 }
