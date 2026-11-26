@@ -6,6 +6,8 @@ import gzip
 import hashlib
 import importlib.util
 import json
+import math
+import struct
 import os
 import re
 from datetime import date
@@ -75,6 +77,27 @@ def prepare(day, folder):
             points = base64.b64decode(study["points"], validate=True)
             require(len(points) == budget * 44 and digest(points) == study.get("pointsSha256"),
                     "Corrupt splat records: " + name)
+            meshes = study.get("meshCounts", [])
+            materials = study.get("materialCounts", [])
+            require(isinstance(meshes, list) and meshes and isinstance(materials, list)
+                    and len(meshes) == len(materials)
+                    and all(isinstance(m, list) and len(m) == 2
+                            and all(type(n) is int and n > 0 for n in m)
+                            and m[1] % 3 == 0 for m in meshes)
+                    and all(type(n) is int and n > 0 for n in materials)
+                    and sum(m[1] // 3 for m in meshes) == study.get("originalTriangles"),
+                    "Invalid source geometry counts")
+            coverage = [0] * len(meshes)
+            for point in struct.iter_unpack("<11f", points):
+                nx, ny, nz = point[3:6]
+                radius, mesh, material = point[8:11]
+                require(all(math.isfinite(n) for n in point)
+                        and abs(nx*nx + ny*ny + nz*nz - 1) <= 1e-4 and radius > 0
+                        and mesh.is_integer() and 0 <= mesh < len(meshes)
+                        and material.is_integer() and 0 <= material < materials[int(mesh)],
+                        "Invalid splat record")
+                coverage[int(mesh)] += 1
+            require(all(n >= 4 for n in coverage), "Missing pigment region")
             current[name] = study["seed"]
         require(roster is None or roster == current, "Quality tiers disagree on sculpture identity")
         roster = current
