@@ -1,10 +1,7 @@
 import * as THREE from 'three';
 // Generated from the actual verified sculpture pack, never camera pixels.
 // Preserve each pigment region and material group in the simplified alternative.
-export const SCULPTURE_SPLAT_VERSION=1;
-export const SCULPTURE_SPLAT_BUDGETS=Object.freeze({mobile:12000,desktop:30000});
-export const SCULPTURE_SPLAT_STRIDE=11;
-export const SCULPTURE_SPLAT_ALGORITHM='v2-surface-uv-diffuse-v1';
+export {SPLAT_FORMAT_VERSION as SCULPTURE_SPLAT_VERSION,SPLAT_BUDGETS as SCULPTURE_SPLAT_BUDGETS,SPLAT_STRIDE as SCULPTURE_SPLAT_STRIDE,SPLAT_ALGORITHM as SCULPTURE_SPLAT_ALGORITHM} from './format.mjs';
 export function simplifyRegion(mesh,cell=.016){
  const g=mesh.geometry,remap=[],buckets=new Map();
  const p=g.position,n=g.normal,uv=g.uv;
