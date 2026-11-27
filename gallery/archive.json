@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-27",
+      "cover": "2026-11-27-G01-oil-scribble-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Constructed Forms",
+        "Recursive Divisions",
+        "Growth Systems",
+        "Orbital Studies",
+        "Automatic Marks",
+        "Radiant Systems",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-27/cover-9cc8e4c34cc49314705bf6dd16ebb86a76008be53c14fae7d5d6d9ab058a71cf.jpg",
+      "mediaCoverBytes": 100126
+    },
+    {
       "date": "2026-11-26",
       "cover": "2026-11-26-G01-action-organic-landscape.jpg",
       "coverOrientation": "landscape",
