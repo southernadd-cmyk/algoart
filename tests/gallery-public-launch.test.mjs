@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync,readdirSync} from 'node:fs';
 import {resolve,dirname} from 'node:path';
+import {runInNewContext} from 'node:vm';
 
 const root=resolve('gallery/visit');
 const read=path=>readFileSync(path,'utf8');
@@ -52,7 +53,22 @@ test('public metadata and essential production assets exist',()=>{
   assert.doesNotMatch(html,/Chrome loading diagnosis/);
   const app=read(resolve(root,'gallery-phi.js'));
   assert.match(html,/id="liftReception"/);assert.match(html,/phi-gallery\.css/);
-  assert.doesNotMatch(html,/Gallery preview|Architecture study|type="importmap"/);
+  assert.doesNotMatch(html,/Gallery preview|Architecture study/);
+  // GS6 uses the same pinned local Three.js modules for both renderers.
+  const maps=[...html.matchAll(/<script type="importmap">([\s\S]*?)<\/script>/g)];
+  assert.equal(maps.length,1,'Exactly one approved import map');
+  const imports=JSON.parse(maps[0][1]).imports;
+  assert.deepEqual(imports,{
+    'three':'./vendor/three-0.187.0/build/three.module.js',
+    'three/':'./vendor/three-0.187.0/',
+    'three/addons/':'./vendor/three-0.187.0/examples/jsm/',
+    'three/webgpu':'./vendor/three-0.187.0/build/three.webgpu.js',
+    'three/tsl':'./vendor/three-0.187.0/build/three.tsl.js',
+    '@sparkjsdev/spark':'https://sparkjs.dev/releases/spark/2.4.0/spark.module.js'
+  });
+  for(const target of Object.values(imports).filter(x=>x.startsWith('./')))
+    assert.ok(existsSync(resolve(root,target)),'Missing import map target '+target);
+  assert.ok(maps[0].index<html.indexOf('<script type="module">'),'Import map must precede module startup');
   assert.doesNotMatch(app,/loadPrebuiltTower|tower-geometry\.bin/);
   assert.doesNotMatch(app,/window[.]prompt/);
   assert.doesNotMatch(app,/Temporary diagnostic for the unexplained entrance overlay/);
@@ -112,7 +128,34 @@ test('production lift keeps painting readiness and uses approved loading overlap
  assert.ok(app.includes('phiPaintingGate.wait'));
  assert.ok(app.includes('await phiMarkerReady;'));
  assert.ok(preloader.includes('releaseAfterDecode'));
- const preload=html.match(/rel="modulepreload" href="([^"]+)"/)?.[1];
- const imported=html.match(/await import\('([^']+)'\)/)?.[1];
- assert.equal(preload,imported);
+ // Gaussian startup has two entry bundles, not one static modulepreload.
+ const entry=html.match(/\/\* GS6_ENTRY_START \*\/([\s\S]*?)\/\* GS6_ENTRY_END \*\//)?.[1];
+ assert.ok(entry,'Missing production renderer selection');
+ const imports=[...entry.matchAll(/await import\('([^']+)'\)/g)].map(m=>m[1]);
+ const [mesh,splats,fallback]=imports;
+ assert.equal(imports.length,3);
+ assert.match(mesh,/^\.\/gallery-phi-sculpture-v2-test-bundle\.js\?v=sculpture-v2-20\d{6}(?:-[a-z0-9-]+)?$/);
+ assert.match(splats,/^\.\/gallery-phi-splats-bundle\.js\?v=gs[0-9]+-[0-9]+$/);
+ assert.equal(fallback,mesh,'Fallback must use the same approved mesh bundle');
+ for(const specifier of [mesh,splats])
+   assert.ok(existsSync(resolve(root,specifier.split('?')[0])),'Missing entry bundle '+specifier);
+ const head=html.match(/<!-- GS6_HEAD_START -->([\s\S]*?)<!-- GS6_HEAD_END -->/)?.[1];
+ assert.ok(head,'Missing renderer preload');
+ const script=head.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+ assert.ok(script,'Missing dynamic preload script');
+ for(const [search,expected] of [['',splats],['?sculptures=mesh',mesh],['?date=2026-11-27',splats]]){
+   const links=[];
+   runInNewContext(script,{
+     URLSearchParams,location:{search},
+     document:{createElement(tag){assert.equal(tag,'link');return {};},head:{append(link){links.push(link);}}}
+   },{timeout:1000});
+   assert.equal(links.length,1);
+   assert.equal(links[0].rel,'modulepreload');
+   assert.equal(links[0].href,expected,'Preload must match selected renderer');
+ }
+ assert.match(entry,/if\(meshOnly\)\{[\s\S]*?__ppSculptureMode='mesh'/);
+ assert.match(entry,/__ppSculptureMode='splats'/);
+ assert.match(entry,/catch\(splatError\)/);
+ assert.match(entry,/__ppSculptureMode='mesh-fallback'/);
+ assert.match(entry,/rollback\.searchParams\.set\('sculptures','mesh'\)/);
 });
