@@ -2,6 +2,23 @@
   "version": 1,
   "days": [
     {
+      "date": "2026-11-28",
+      "cover": "2026-11-28-G01-marker-geometric-portrait.jpg",
+      "coverOrientation": "portrait",
+      "count": 14,
+      "series": [
+        "Constructed Forms",
+        "Orbital Studies",
+        "Recursive Divisions",
+        "Connected Fields",
+        "Growth Systems",
+        "Automatic Marks",
+        "Confluence"
+      ],
+      "mediaCover": "https://proportion-piece-media.mr-adam-clement.workers.dev/editions/2026-11-28/cover-e65a1b5072e95f3ef959bd6aaa3216bfa47c20e5a570aea26dcc775dcc937307.jpg",
+      "mediaCoverBytes": 100933
+    },
+    {
       "date": "2026-11-27",
       "cover": "2026-11-27-G01-oil-scribble-portrait.jpg",
       "coverOrientation": "portrait",
